@@ -229,7 +229,7 @@ class CRMSyncService:
             
             query = text("""
                 INSERT INTO myfdc.user_settings (id, user_id, settings, scheme_name, created_at)
-                VALUES (:id, :user_id, :settings::jsonb, :scheme_name, :created_at)
+                VALUES (:id, :user_id, CAST(:settings AS jsonb), :scheme_name, :created_at)
                 RETURNING id, user_id, settings, scheme_name, created_at, updated_at
             """)
             
@@ -246,7 +246,7 @@ class CRMSyncService:
             if settings_data.settings:
                 merged_settings.update(settings_data.settings)
             
-            updates = ["updated_at = :updated_at", "settings = :settings::jsonb"]
+            updates = ["updated_at = :updated_at", "settings = CAST(:settings AS jsonb)"]
             params = {
                 "user_id": user_id,
                 "updated_at": datetime.now(timezone.utc),
