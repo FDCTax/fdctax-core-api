@@ -491,7 +491,7 @@ class CRMSyncService:
             params["status"] = status
         
         if user_id:
-            conditions.append("user_id = :user_id::uuid")
+            conditions.append("user_id = CAST(:user_id AS uuid)")
             params["user_id"] = user_id
         
         if category:
