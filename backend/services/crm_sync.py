@@ -613,7 +613,7 @@ class CRMSyncService:
     
     async def delete_task(self, task_id: str) -> bool:
         """Delete task"""
-        query = text("DELETE FROM myfdc.user_tasks WHERE id = :task_id::uuid RETURNING id")
+        query = text("DELETE FROM myfdc.user_tasks WHERE id = CAST(:task_id AS uuid) RETURNING id")
         result = await self.db.execute(query, {"task_id": task_id})
         await self.db.commit()
         return result.fetchone() is not None
