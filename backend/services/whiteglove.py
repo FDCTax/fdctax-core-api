@@ -1,15 +1,16 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from typing import Optional, Dict, Any
-from uuid import UUID
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone, timedelta
 import logging
 import json
+import uuid
 
 from models import (
     UserProfileResponse, UserProfileUpdate,
-    TaskResponse, TaskCreate,
-    OnboardingUpdateRequest, SetupState, TaskSource, TaskStatus
+    TaskResponse, TaskCreate, TaskUpdate,
+    UserSettingsUpdate,
+    OnboardingUpdateRequest, SetupState
 )
 from services.crm_sync import CRMSyncService
 
@@ -28,7 +29,7 @@ class WhiteGloveService:
     
     async def admin_profile_override(
         self,
-        user_id: UUID,
+        user_id: str,
         profile_data: UserProfileUpdate
     ) -> Optional[UserProfileResponse]:
         """
@@ -41,14 +42,13 @@ class WhiteGloveService:
         profile = await self.crm_service.update_user_profile(user_id, profile_data)
         
         if profile:
-            # Log the admin action (could be expanded to audit table)
             logger.info(f"Profile updated by admin: {user_id}, changes: {profile_data.model_dump(exclude_none=True)}")
         
         return profile
     
     async def override_onboarding_state(
         self,
-        user_id: UUID,
+        user_id: str,
         request: OnboardingUpdateRequest
     ) -> Optional[UserProfileResponse]:
         """
@@ -69,21 +69,20 @@ class WhiteGloveService:
         Assign a task to a user
         White-glove service: task assignment to educator dashboard
         """
-        # Set source as internal_crm since it's coming from admin
-        task_data.source = TaskSource.internal_crm
+        # Set task type as internal_crm since it's coming from admin
+        task_data.task_type = "internal_crm"
         
-        logger.info(f"Assigning task to user {task_data.user_id}: {task_data.title}")
+        logger.info(f"Assigning task to user {task_data.user_id}: {task_data.task_name}")
         
         task = await self.crm_service.create_task(task_data)
         
-        # Log the assignment
         logger.info(f"Task {task.id} assigned to {task.user_id}")
         
         return task
     
     async def create_luna_escalation(
         self,
-        user_id: UUID,
+        user_id: str,
         reason: str
     ) -> Dict[str, Any]:
         """
@@ -99,7 +98,7 @@ class WhiteGloveService:
         # Create escalation task
         escalation_task = TaskCreate(
             user_id=user_id,
-            title=f"Luna Escalation: {reason[:50]}...",
+            task_name=f"Luna Escalation: {reason[:50]}...",
             description=f"""
             LUNA ESCALATION
             ===============
@@ -112,47 +111,37 @@ class WhiteGloveService:
             Action Required: Review user's situation and provide personalized assistance.
             """,
             due_date=(datetime.now(timezone.utc) + timedelta(days=1)).date(),
-            status=TaskStatus.pending,
-            source=TaskSource.luna
+            status="pending",
+            priority="high",
+            category="escalation",
+            task_type="luna"
         )
         
         task = await self.crm_service.create_task(escalation_task)
         
         # Mark in user's profile that they've requested help
-        # This could trigger different UI states
         try:
             profile = await self.crm_service.get_user_profile(user_id)
             if profile:
-                # Could add an 'escalation_pending' flag to setup_state
                 current_state = profile.setup_state.model_dump()
                 current_state['escalation_pending'] = True
                 current_state['last_escalation'] = datetime.now(timezone.utc).isoformat()
                 
-                query = text("""
-                    UPDATE user_profiles 
-                    SET setup_state = :setup_state::jsonb, updated_at = :updated_at
-                    WHERE user_id = :user_id
-                """)
-                
-                await self.db.execute(query, {
-                    "user_id": str(user_id),
-                    "setup_state": json.dumps(current_state),
-                    "updated_at": datetime.now(timezone.utc)
-                })
-                await self.db.commit()
+                settings_update = UserSettingsUpdate(settings={'setup_state': current_state})
+                await self.crm_service.update_user_settings(user_id, settings_update)
         except Exception as e:
             logger.warning(f"Could not update profile for escalation: {e}")
         
         return {
             "success": True,
-            "escalation_id": str(task.id),
-            "user_id": str(user_id),
+            "escalation_id": task.id,
+            "user_id": user_id,
             "reason": reason,
             "task_created": True,
             "message": "Escalation created. FDC Tax team will follow up within 24 hours."
         }
     
-    async def get_client_summary(self, user_id: UUID) -> Dict[str, Any]:
+    async def get_client_summary(self, user_id: str) -> Dict[str, Any]:
         """
         Get comprehensive client summary for white-glove review
         Combines user, profile, and tasks data
@@ -164,8 +153,8 @@ class WhiteGloveService:
         profile = await self.crm_service.get_user_profile(user_id)
         tasks = await self.crm_service.get_user_tasks(user_id)
         
-        pending_tasks = [t for t in tasks if t.status == TaskStatus.pending]
-        in_progress_tasks = [t for t in tasks if t.status == TaskStatus.in_progress]
+        pending_tasks = [t for t in tasks if t.status == "pending"]
+        in_progress_tasks = [t for t in tasks if t.status == "in_progress"]
         
         return {
             "user": user.model_dump(),
@@ -174,7 +163,7 @@ class WhiteGloveService:
                 "total": len(tasks),
                 "pending": len(pending_tasks),
                 "in_progress": len(in_progress_tasks),
-                "items": [t.model_dump() for t in tasks[:10]]  # Last 10 tasks
+                "items": [t.model_dump() for t in tasks[:10]]
             },
             "onboarding_status": profile.setup_state.model_dump() if profile else None,
             "flags": {
@@ -186,8 +175,8 @@ class WhiteGloveService:
     
     async def bulk_task_assignment(
         self,
-        user_ids: list[UUID],
-        title: str,
+        user_ids: List[str],
+        task_name: str,
         description: str,
         due_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
@@ -202,16 +191,17 @@ class WhiteGloveService:
             try:
                 task_data = TaskCreate(
                     user_id=user_id,
-                    title=title,
+                    task_name=task_name,
                     description=description,
                     due_date=due_date.date() if due_date else None,
-                    status=TaskStatus.pending,
-                    source=TaskSource.internal_crm
+                    status="pending",
+                    priority="normal",
+                    task_type="internal_crm"
                 )
                 task = await self.crm_service.create_task(task_data)
-                results.append({"user_id": str(user_id), "task_id": str(task.id)})
+                results.append({"user_id": user_id, "task_id": task.id})
             except Exception as e:
-                errors.append({"user_id": str(user_id), "error": str(e)})
+                errors.append({"user_id": user_id, "error": str(e)})
         
         return {
             "success": len(errors) == 0,
@@ -219,4 +209,64 @@ class WhiteGloveService:
             "errors": len(errors),
             "results": results,
             "error_details": errors if errors else None
+        }
+    
+    async def complete_oscar_wizard(
+        self,
+        user_id: str,
+        oscar_enabled: bool
+    ) -> Dict[str, Any]:
+        """
+        Complete Meet Oscar wizard
+        Steps completed:
+        1. Intro Screen - shown
+        2. Toggle Oscar preprocessing
+        3. Mark oscar_intro_seen in setup_state
+        """
+        logger.info(f"Oscar wizard completed for user {user_id}, enabled: {oscar_enabled}")
+        
+        # Update oscar_enabled and setup_state
+        profile_update = UserProfileUpdate(
+            oscar_enabled=oscar_enabled,
+            setup_state=SetupState(oscar_intro_seen=True)
+        )
+        
+        profile = await self.crm_service.update_user_profile(user_id, profile_update)
+        
+        if not profile:
+            return {"success": False, "error": "User profile not found"}
+        
+        return {
+            "success": True,
+            "user_id": user_id,
+            "oscar_enabled": oscar_enabled,
+            "setup_state": profile.setup_state.model_dump(),
+            "message": f"Oscar {'enabled' if oscar_enabled else 'skipped'}. Welcome to enhanced receipt processing!"
+        }
+    
+    async def reset_onboarding(self, user_id: str) -> Dict[str, Any]:
+        """
+        Reset all onboarding flags for a user
+        Use case: Re-onboarding after major updates
+        """
+        logger.info(f"Resetting onboarding for user {user_id}")
+        
+        reset_state = OnboardingUpdateRequest(
+            welcome_complete=False,
+            fdc_percent_set=False,
+            gst_status_set=False,
+            oscar_intro_seen=False,
+            levy_auto_enabled=False
+        )
+        
+        profile = await self.crm_service.update_onboarding_state(user_id, reset_state)
+        
+        if not profile:
+            return {"success": False, "error": "User profile not found"}
+        
+        return {
+            "success": True,
+            "user_id": user_id,
+            "setup_state": profile.setup_state.model_dump(),
+            "message": "Onboarding reset. User will see welcome wizard on next login."
         }
