@@ -550,7 +550,7 @@ class CRMSyncService:
             "priority": task_data.priority,
             "category": task_data.category,
             "task_type": task_data.task_type,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now()
         }
         
         result = await self.db.execute(query, params)
