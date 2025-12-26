@@ -705,7 +705,7 @@ class CRMSyncService:
             "input_type": task_data.input_type,
             "custom_options": task_data.custom_options,
             "notify_on_complete": task_data.notify_on_complete,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now()
         }
         
         result = await self.db.execute(query, params)
