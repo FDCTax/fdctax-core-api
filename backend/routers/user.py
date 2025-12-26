@@ -1,14 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
 from typing import List, Optional
-from uuid import UUID
-from datetime import datetime, timezone
 import logging
 
 from database import get_db
 from models import (
-    UserProfileResponse, UserProfileUpdate, UserProfileCreate,
+    UserProfileResponse, UserProfileUpdate,
     TaskResponse, SetupState, OscarToggleRequest, OnboardingUpdateRequest
 )
 from services.crm_sync import CRMSyncService
@@ -19,7 +16,7 @@ router = APIRouter(prefix="/user", tags=["User"])
 
 @router.get("/tasks", response_model=List[TaskResponse])
 async def get_user_tasks(
-    user_id: UUID = Query(..., description="User ID to fetch tasks for"),
+    user_id: str = Query(..., description="User ID to fetch tasks for"),
     status: Optional[str] = Query(None, description="Filter by status"),
     db: AsyncSession = Depends(get_db)
 ):
@@ -38,7 +35,7 @@ async def get_user_tasks(
 
 @router.get("/profile", response_model=UserProfileResponse)
 async def get_user_profile(
-    user_id: UUID = Query(..., description="User ID to fetch profile for"),
+    user_id: str = Query(..., description="User ID to fetch profile for"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -60,7 +57,7 @@ async def get_user_profile(
 
 @router.post("/profile", response_model=UserProfileResponse)
 async def create_or_update_profile(
-    user_id: UUID = Query(..., description="User ID"),
+    user_id: str = Query(..., description="User ID"),
     profile_data: UserProfileUpdate = None,
     db: AsyncSession = Depends(get_db)
 ):
@@ -71,21 +68,18 @@ async def create_or_update_profile(
     try:
         crm_service = CRMSyncService(db)
         
-        # Check if profile exists
-        existing = await crm_service.get_user_profile(user_id)
-        
-        if existing:
-            # Update existing profile
+        # Update profile
+        if profile_data:
             profile = await crm_service.update_user_profile(user_id, profile_data)
         else:
-            # Create new profile
-            create_data = UserProfileCreate(
-                user_id=user_id,
-                **(profile_data.model_dump(exclude_none=True) if profile_data else {})
-            )
-            profile = await crm_service.create_user_profile(create_data)
+            profile = await crm_service.get_user_profile(user_id)
+        
+        if not profile:
+            raise HTTPException(status_code=404, detail="User not found")
         
         return profile
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating/updating profile for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -93,7 +87,7 @@ async def create_or_update_profile(
 
 @router.post("/oscar", response_model=dict)
 async def toggle_oscar_preprocessing(
-    user_id: UUID = Query(..., description="User ID"),
+    user_id: str = Query(..., description="User ID"),
     request: OscarToggleRequest = None,
     db: AsyncSession = Depends(get_db)
 ):
@@ -130,7 +124,7 @@ async def toggle_oscar_preprocessing(
 
 @router.patch("/onboarding", response_model=UserProfileResponse)
 async def update_onboarding_state(
-    user_id: UUID = Query(..., description="User ID"),
+    user_id: str = Query(..., description="User ID"),
     request: OnboardingUpdateRequest = None,
     db: AsyncSession = Depends(get_db)
 ):
@@ -155,7 +149,7 @@ async def update_onboarding_state(
 
 @router.get("/onboarding/status", response_model=SetupState)
 async def get_onboarding_status(
-    user_id: UUID = Query(..., description="User ID"),
+    user_id: str = Query(..., description="User ID"),
     db: AsyncSession = Depends(get_db)
 ):
     """
