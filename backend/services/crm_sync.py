@@ -536,7 +536,7 @@ class CRMSyncService:
         query = text("""
             INSERT INTO myfdc.user_tasks 
             (id, user_id, task_name, description, due_date, status, priority, category, task_type, created_at)
-            VALUES (:id::uuid, :user_id::uuid, :task_name, :description, :due_date, :status, :priority, :category, :task_type, :created_at)
+            VALUES (CAST(:id AS uuid), CAST(:user_id AS uuid), :task_name, :description, :due_date, :status, :priority, :category, :task_type, :created_at)
             RETURNING id, user_id, task_name, description, due_date, status, priority, category, task_type, created_at, updated_at
         """)
         
