@@ -249,7 +249,7 @@ class CRMSyncService:
             updates = ["updated_at = :updated_at", "settings = CAST(:settings AS jsonb)"]
             params = {
                 "user_id": user_id,
-                "updated_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(),
                 "settings": json.dumps(merged_settings)
             }
             
