@@ -145,7 +145,7 @@ class CRMSyncService:
         updates = ["updated_at = :updated_at"]
         params = {
             "user_id": user_id,
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now()
         }
         
         update_dict = user_data.model_dump(exclude_none=True)
@@ -576,7 +576,7 @@ class CRMSyncService:
         updates = ["updated_at = :updated_at"]
         params = {
             "task_id": task_id,
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now()
         }
         
         update_dict = task_data.model_dump(exclude_none=True)
@@ -739,7 +739,7 @@ class CRMSyncService:
         updates = ["updated_at = :updated_at"]
         params = {
             "task_id": task_id,
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now()
         }
         
         update_dict = task_data.model_dump(exclude_none=True)
