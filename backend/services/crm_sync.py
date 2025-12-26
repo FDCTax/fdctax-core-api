@@ -586,7 +586,7 @@ class CRMSyncService:
         
         query = text(f"""
             UPDATE myfdc.user_tasks SET {', '.join(updates)}
-            WHERE id = :task_id::uuid
+            WHERE id = CAST(:task_id AS uuid)
             RETURNING id, user_id, task_name, description, due_date, status, priority, category, task_type, created_at, updated_at
         """)
         
