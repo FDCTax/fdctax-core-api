@@ -439,7 +439,7 @@ class CRMSyncService:
         status: Optional[str] = None
     ) -> List[TaskResponse]:
         """Get tasks for a specific user"""
-        conditions = ["user_id = :user_id::uuid"]
+        conditions = ["user_id = CAST(:user_id AS uuid)"]
         params = {"user_id": user_id}
         
         if status:
