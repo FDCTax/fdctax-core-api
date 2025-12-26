@@ -378,7 +378,7 @@ class CRMSyncService:
                 "id": new_id,
                 "user_id": user_id,
                 "percentage": profile_data.fdc_percent,
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now()
             })
             await self.db.commit()
         
@@ -425,7 +425,7 @@ class CRMSyncService:
                 await self.db.execute(luna_update, {
                     "email": user.email,
                     "has_seen": request.welcome_complete,
-                    "created_at": datetime.now(timezone.utc)
+                    "created_at": datetime.now()
                 })
                 await self.db.commit()
         
