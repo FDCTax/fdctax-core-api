@@ -238,7 +238,7 @@ class CRMSyncService:
                 "user_id": user_id,
                 "settings": settings_json,
                 "scheme_name": settings_data.scheme_name,
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now()
             })
         else:
             # Merge settings
