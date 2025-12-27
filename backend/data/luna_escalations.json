@@ -19,5 +19,27 @@
     "resolved_by": "de84d312-c2bb-4b77-bf78-52e34e25cc43",
     "created_at": "2025-12-27T01:16:39.932980+00:00",
     "updated_at": "2025-12-27T01:17:07.414145+00:00"
+  },
+  {
+    "id": "df77eb36-035e-4842-9faa-910f580770d5",
+    "task_id": "40774dbf-24ad-448f-ae3b-8e1c5f59d970",
+    "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+    "query": "Can I claim personal superannuation contributions as a deduction if I am a contractor?",
+    "luna_response": "I am uncertain about this. It depends on several factors. Let me escalate this for expert review.",
+    "confidence": 0.18,
+    "tags": [
+      "superannuation",
+      "contractor",
+      "complex_deduction"
+    ],
+    "priority": "medium",
+    "status": "open",
+    "additional_context": null,
+    "assigned_to": "luna@fdctax.com",
+    "resolution_notes": null,
+    "resolved_at": null,
+    "resolved_by": null,
+    "created_at": "2025-12-27T01:18:02.170599+00:00",
+    "updated_at": null
   }
 ]
