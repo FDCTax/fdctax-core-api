@@ -13,9 +13,15 @@ from models import (
 )
 from services.crm_sync import CRMSyncService
 from services.whiteglove import WhiteGloveService
+from middleware.auth import get_optional_user, require_staff, AuthUser
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["Admin - White Glove"])
+
+# Note: All /admin endpoints require staff or admin role when authentication is enabled.
+# Use the require_staff dependency for protected endpoints.
+# Currently endpoints work without auth for backwards compatibility.
+# To enforce auth, add: current_user: AuthUser = Depends(require_staff)
 
 
 # ==================== USER MANAGEMENT ====================
