@@ -69,6 +69,11 @@ app = FastAPI(
     - Template management for recurring tasks
     - Automatic task generation based on RRULE
     - Predefined templates (BAS, income checks)
+    
+    ### Document Requests (/api/documents)
+    - Request documents from clients
+    - Secure file uploads
+    - Audit logging
     """,
     version="1.0.0",
     lifespan=lifespan
