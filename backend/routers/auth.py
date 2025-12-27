@@ -454,6 +454,7 @@ async def set_user_role(
 @router.post("/admin/users/{user_id}/set-password")
 async def admin_set_password(
     user_id: str,
+    request: Request,
     new_password: str = Query(..., description="New password", min_length=6),
     current_user: AuthUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
@@ -465,6 +466,9 @@ async def admin_set_password(
     """
     auth_service = AuthService(db)
     
+    # Get user info for audit
+    user = await auth_service.get_user_by_id(user_id)
+    
     success = await auth_service.set_user_password(user_id, new_password)
     
     if not success:
@@ -472,6 +476,20 @@ async def admin_set_password(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    
+    # Log password reset by admin
+    log_action(
+        action=AuditAction.USER_PASSWORD_RESET,
+        resource_type=ResourceType.USER,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        resource_id=user_id,
+        details={
+            "target_user_email": user.email if user else "unknown",
+            "reset_by": "admin"
+        },
+        request=request
+    )
     
     return {"success": True, "message": "Password set successfully"}
 
