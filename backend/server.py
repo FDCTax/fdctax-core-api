@@ -64,6 +64,11 @@ app = FastAPI(
     ### Knowledge Base Endpoints (/api/kb)
     - KB entry CRUD
     - Search for Luna responses
+    
+    ### Recurring Tasks (/api/recurring)
+    - Template management for recurring tasks
+    - Automatic task generation based on RRULE
+    - Predefined templates (BAS, income checks)
     """,
     version="1.0.0",
     lifespan=lifespan
