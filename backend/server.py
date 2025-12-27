@@ -79,6 +79,12 @@ app = FastAPI(
     - JWT-based authentication
     - Role-based access control (admin, staff, client)
     - Token refresh
+    
+    ### Audit Logs (/api/audit)
+    - Centralized audit logging
+    - Track all user and system actions
+    - Query logs by user, action, resource, date range
+    - Statistics and activity reports
     """,
     version="1.0.0",
     lifespan=lifespan
