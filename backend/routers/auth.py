@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import logging
@@ -21,6 +21,7 @@ from middleware.auth import (
     require_admin,
     require_staff
 )
+from services.audit import log_auth_action, log_action, AuditAction, ResourceType
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
