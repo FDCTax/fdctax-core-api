@@ -505,7 +505,7 @@ class DocumentRequestStorage:
                 })
                 self._save_requests(requests)
                 
-                # Audit log
+                # Local audit log (legacy)
                 self.audit_logger.log(AuditLogEntry(
                     action=AuditAction.file_uploaded.value,
                     request_id=request_id,
@@ -517,6 +517,21 @@ class DocumentRequestStorage:
                         "checksum": file_result.checksum
                     }
                 ))
+                
+                # Centralized audit log
+                log_document_action(
+                    action=CentralAuditAction.DOCUMENT_UPLOAD,
+                    document_id=request_id,
+                    user_id=uploaded_by,
+                    details={
+                        "file_name": file_result.file_name,
+                        "file_size": file_result.file_size,
+                        "content_type": file_result.content_type,
+                        "checksum": file_result.checksum,
+                        "client_id": r.get('client_id'),
+                        "title": r.get('title')
+                    }
+                )
                 
                 return DocumentRequest(**requests[i])
         
