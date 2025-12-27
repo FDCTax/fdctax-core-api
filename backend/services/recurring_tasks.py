@@ -320,15 +320,32 @@ class RecurringTaskStorage:
         
         return None
     
-    def delete_template(self, template_id: str) -> bool:
+    def delete_template(self, template_id: str, deleted_by: Optional[str] = None) -> bool:
         """Delete a recurring task template"""
         templates = self._load_templates()
         original_len = len(templates)
+        
+        # Find template info for audit before deletion
+        template_info = next((t for t in templates if t.get('id') == template_id), None)
         
         templates = [t for t in templates if t.get('id') != template_id]
         
         if len(templates) < original_len:
             self._save_templates(templates)
+            
+            # Log template deletion
+            if template_info:
+                log_action(
+                    action=AuditAction.RECURRING_TEMPLATE_DELETE,
+                    resource_type=ResourceType.RECURRING_TEMPLATE,
+                    resource_id=template_id,
+                    user_id=deleted_by,
+                    details={
+                        "title": template_info.get('title'),
+                        "for_user": template_info.get('user_id')
+                    }
+                )
+            
             return True
         
         return False
