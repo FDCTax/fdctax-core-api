@@ -10,10 +10,10 @@
     "recurrence_rule": "FREQ=WEEKLY;BYDAY=FR",
     "recurrence_summary": "Weekly on Friday",
     "is_active": true,
-    "last_generated_at": null,
+    "last_generated_at": "2025-12-27T00:18:25.769151",
     "next_due_date": "2026-01-02",
     "created_at": "2025-12-27T00:18:11.225590",
-    "updated_at": null
+    "updated_at": "2025-12-27T00:18:25.769264"
   },
   {
     "id": "54d1db4f-7946-40f7-b163-1f548b4af49c",
@@ -26,9 +26,9 @@
     "recurrence_rule": "FREQ=MONTHLY;BYMONTHDAY=15",
     "recurrence_summary": "Monthly on the 15th",
     "is_active": true,
-    "last_generated_at": null,
+    "last_generated_at": "2025-12-27T00:18:26.878457",
     "next_due_date": "2026-01-15",
     "created_at": "2025-12-27T00:18:11.275042",
-    "updated_at": null
+    "updated_at": "2025-12-27T00:18:26.878567"
   }
 ]
