@@ -6,7 +6,7 @@ Allows FDC Tax to request documents from clients and receive uploads via MyFDC.
 Features:
 - Document request management
 - Secure file uploads (local storage, S3-ready)
-- Audit logging for all operations
+- Audit logging for all operations (integrated with centralized audit service)
 - Document type categorization
 
 Since sandbox DB has restricted permissions, this implementation uses:
@@ -25,6 +25,14 @@ from pathlib import Path
 import logging
 from enum import Enum
 from pydantic import BaseModel, Field
+
+# Import centralized audit service
+from services.audit import (
+    log_action as centralized_log_action,
+    log_document_action,
+    AuditAction as CentralAuditAction,
+    ResourceType
+)
 
 logger = logging.getLogger(__name__)
 
