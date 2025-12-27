@@ -388,7 +388,7 @@ class DocumentRequestStorage:
         requests.append(request.model_dump())
         self._save_requests(requests)
         
-        # Audit log
+        # Local audit log (legacy)
         self.audit_logger.log(AuditLogEntry(
             action=AuditAction.request_created.value,
             request_id=request.id,
@@ -400,6 +400,19 @@ class DocumentRequestStorage:
                 "due_date": data.due_date
             }
         ))
+        
+        # Centralized audit log
+        log_document_action(
+            action=CentralAuditAction.DOCUMENT_REQUEST_CREATE,
+            document_id=request.id,
+            user_id=created_by,
+            details={
+                "title": data.title,
+                "document_type": data.document_type,
+                "due_date": data.due_date,
+                "client_id": data.client_id
+            }
+        )
         
         return request
     
