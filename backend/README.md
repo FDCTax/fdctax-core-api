@@ -690,6 +690,21 @@ All escalations are logged to the centralized audit system:
 - `GET /priorities` - Priority levels
 - `GET /statuses` - Status options
 
+### Integrations (`/api/integrations`)
+- `POST /calendly/webhook` - Receive Calendly events
+- `GET /calendly/status` - Check Calendly connection
+
+### Appointments (`/api/appointments`)
+- `GET /admin` - List all appointments
+- `GET /admin/stats` - Appointment statistics
+- `GET /admin/upcoming` - Upcoming appointments
+- `GET /admin/{id}` - Get specific appointment
+- `PATCH /admin/{id}/status` - Update status
+- `POST /admin/create` - Create manual appointment
+- `GET /client/{id}` - Client's appointments
+- `GET /my-appointments` - Current user's appointments
+- `GET /statuses` - Available statuses
+
 ---
 
 ## Calendly Webhook Integration
