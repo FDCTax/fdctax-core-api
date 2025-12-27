@@ -101,3 +101,97 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Implement a comprehensive Audit Logging System that integrates across all major services and routes to track user and system actions for compliance and security monitoring."
+
+backend:
+  - task: "Audit Service Core"
+    implemented: true
+    working: true
+    file: "/app/backend/services/audit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "AuditLogger class with file-based JSONL storage, filtering, statistics, and cleanup functionality"
+
+  - task: "Audit Router Endpoints"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/audit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Endpoints for listing logs, stats, user activity, resource history, errors, cleanup. All protected by staff/admin roles."
+
+  - task: "Auth Router Audit Integration"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added audit logging for login, login_failed, logout, register, password_change, password_reset, role_change. Fixed dict vs object attribute issues."
+
+  - task: "CRM Sync Service Audit Integration"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/services/crm_sync.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added audit logging for task.create, task.update, task.delete, task.complete, crm_task.create, crm_task.update"
+
+  - task: "Documents Service Audit Integration"
+    implemented: true
+    working: true
+    file: "/app/backend/services/documents.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Integrated with centralized audit service for document.request_create, document.upload, document.request_dismiss, document.request_update"
+
+  - task: "Recurring Tasks Service Audit Integration"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/services/recurring_tasks.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added audit logging for recurring.template_create, recurring.template_update, recurring.template_delete, recurring.trigger, recurring.task_generated"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Audit Router Endpoints"
+    - "Auth Router Audit Integration"
+    - "Documents Service Audit Integration"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented comprehensive audit logging integration. Key endpoints working: /api/audit (list logs), /api/audit/stats (statistics), /api/audit/actions (action types). Auth events (login, logout, register, role_change) and document events (request_create) are being logged. Test credentials: admin@fdctax.com/admin123, staff@fdctax.com/staff123, client@example.com/client123. Please test all audit endpoints and verify logs are created for various actions."
