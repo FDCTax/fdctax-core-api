@@ -642,12 +642,30 @@ class CRMSyncService:
             updated_at=row.updated_at
         )
     
-    async def delete_task(self, task_id: str) -> bool:
+    async def delete_task(self, task_id: str, deleted_by: Optional[str] = None) -> bool:
         """Delete task"""
+        # Get task info before deletion for audit
+        get_query = text("SELECT task_name, user_id FROM myfdc.user_tasks WHERE id = CAST(:task_id AS uuid)")
+        task_info = (await self.db.execute(get_query, {"task_id": task_id})).fetchone()
+        
         query = text("DELETE FROM myfdc.user_tasks WHERE id = CAST(:task_id AS uuid) RETURNING id")
         result = await self.db.execute(query, {"task_id": task_id})
         await self.db.commit()
-        return result.fetchone() is not None
+        deleted = result.fetchone() is not None
+        
+        if deleted and task_info:
+            # Log task deletion
+            log_task_action(
+                action=AuditAction.TASK_DELETE,
+                task_id=task_id,
+                user_id=deleted_by,
+                details={
+                    "task_name": task_info.task_name,
+                    "assigned_to_user": str(task_info.user_id)
+                }
+            )
+        
+        return deleted
     
     # ==================== CRM TASK OPERATIONS (crm.tasks) ====================
     
