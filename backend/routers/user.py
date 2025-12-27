@@ -169,3 +169,25 @@ async def get_onboarding_status(
     except Exception as e:
         logger.error(f"Error fetching onboarding status for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ==================== DOCUMENT SHORTCUTS ====================
+# These are convenience endpoints that redirect to /api/documents/user/*
+
+@router.get("/documents")
+async def get_user_documents_shortcut(
+    user_id: str = Query(..., description="User ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all document requests for a user.
+    This is a convenience endpoint - see /api/documents/user for full API.
+    """
+    try:
+        from services.documents import DocumentService
+        service = DocumentService()
+        return service.get_user_documents(user_id)
+    except Exception as e:
+        logger.error(f"Error getting user documents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
