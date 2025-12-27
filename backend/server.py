@@ -85,6 +85,12 @@ app = FastAPI(
     - Track all user and system actions
     - Query logs by user, action, resource, date range
     - Statistics and activity reports
+    
+    ### Luna Escalations (/api/luna)
+    - Escalate complex queries to FDC Tax team
+    - Create tasks with full context
+    - Filter by confidence, tags, priority
+    - Track escalation resolution
     """,
     version="1.0.0",
     lifespan=lifespan
