@@ -434,11 +434,14 @@ class DocumentRequestStorage:
                 requests[i].update(update_data)
                 self._save_requests(requests)
                 
-                # Audit log
+                # Determine action type
                 action = AuditAction.request_updated.value
+                central_action = CentralAuditAction.DOCUMENT_REQUEST_UPDATE
                 if data.status == DocumentStatus.dismissed.value:
                     action = AuditAction.request_dismissed.value
+                    central_action = CentralAuditAction.DOCUMENT_REQUEST_DISMISS
                 
+                # Local audit log (legacy)
                 self.audit_logger.log(AuditLogEntry(
                     action=action,
                     request_id=request_id,
@@ -449,6 +452,19 @@ class DocumentRequestStorage:
                         "old_status": old_status
                     }
                 ))
+                
+                # Centralized audit log
+                log_document_action(
+                    action=central_action,
+                    document_id=request_id,
+                    user_id=updated_by,
+                    details={
+                        "changes": update_data,
+                        "old_status": old_status,
+                        "client_id": r.get('client_id'),
+                        "title": r.get('title')
+                    }
+                )
                 
                 return DocumentRequest(**requests[i])
         
