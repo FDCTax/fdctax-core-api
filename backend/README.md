@@ -248,6 +248,186 @@ POST /api/recurring/preview?rule=<rrule>
 
 ---
 
+## Audit Logging System
+
+A centralized audit logging system that tracks all significant user and system actions for compliance, debugging, and security monitoring.
+
+### Features
+
+- **Comprehensive Tracking**: Logs all authentication, task, document, and recurring task actions
+- **IP & User Agent Capture**: Records request metadata for security analysis
+- **Flexible Querying**: Filter logs by user, action type, resource, date range, success status
+- **Statistics**: Aggregate views of system activity
+- **JSONL Storage**: Efficient append-only log file (can migrate to DB when permissions allow)
+
+### Logged Actions
+
+| Category | Actions |
+|----------|---------|
+| **Authentication** | `user.login`, `user.login_failed`, `user.logout`, `user.register`, `user.password_change`, `user.password_reset`, `token.refresh` |
+| **User Management** | `user.role_change`, `user.update`, `user.deactivate`, `user.activate` |
+| **Tasks** | `task.create`, `task.update`, `task.delete`, `task.complete`, `task.assign` |
+| **CRM Tasks** | `crm_task.create`, `crm_task.update`, `crm_task.delete` |
+| **Documents** | `document.request_create`, `document.upload`, `document.request_dismiss`, `document.download`, `document.delete` |
+| **Recurring** | `recurring.template_create`, `recurring.trigger`, `recurring.task_generated` |
+| **Profile** | `profile.update`, `onboarding.update`, `oscar.toggle` |
+
+### Audit Log Schema
+
+```json
+{
+  "id": "uuid",
+  "timestamp": "2025-01-15T10:30:00.000Z",
+  "user_id": "user-uuid",
+  "user_email": "admin@fdctax.com",
+  "action": "user.login",
+  "resource_type": "auth",
+  "resource_id": null,
+  "details": {
+    "role": "admin"
+  },
+  "ip_address": "192.168.1.100",
+  "user_agent": "Mozilla/5.0...",
+  "success": true,
+  "error_message": null
+}
+```
+
+### Sample Log Entries
+
+**Successful Login:**
+```json
+{
+  "action": "user.login",
+  "resource_type": "auth",
+  "user_email": "admin@fdctax.com",
+  "details": {"role": "admin"},
+  "success": true
+}
+```
+
+**Failed Login:**
+```json
+{
+  "action": "user.login_failed",
+  "resource_type": "auth",
+  "user_email": "unknown@example.com",
+  "details": {"reason": "Invalid email or password"},
+  "success": false,
+  "error_message": "Invalid credentials"
+}
+```
+
+**Task Created:**
+```json
+{
+  "action": "task.create",
+  "resource_type": "task",
+  "resource_id": "task-uuid",
+  "user_id": "admin-uuid",
+  "details": {
+    "task_name": "Review BAS",
+    "assigned_to_user": "client-uuid",
+    "due_date": "2025-01-30",
+    "priority": "high"
+  },
+  "success": true
+}
+```
+
+**Document Uploaded:**
+```json
+{
+  "action": "document.upload",
+  "resource_type": "document",
+  "resource_id": "request-uuid",
+  "user_id": "client-uuid",
+  "details": {
+    "file_name": "tax_return_2024.pdf",
+    "file_size": 1024000,
+    "content_type": "application/pdf"
+  },
+  "success": true
+}
+```
+
+### API Endpoints
+
+```bash
+# List audit logs with filters (staff/admin only)
+GET /api/audit
+  ?start_date=2025-01-01
+  &end_date=2025-01-31
+  &user_id=<uuid>
+  &action=user.login
+  &resource_type=auth
+  &success=true
+  &limit=100
+  &offset=0
+
+# Get single audit entry
+GET /api/audit/entry/{entry_id}
+
+# Get audit statistics
+GET /api/audit/stats
+
+# Get user activity
+GET /api/audit/user/{user_id}?limit=50
+
+# Get resource history
+GET /api/audit/resource/{resource_type}/{resource_id}?limit=50
+
+# Get failed actions
+GET /api/audit/errors?limit=100
+
+# List available action types
+GET /api/audit/actions
+
+# Cleanup old logs (admin only, keep last N days)
+POST /api/audit/cleanup?days_to_keep=90
+
+# Get current user's own activity
+GET /api/audit/my-activity?limit=50
+```
+
+### Usage Examples
+
+```bash
+# 1. Login and get token
+TOKEN=$(curl -s -X POST "http://localhost:8001/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@fdctax.com", "password": "admin123"}' \
+  | jq -r '.access_token')
+
+# 2. Get all audit logs
+curl -s "http://localhost:8001/api/audit" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 3. Get login events only
+curl -s "http://localhost:8001/api/audit?action=user.login" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 4. Get failed actions
+curl -s "http://localhost:8001/api/audit/errors" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 5. Get audit statistics
+curl -s "http://localhost:8001/api/audit/stats" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 6. Get activity for a specific user
+curl -s "http://localhost:8001/api/audit/user/<user-uuid>" \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+### Storage
+
+Audit logs are stored in `/app/backend/data/audit_log.jsonl` using JSON Lines format for efficient appending. Each line is a valid JSON object representing one log entry.
+
+**Note:** This file-based storage is a workaround for the sandbox DB permission limitations. When DB permissions are available, logs can be migrated to a PostgreSQL table for better querying and scalability.
+
+---
+
 ## API Endpoints Summary
 
 ### Health (`/api`)
