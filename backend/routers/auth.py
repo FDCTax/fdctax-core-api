@@ -486,7 +486,7 @@ async def admin_set_password(
         user_email=current_user.email,
         resource_id=user_id,
         details={
-            "target_user_email": user.email if user else "unknown",
+            "target_user_email": user.get("email") if user else "unknown",
             "reset_by": "admin"
         },
         request=request
