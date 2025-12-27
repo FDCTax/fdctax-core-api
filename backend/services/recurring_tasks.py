@@ -28,6 +28,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from pydantic import BaseModel, Field
 
+# Import centralized audit service
+from services.audit import log_action, AuditAction, ResourceType
+
 logger = logging.getLogger(__name__)
 
 # Path to recurring templates storage
