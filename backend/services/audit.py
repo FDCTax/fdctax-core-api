@@ -125,6 +125,7 @@ class ResourceType(str, Enum):
     KB_ENTRY = "kb_entry"
     AUTH = "auth"
     SYSTEM = "system"
+    APPOINTMENT = "appointment"
 
 
 # ==================== MODELS ====================
