@@ -53,6 +53,7 @@ def _get_request_metadata(request: Request) -> dict:
 @router.post("/login", response_model=Token)
 async def login(
     login_data: LoginRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -74,11 +75,29 @@ async def login(
     token = await auth_service.login(login_data.email, login_data.password)
     
     if not token:
+        # Log failed login attempt
+        log_auth_action(
+            action=AuditAction.USER_LOGIN_FAILED,
+            user_email=login_data.email,
+            details={"reason": "Invalid email or password"},
+            request=request,
+            success=False,
+            error_message="Invalid credentials"
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"}
         )
+    
+    # Log successful login
+    log_auth_action(
+        action=AuditAction.USER_LOGIN,
+        user_id=token.user_id,
+        user_email=token.email,
+        details={"role": token.role},
+        request=request
+    )
     
     return token
 
