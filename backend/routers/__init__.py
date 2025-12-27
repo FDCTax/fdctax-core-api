@@ -3,5 +3,6 @@ from .admin import router as admin_router
 from .kb import router as kb_router
 from .recurring import router as recurring_router
 from .documents import router as documents_router
+from .auth import router as auth_router
 
-__all__ = ['user_router', 'admin_router', 'kb_router', 'recurring_router', 'documents_router']
+__all__ = ['user_router', 'admin_router', 'kb_router', 'recurring_router', 'documents_router', 'auth_router']
