@@ -328,6 +328,7 @@ async def logout(
 @router.post("/admin/register", response_model=dict)
 async def admin_register_user(
     register_data: RegisterRequest,
+    request: Request,
     current_user: AuthUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
@@ -353,6 +354,23 @@ async def admin_register_user(
                 detail="Failed to create user"
             )
         
+        # Log admin registration action
+        log_action(
+            action=AuditAction.USER_REGISTER,
+            resource_type=ResourceType.USER,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            resource_id=user.id,
+            details={
+                "registered_email": user.email,
+                "registered_role": user.role,
+                "first_name": register_data.first_name,
+                "last_name": register_data.last_name,
+                "registered_by": "admin"
+            },
+            request=request
+        )
+        
         return {
             "success": True,
             "message": f"User created with role: {user.role}",
@@ -364,6 +382,16 @@ async def admin_register_user(
         }
         
     except ValueError as e:
+        log_action(
+            action=AuditAction.USER_REGISTER,
+            resource_type=ResourceType.USER,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            details={"error": str(e), "attempted_email": register_data.email},
+            request=request,
+            success=False,
+            error_message=str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
