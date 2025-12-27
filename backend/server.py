@@ -119,6 +119,7 @@ async def health_check():
 
 
 # Include all routers
+api_router.include_router(auth_router)  # Auth first for visibility
 api_router.include_router(user_router)
 api_router.include_router(admin_router)
 api_router.include_router(kb_router)
