@@ -96,6 +96,13 @@ class AuditAction(str, Enum):
     # Luna / Escalation
     LUNA_ESCALATION = "luna.escalation"
     
+    # Appointments / Calendly
+    APPOINTMENT_BOOKED = "appointment.booked"
+    APPOINTMENT_CANCELLED = "appointment.cancelled"
+    APPOINTMENT_COMPLETED = "appointment.completed"
+    APPOINTMENT_NO_SHOW = "appointment.no_show"
+    APPOINTMENT_RESCHEDULED = "appointment.rescheduled"
+    
     # Knowledge Base
     KB_ENTRY_CREATE = "kb.entry_create"
     KB_ENTRY_UPDATE = "kb.entry_update"
