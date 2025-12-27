@@ -428,6 +428,189 @@ Audit logs are stored in `/app/backend/data/audit_log.jsonl` using JSON Lines fo
 
 ---
 
+## Luna Escalation System
+
+Luna AI can escalate complex queries to the FDC Tax team when confidence is low or human review is needed.
+
+### Escalation Flow
+
+```
+1. User asks Luna a question
+2. Luna detects low confidence or complex query
+3. Luna calls POST /api/luna/escalate with context
+4. System creates:
+   - Task for client in myfdc.user_tasks
+   - Escalation record with metadata
+   - Audit log entry
+5. FDC Tax staff reviews via /api/luna/escalations
+6. Staff resolves and updates status
+```
+
+### Create Escalation
+
+```bash
+POST /api/luna/escalate
+Content-Type: application/json
+
+{
+  "client_id": "uuid-of-client",
+  "query": "What if I use my car for both daycare and personal errands?",
+  "luna_response": "This may be partially deductible. Let me flag this for review.",
+  "confidence": 0.42,
+  "tags": ["motor_vehicle", "mixed_use"],
+  "priority": "medium",
+  "additional_context": "Client mentioned 60% business use"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "escalation_id": "uuid",
+  "task_id": "uuid",
+  "client_id": "uuid",
+  "message": "Escalation created. FDC Tax team will review within 24-48 hours.",
+  "confidence": 0.42,
+  "priority": "medium",
+  "tags": ["motor_vehicle", "mixed_use"]
+}
+```
+
+### Priority Levels
+
+| Priority | Description | Response Time |
+|----------|-------------|---------------|
+| `low` | Non-urgent, general questions | 5 days |
+| `medium` | Standard escalation | 2 days |
+| `high` | Complex or time-sensitive | 1 day |
+| `urgent` | Immediate attention needed | 1 day (highest) |
+
+### Confidence Score Behavior
+
+- **0.0-0.3**: Very low confidence → auto-escalates as high priority
+- **0.3-0.5**: Low confidence → standard escalation
+- **0.5-1.0**: Moderate confidence → review requested
+
+### Available Tags
+
+```
+motor_vehicle, mixed_use, home_office, travel, meals_entertainment,
+equipment, depreciation, gst, bas, eofy, complex_deduction,
+contractor, employee, superannuation, investment, capital_gains, other
+```
+
+### Escalation Statuses
+
+| Status | Description |
+|--------|-------------|
+| `open` | New escalation, not yet reviewed |
+| `in_review` | Staff member is working on it |
+| `resolved` | Issue has been addressed |
+| `dismissed` | Not actionable or duplicate |
+
+### Admin Review Endpoints
+
+```bash
+# List all escalations (staff/admin)
+GET /api/luna/escalations
+GET /api/luna/escalations?status=open
+GET /api/luna/escalations?max_confidence=0.5
+GET /api/luna/escalations?tag=motor_vehicle
+GET /api/luna/escalations?priority=high
+
+# Get escalation statistics
+GET /api/luna/escalations/stats
+
+# Get specific escalation
+GET /api/luna/escalations/{escalation_id}
+
+# Update escalation status
+PATCH /api/luna/escalations/{escalation_id}/status?status=resolved&resolution_notes=Advised%20on%20logbook%20method
+
+# Assign to staff member
+PATCH /api/luna/escalations/{escalation_id}/assign?assigned_to=staff@fdctax.com
+
+# Get client's escalation history
+GET /api/luna/escalations/client/{client_id}
+
+# List available tags and priorities
+GET /api/luna/tags
+GET /api/luna/priorities
+GET /api/luna/statuses
+```
+
+### Example: Complete Escalation Workflow
+
+```bash
+# 1. Login as admin
+TOKEN=$(curl -s -X POST "$API_URL/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@fdctax.com", "password": "admin123"}' \
+  | jq -r '.access_token')
+
+# 2. Create an escalation (simulating Luna)
+curl -s -X POST "$API_URL/api/luna/escalate" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+    "query": "Can I claim my home internet as a deduction?",
+    "luna_response": "Home internet may be partially deductible for business use. Let me flag this for review.",
+    "confidence": 0.38,
+    "tags": ["home_office", "mixed_use"]
+  }' | jq
+
+# 3. List open escalations
+curl -s "$API_URL/api/luna/escalations?status=open" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 4. Pick up escalation for review
+curl -s -X PATCH "$API_URL/api/luna/escalations/{escalation_id}/status?status=in_review" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 5. Resolve escalation
+curl -s -X PATCH "$API_URL/api/luna/escalations/{escalation_id}/status?status=resolved&resolution_notes=Advised%20on%20work%20percentage%20calculation" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 6. Check escalation stats
+curl -s "$API_URL/api/luna/escalations/stats" \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+### Task Created by Escalation
+
+When an escalation is created, a task is added to `myfdc.user_tasks` with:
+
+- **Title**: `Luna Escalation: [truncated query]`
+- **Description**: Full context including query, Luna's response, confidence, tags
+- **Priority**: Based on confidence and requested priority
+- **Category**: `escalation`
+- **Task Type**: `luna_escalation`
+- **Due Date**: 1-5 days based on priority
+
+### Audit Logging
+
+All escalations are logged to the centralized audit system:
+
+```json
+{
+  "action": "luna.escalation",
+  "resource_type": "task",
+  "resource_id": "task-uuid",
+  "details": {
+    "escalation_id": "uuid",
+    "client_id": "uuid",
+    "query": "User's question...",
+    "luna_response": "Luna's response...",
+    "confidence": 0.42,
+    "tags": ["motor_vehicle", "mixed_use"],
+    "priority": "medium"
+  }
+}
+```
+
+---
+
 ## API Endpoints Summary
 
 ### Health (`/api`)
