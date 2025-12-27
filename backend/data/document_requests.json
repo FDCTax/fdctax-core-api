@@ -21,18 +21,18 @@
     "id": "8fa3d270-7cdc-40b6-a77c-672cc91e9d9f",
     "client_id": "1185602f-d78e-4a55-92c4-8a87d5f9714e",
     "title": "Lease Agreement Copy",
-    "description": "We need a copy of your current lease agreement for the home office deduction",
+    "description": "Updated: We need a copy of your current lease agreement for the home office deduction. Please include all pages.",
     "document_type": "Lease Agreement",
-    "due_date": "2025-01-10",
-    "status": "pending",
+    "due_date": "2025-01-20",
+    "status": "dismissed",
     "uploaded_file_url": null,
     "uploaded_file_name": null,
     "uploaded_file_size": null,
     "uploaded_at": null,
     "uploaded_by": null,
-    "notes": null,
+    "notes": "Client confirmed they work from their car",
     "created_at": "2025-12-27T00:26:22.530995",
-    "updated_at": null,
+    "updated_at": "2025-12-27T00:26:55.069852",
     "created_by": "admin"
   }
 ]
