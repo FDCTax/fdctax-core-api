@@ -12,7 +12,7 @@ load_dotenv(ROOT_DIR / '.env')
 
 # Import database and routers
 from database import init_db, get_db
-from routers import user_router, admin_router, kb_router, recurring_router, documents_router
+from routers import user_router, admin_router, kb_router, recurring_router, documents_router, auth_router
 
 # Configure logging
 logging.basicConfig(
