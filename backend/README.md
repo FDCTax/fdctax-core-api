@@ -707,7 +707,7 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 ```
 
-## Total Endpoints: 70+
+## Total Endpoints: 80+
 
 ## Related Projects
 
