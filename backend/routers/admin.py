@@ -456,3 +456,32 @@ async def sync_crm_profiles(
     except Exception as e:
         logger.error(f"Error syncing profiles: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== RECURRING TASKS ====================
+
+@router.post("/tasks/trigger-recurring")
+async def trigger_recurring_tasks(
+    user_id: Optional[str] = Query(None, description="Process only this user's templates"),
+    force: bool = Query(False, description="Force generation even if not due"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Manually trigger the recurring task generation job.
+    
+    This endpoint processes all active recurring task templates and
+    generates tasks for any that are due.
+    
+    - In production, this would be called by a daily cron job
+    - Use force=true to generate tasks even if they're not yet due
+    - Use user_id to process only a specific user's templates
+    """
+    try:
+        from services.recurring_tasks import RecurringTaskEngine
+        
+        engine = RecurringTaskEngine(db)
+        results = await engine.process_recurring_tasks(user_id=user_id, force=force)
+        return results
+    except Exception as e:
+        logger.error(f"Error triggering recurring tasks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
