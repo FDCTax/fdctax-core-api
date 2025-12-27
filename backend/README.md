@@ -692,6 +692,223 @@ All escalations are logged to the centralized audit system:
 
 ---
 
+## Calendly Webhook Integration
+
+Integrates Calendly appointments with the CRM for visibility, task creation, and audit logging.
+
+### Features
+
+- **Webhook Processing**: Automatically receives booking events from Calendly
+- **Client Matching**: Maps invitee email to existing clients
+- **Task Creation**: Creates CRM tasks for upcoming appointments
+- **Audit Logging**: All appointment events are logged
+- **Status Management**: Track appointments through their lifecycle
+
+### Webhook Setup
+
+1. Go to [Calendly Developer Portal](https://developer.calendly.com/)
+2. Create a webhook subscription:
+   - **URL**: `{your-domain}/api/integrations/calendly/webhook`
+   - **Events**: `invitee.created`, `invitee.canceled`
+3. (Optional) Set a signing key for signature validation
+
+### Webhook Payload Example
+
+```json
+{
+  "event": "invitee.created",
+  "payload": {
+    "invitee": {
+      "email": "client@example.com",
+      "name": "John Smith",
+      "uri": "https://api.calendly.com/scheduled_events/.../invitees/...",
+      "questions_and_answers": [
+        {"question": "What topics would you like to discuss?", "answer": "BAS lodgement"}
+      ]
+    },
+    "event": {
+      "uri": "https://api.calendly.com/scheduled_events/...",
+      "name": "Tax Consultation",
+      "start_time": "2025-01-15T10:00:00Z",
+      "end_time": "2025-01-15T10:30:00Z"
+    },
+    "scheduled_event": {
+      "uri": "https://api.calendly.com/scheduled_events/...",
+      "name": "Tax Consultation",
+      "start_time": "2025-01-15T10:00:00Z",
+      "end_time": "2025-01-15T10:30:00Z",
+      "location": {
+        "type": "google_meet",
+        "join_url": "https://meet.google.com/..."
+      }
+    }
+  }
+}
+```
+
+### Appointment Record Schema
+
+```json
+{
+  "id": "uuid",
+  "calendly_event_uri": "https://api.calendly.com/scheduled_events/...",
+  "client_id": "uuid (if matched)",
+  "client_email": "client@example.com",
+  "client_name": "John Smith",
+  "event_type": "Tax Consultation",
+  "event_type_name": "Tax Consultation",
+  "scheduled_for": "2025-01-15T10:00:00Z",
+  "end_time": "2025-01-15T10:30:00Z",
+  "duration_minutes": 30,
+  "location": "https://meet.google.com/...",
+  "location_type": "google_meet",
+  "meeting_url": "https://meet.google.com/...",
+  "status": "scheduled",
+  "task_id": "uuid (if CRM task created)",
+  "questions_and_answers": [...],
+  "created_at": "2025-01-10T08:00:00Z"
+}
+```
+
+### Appointment Statuses
+
+| Status | Description |
+|--------|-------------|
+| `scheduled` | Appointment is booked and upcoming |
+| `completed` | Appointment has been completed |
+| `cancelled` | Appointment was cancelled |
+| `no_show` | Client did not show up |
+| `rescheduled` | Appointment was rescheduled |
+
+### API Endpoints
+
+```bash
+# Webhook (called by Calendly)
+POST /api/integrations/calendly/webhook
+
+# Check Calendly integration status
+GET /api/integrations/calendly/status
+
+# List all appointments (admin)
+GET /api/appointments/admin
+GET /api/appointments/admin?status=scheduled
+GET /api/appointments/admin?client_id=uuid
+GET /api/appointments/admin?start_date=2025-01-01&end_date=2025-01-31
+
+# Get appointment statistics
+GET /api/appointments/admin/stats
+
+# Get upcoming appointments (next N days)
+GET /api/appointments/admin/upcoming?days=7
+
+# Get specific appointment
+GET /api/appointments/admin/{appointment_id}
+
+# Update appointment status
+PATCH /api/appointments/admin/{appointment_id}/status?status=completed
+
+# Get client's appointments
+GET /api/appointments/client/{client_id}
+
+# Get current user's appointments
+GET /api/appointments/my-appointments
+
+# Create manual appointment (not from Calendly)
+POST /api/appointments/admin/create?client_email=...&event_type=...&scheduled_for=...
+
+# List appointment statuses
+GET /api/appointments/statuses
+```
+
+### Example Workflow
+
+```bash
+# 1. Login
+TOKEN=$(curl -s -X POST "$API_URL/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@fdctax.com", "password": "admin123"}' \
+  | jq -r '.access_token')
+
+# 2. Check Calendly connection
+curl -s "$API_URL/api/integrations/calendly/status" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 3. Simulate webhook (for testing)
+curl -s -X POST "$API_URL/api/integrations/calendly/webhook" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event": "invitee.created",
+    "payload": {
+      "invitee": {
+        "email": "client@example.com",
+        "name": "Test Client"
+      },
+      "scheduled_event": {
+        "uri": "https://api.calendly.com/scheduled_events/test-123",
+        "name": "Tax Consultation",
+        "start_time": "2025-01-20T14:00:00Z",
+        "end_time": "2025-01-20T14:30:00Z",
+        "location": {"type": "phone"}
+      }
+    }
+  }' | jq
+
+# 4. List all appointments
+curl -s "$API_URL/api/appointments/admin" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 5. Get appointment statistics
+curl -s "$API_URL/api/appointments/admin/stats" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 6. Mark appointment as completed
+curl -s -X PATCH "$API_URL/api/appointments/admin/{appointment_id}/status?status=completed" \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+### CRM Task Created
+
+When an appointment is booked and the client is matched:
+
+- **Title**: `Upcoming: {Event Type} with {Client Name}`
+- **Description**: Full context including date, time, location, Q&A
+- **Due Date**: Appointment date
+- **Category**: `appointment`
+- **Task Type**: `calendly_appointment`
+- **Status**: `pending`
+
+### Audit Logging
+
+All appointment events are logged:
+
+```json
+{
+  "action": "appointment.booked",
+  "resource_type": "appointment",
+  "resource_id": "appointment-uuid",
+  "details": {
+    "event_type": "Tax Consultation",
+    "scheduled_for": "2025-01-15T10:00:00Z",
+    "client_name": "John Smith",
+    "location_type": "google_meet",
+    "task_created": true
+  }
+}
+```
+
+### Storage
+
+Appointments stored in `/app/backend/data/appointments.json` (file-based workaround due to DB constraints).
+
+### Environment Variables
+
+```env
+CALENDLY_PAT=your-personal-access-token
+CALENDLY_WEBHOOK_SECRET=your-webhook-signing-key (optional)
+```
+
+---
+
 ## Environment Variables
 
 ```env
@@ -705,9 +922,13 @@ CORS_ORIGINS=*
 JWT_SECRET_KEY=your-secret-key-change-in-production
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# Calendly Integration
+CALENDLY_PAT=your-calendly-personal-access-token
+CALENDLY_WEBHOOK_SECRET=your-webhook-signing-key
 ```
 
-## Total Endpoints: 80+
+## Total Endpoints: 90+
 
 ## Related Projects
 
