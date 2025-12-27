@@ -138,6 +138,7 @@ api_router.include_router(kb_router)
 api_router.include_router(recurring_router)
 api_router.include_router(documents_router)
 api_router.include_router(audit_router)  # Audit logs
+api_router.include_router(luna_router)  # Luna escalations
 
 # Include the main router in the app
 app.include_router(api_router)
