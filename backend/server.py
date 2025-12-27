@@ -95,6 +95,16 @@ app = FastAPI(
     - Create tasks with full context
     - Filter by confidence, tags, priority
     - Track escalation resolution
+    
+    ### Appointments (/api/appointments)
+    - Calendly webhook integration
+    - Appointment visibility and management
+    - CRM task creation for appointments
+    - Client appointment history
+    
+    ### Integrations (/api/integrations)
+    - Calendly webhooks
+    - Integration status checks
     """,
     version="1.0.0",
     lifespan=lifespan
