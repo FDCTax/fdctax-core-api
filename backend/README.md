@@ -484,6 +484,17 @@ Audit logs are stored in `/app/backend/data/audit_log.jsonl` using JSON Lines fo
 - Predefined templates
 - Task generation
 
+### Audit Logs (`/api/audit`)
+- `GET /` - List audit logs (with filters)
+- `GET /entry/{id}` - Get specific entry
+- `GET /stats` - Get statistics
+- `GET /user/{user_id}` - User activity
+- `GET /resource/{type}/{id}` - Resource history
+- `GET /errors` - Failed actions
+- `GET /actions` - List action types
+- `POST /cleanup` - Cleanup old logs
+- `GET /my-activity` - Own activity
+
 ---
 
 ## Environment Variables
