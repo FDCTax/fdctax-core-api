@@ -530,7 +530,7 @@ class CRMSyncService:
             for row in rows
         ]
     
-    async def create_task(self, task_data: TaskCreate) -> TaskResponse:
+    async def create_task(self, task_data: TaskCreate, created_by: Optional[str] = None) -> TaskResponse:
         """Create new task"""
         new_id = str(uuid.uuid4())
         
@@ -557,6 +557,20 @@ class CRMSyncService:
         result = await self.db.execute(query, params)
         await self.db.commit()
         row = result.fetchone()
+        
+        # Log task creation
+        log_task_action(
+            action=AuditAction.TASK_CREATE,
+            task_id=new_id,
+            user_id=created_by,
+            details={
+                "task_name": task_data.task_name,
+                "assigned_to_user": task_data.user_id,
+                "due_date": str(task_data.due_date) if task_data.due_date else None,
+                "priority": task_data.priority,
+                "category": task_data.category
+            }
+        )
         
         return TaskResponse(
             id=str(row.id),
