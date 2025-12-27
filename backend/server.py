@@ -74,6 +74,11 @@ app = FastAPI(
     - Request documents from clients
     - Secure file uploads
     - Audit logging
+    
+    ### Authentication (/api/auth)
+    - JWT-based authentication
+    - Role-based access control (admin, staff, client)
+    - Token refresh
     """,
     version="1.0.0",
     lifespan=lifespan
