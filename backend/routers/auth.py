@@ -253,6 +253,7 @@ async def get_current_user_info(
 @router.post("/change-password")
 async def change_password(
     password_data: ChangePasswordRequest,
+    request: Request,
     current_user: AuthUser = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db)
 ):
@@ -270,10 +271,27 @@ async def change_password(
     )
     
     if not success:
+        log_auth_action(
+            action=AuditAction.USER_PASSWORD_CHANGE,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            details={"reason": "Current password incorrect"},
+            request=request,
+            success=False,
+            error_message="Current password is incorrect"
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect"
         )
+    
+    # Log successful password change
+    log_auth_action(
+        action=AuditAction.USER_PASSWORD_CHANGE,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        request=request
+    )
     
     return {"success": True, "message": "Password changed successfully"}
 
