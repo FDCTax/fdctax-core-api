@@ -1,0 +1,23 @@
+[
+  {
+    "id": "77d37db1-ced8-43b5-b2e1-f232a52d11ee",
+    "task_id": "2293e07d-1c13-4b4c-8ab1-47c837057426",
+    "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+    "query": "What if I use my car for both daycare and personal errands?",
+    "luna_response": "This may be partially deductible. Let me flag this for review.",
+    "confidence": 0.42,
+    "tags": [
+      "motor_vehicle",
+      "mixed_use"
+    ],
+    "priority": "medium",
+    "status": "open",
+    "additional_context": null,
+    "assigned_to": "luna@fdctax.com",
+    "resolution_notes": null,
+    "resolved_at": null,
+    "resolved_by": null,
+    "created_at": "2025-12-27T01:16:39.932980+00:00",
+    "updated_at": null
+  }
+]
