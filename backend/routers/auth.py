@@ -401,6 +401,7 @@ async def admin_register_user(
 @router.patch("/admin/users/{user_id}/role")
 async def set_user_role(
     user_id: str,
+    request: Request,
     role: str = Query(..., description="New role (admin, staff, client)"),
     current_user: AuthUser = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
@@ -424,7 +425,23 @@ async def set_user_role(
             detail="User not found"
         )
     
+    old_role = user.role
     auth_service.set_user_role(user_id, role)
+    
+    # Log role change
+    log_action(
+        action=AuditAction.USER_ROLE_CHANGE,
+        resource_type=ResourceType.USER,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        resource_id=user_id,
+        details={
+            "target_user_email": user.email,
+            "old_role": old_role,
+            "new_role": role
+        },
+        request=request
+    )
     
     return {
         "success": True,
