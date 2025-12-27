@@ -425,7 +425,8 @@ async def set_user_role(
             detail="User not found"
         )
     
-    old_role = user.role
+    # Get old role from role storage (user dict doesn't have role)
+    old_role = auth_service.role_storage.get_user_role(user.get("email", ""))
     auth_service.set_user_role(user_id, role)
     
     # Log role change
@@ -436,7 +437,7 @@ async def set_user_role(
         user_email=current_user.email,
         resource_id=user_id,
         details={
-            "target_user_email": user.email,
+            "target_user_email": user.get("email"),
             "old_role": old_role,
             "new_role": role
         },
