@@ -298,6 +298,7 @@ async def change_password(
 
 @router.post("/logout")
 async def logout(
+    request: Request,
     current_user: AuthUser = Depends(get_current_user_required)
 ):
     """
@@ -308,6 +309,14 @@ async def logout(
     
     In production, consider implementing a token blacklist.
     """
+    # Log logout action
+    log_auth_action(
+        action=AuditAction.USER_LOGOUT,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        request=request
+    )
+    
     return {
         "success": True,
         "message": "Logged out successfully. Please discard your tokens."
