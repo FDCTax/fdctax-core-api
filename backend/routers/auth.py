@@ -144,6 +144,7 @@ async def refresh_token(
 @router.post("/register", response_model=dict)
 async def register(
     register_data: RegisterRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -154,6 +155,14 @@ async def register(
     """
     # Prevent non-admins from creating admin/staff accounts
     if register_data.role in [UserRole.admin.value, UserRole.staff.value]:
+        log_auth_action(
+            action=AuditAction.USER_REGISTER,
+            user_email=register_data.email,
+            details={"attempted_role": register_data.role, "reason": "Forbidden role"},
+            request=request,
+            success=False,
+            error_message="Cannot self-register as admin or staff"
+        )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot self-register as admin or staff"
@@ -176,6 +185,19 @@ async def register(
                 detail="Failed to create user"
             )
         
+        # Log successful registration
+        log_auth_action(
+            action=AuditAction.USER_REGISTER,
+            user_id=user.id,
+            user_email=user.email,
+            details={
+                "role": user.role,
+                "first_name": register_data.first_name,
+                "last_name": register_data.last_name
+            },
+            request=request
+        )
+        
         return {
             "success": True,
             "message": "Registration successful",
@@ -187,6 +209,14 @@ async def register(
         }
         
     except ValueError as e:
+        log_auth_action(
+            action=AuditAction.USER_REGISTER,
+            user_email=register_data.email,
+            details={"error": str(e)},
+            request=request,
+            success=False,
+            error_message=str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
