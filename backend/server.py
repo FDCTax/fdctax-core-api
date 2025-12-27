@@ -118,6 +118,7 @@ api_router.include_router(user_router)
 api_router.include_router(admin_router)
 api_router.include_router(kb_router)
 api_router.include_router(recurring_router)
+api_router.include_router(documents_router)
 
 # Include the main router in the app
 app.include_router(api_router)
