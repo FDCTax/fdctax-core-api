@@ -11,13 +11,13 @@
       "mixed_use"
     ],
     "priority": "medium",
-    "status": "open",
+    "status": "resolved",
     "additional_context": null,
-    "assigned_to": "luna@fdctax.com",
-    "resolution_notes": null,
-    "resolved_at": null,
-    "resolved_by": null,
+    "assigned_to": "staff@fdctax.com",
+    "resolution_notes": "Advised on logbook method for mixed use",
+    "resolved_at": "2025-12-27T01:17:07.414094+00:00",
+    "resolved_by": "de84d312-c2bb-4b77-bf78-52e34e25cc43",
     "created_at": "2025-12-27T01:16:39.932980+00:00",
-    "updated_at": null
+    "updated_at": "2025-12-27T01:17:07.414145+00:00"
   }
 ]
