@@ -242,7 +242,7 @@ class RecurringTaskStorage:
                 return RecurringTaskTemplate(**t)
         return None
     
-    def create_template(self, data: RecurringTaskTemplateCreate) -> RecurringTaskTemplate:
+    def create_template(self, data: RecurringTaskTemplateCreate, created_by: Optional[str] = None) -> RecurringTaskTemplate:
         """Create a new recurring task template"""
         templates = self._load_templates()
         
@@ -265,6 +265,20 @@ class RecurringTaskStorage:
         
         templates.append(template.model_dump())
         self._save_templates(templates)
+        
+        # Log template creation
+        log_action(
+            action=AuditAction.RECURRING_TEMPLATE_CREATE,
+            resource_type=ResourceType.RECURRING_TEMPLATE,
+            resource_id=template.id,
+            user_id=created_by or data.user_id,
+            details={
+                "title": data.title,
+                "recurrence_rule": data.recurrence_rule,
+                "recurrence_summary": summary,
+                "for_user": data.user_id
+            }
+        )
         
         return template
     
