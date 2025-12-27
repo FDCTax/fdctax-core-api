@@ -1,15 +1,16 @@
 # FDC Tax Core + CRM Sync API
 
-Backend API for FDC Tax CRM sync, user onboarding state, Meet Oscar wizard integration, recurring tasks, and document upload requests.
+Backend API for FDC Tax CRM sync, user onboarding state, Meet Oscar wizard integration, recurring tasks, document uploads, and authentication.
 
 ## Overview
 
 This API connects the MyFDC frontend to the internal CRM system, providing:
+- **JWT Authentication** - Secure login with role-based access control
 - User profile and onboarding state management
 - Meet Oscar wizard integration
 - Task management and CRM sync
-- **Recurring Task Engine** - Automatic task generation based on iCal RRULE
-- **Document Upload Request System** - Request and receive documents from clients
+- Recurring Task Engine - Automatic task generation
+- Document Upload Request System
 - Knowledge base access for Luna AI
 - White-glove service layer for FDC Tax team
 
@@ -26,166 +27,206 @@ open http://localhost:8001/docs
 
 ---
 
-## Document Upload Request System
+## Authentication & Authorization
 
-The document system allows FDC Tax to request documents from clients (tax returns, lease agreements, etc.) and receive secure uploads via MyFDC.
+The API uses JWT (JSON Web Tokens) for authentication with role-based access control.
 
-### Features
-- Create document requests for clients
-- Secure file uploads with checksum verification
-- Full audit logging for compliance
-- Document type categorization
-- Overdue tracking
-- Admin management interface
+### Roles
+
+| Role | Description | Access |
+|------|-------------|--------|
+| `admin` | Full system access | All endpoints |
+| `staff` | White-glove service team | Admin + user endpoints |
+| `client` | FDC educator/client | User endpoints only |
+
+### Authentication Flow
+
+```
+1. Login with email/password
+   POST /api/auth/login → returns access_token + refresh_token
+
+2. Use access_token for API requests
+   Authorization: Bearer <access_token>
+
+3. When access_token expires (1 hour), use refresh_token
+   POST /api/auth/refresh → returns new tokens
+
+4. Refresh token expires in 7 days, requiring re-login
+```
 
 ### API Endpoints
 
-#### User Endpoints (`/api/documents/user`)
+#### Public Endpoints
 
 ```bash
-# Get all document requests for a user
-GET /api/documents/user?user_id=<uuid>
-GET /api/documents/user?user_id=<uuid>&status=pending
-
-# Get only pending documents
-GET /api/documents/user/pending?user_id=<uuid>
-
-# Get pending count (for notification badges)
-GET /api/documents/user/count?user_id=<uuid>
-
-# Upload a document
-POST /api/documents/user/upload
-Content-Type: multipart/form-data
-- user_id: <uuid>
-- request_id: <uuid>
-- file: <file>
-```
-
-#### Admin Endpoints (`/api/documents/admin`)
-
-```bash
-# List all document requests (with filters)
-GET /api/documents/admin
-GET /api/documents/admin?client_id=<uuid>&status=pending&document_type=Tax%20Return
-
-# Get specific request
-GET /api/documents/admin/{request_id}
-
-# Create new document request
-POST /api/documents/admin/request?created_by=<admin_id>
+# Login
+POST /api/auth/login
 Content-Type: application/json
 {
-  "client_id": "user-uuid",
-  "title": "2024 Tax Return",
-  "description": "Please upload your 2024 tax return",
-  "document_type": "Tax Return",
-  "due_date": "2025-01-15"
+  "email": "admin@fdctax.com",
+  "password": "admin123"
 }
 
-# Update a request
-PATCH /api/documents/admin/{request_id}?updated_by=<admin_id>
+# Response
 {
-  "title": "Updated Title",
-  "due_date": "2025-01-20"
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user_id": "uuid",
+  "email": "admin@fdctax.com",
+  "role": "admin"
 }
 
-# Dismiss a request
-POST /api/documents/admin/{request_id}/dismiss?dismissed_by=<admin_id>&reason=<reason>
+# Refresh token
+POST /api/auth/refresh?refresh_token=<token>
 
-# Delete a request (permanent)
-DELETE /api/documents/admin/{request_id}
+# Register (client role only)
+POST /api/auth/register
+{
+  "email": "new@example.com",
+  "password": "password123",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+
+# Verify token
+GET /api/auth/verify
+Authorization: Bearer <token>
 ```
 
-#### Utility Endpoints
+#### Authenticated Endpoints
 
 ```bash
-# Get available document types
-GET /api/documents/types
+# Get current user info
+GET /api/auth/me
+Authorization: Bearer <token>
 
-# Get statistics
-GET /api/documents/stats
+# Change password
+POST /api/auth/change-password
+Authorization: Bearer <token>
+{
+  "current_password": "old123",
+  "new_password": "new123"
+}
 
-# Get overdue requests
-GET /api/documents/overdue
-
-# Get audit logs
-GET /api/documents/audit
-GET /api/documents/audit?request_id=<uuid>&client_id=<uuid>&action=file_uploaded
+# Logout
+POST /api/auth/logout
+Authorization: Bearer <token>
 ```
 
-### Document Types
-
-| Type | Key |
-|------|-----|
-| Tax Return | `tax_return` |
-| BAS Statement | `bas_statement` |
-| Lease Agreement | `lease_agreement` |
-| Insurance Policy | `insurance_policy` |
-| Bank Statement | `bank_statement` |
-| Receipt | `receipt` |
-| Invoice | `invoice` |
-| Identity Document | `identity_document` |
-| Business Registration | `business_registration` |
-| Vehicle Registration | `vehicle_registration` |
-| Logbook | `logbook` |
-| Other | `other` |
-
-### Document Request Status
-
-| Status | Description |
-|--------|-------------|
-| `pending` | Awaiting upload from client |
-| `uploaded` | Document has been uploaded |
-| `dismissed` | Request was cancelled/no longer needed |
-| `expired` | Past due date without upload |
-
-### Example: Create and Complete Document Request
+#### Admin-Only Endpoints
 
 ```bash
-# 1. Admin creates request
-curl -X POST "http://localhost:8001/api/documents/admin/request" \
+# Register user with any role
+POST /api/auth/admin/register
+Authorization: Bearer <admin_token>
+{
+  "email": "staff@fdctax.com",
+  "password": "staff123",
+  "first_name": "Staff",
+  "last_name": "User",
+  "role": "staff"
+}
+
+# Set user role
+PATCH /api/auth/admin/users/{user_id}/role?role=staff
+Authorization: Bearer <admin_token>
+
+# Set user password
+POST /api/auth/admin/users/{user_id}/set-password?new_password=newpass
+Authorization: Bearer <admin_token>
+
+# List role assignments
+GET /api/auth/admin/roles
+Authorization: Bearer <admin_token>
+
+# Add admin email
+POST /api/auth/admin/roles/add-admin?email=newadmin@fdctax.com
+Authorization: Bearer <admin_token>
+
+# Add staff email
+POST /api/auth/admin/roles/add-staff?email=newstaff@fdctax.com
+Authorization: Bearer <admin_token>
+```
+
+### Test Users
+
+Seed test users for development:
+
+```bash
+POST /api/auth/seed-test-users?admin_key=fdc-seed-2025
+```
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@fdctax.com | admin123 | admin |
+| staff@fdctax.com | staff123 | staff |
+| client@example.com | client123 | client |
+
+### Using Authentication in Requests
+
+```bash
+# 1. Login
+TOKEN=$(curl -s -X POST "http://localhost:8001/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{
-    "client_id": "1185602f-d78e-4a55-92c4-8a87d5f9714e",
-    "title": "2024 Tax Return",
-    "description": "Please upload your 2024 tax return for review",
-    "document_type": "Tax Return",
-    "due_date": "2025-01-15"
-  }'
+  -d '{"email": "admin@fdctax.com", "password": "admin123"}' \
+  | jq -r '.access_token')
 
-# 2. Client views pending requests
-curl "http://localhost:8001/api/documents/user/pending?user_id=1185602f-d78e-4a55-92c4-8a87d5f9714e"
-
-# 3. Client uploads document
-curl -X POST "http://localhost:8001/api/documents/user/upload" \
-  -F "user_id=1185602f-d78e-4a55-92c4-8a87d5f9714e" \
-  -F "request_id=<request-id>" \
-  -F "file=@tax_return_2024.pdf"
-
-# 4. Admin reviews uploaded document
-curl "http://localhost:8001/api/documents/admin?status=uploaded"
+# 2. Use token in requests
+curl -s "http://localhost:8001/api/admin/users" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-### Audit Logging
+### Token Expiry
 
-All document operations are logged for compliance:
-- `request_created` - New document request created
-- `request_updated` - Request details modified
-- `request_dismissed` - Request was dismissed
-- `file_uploaded` - File uploaded with checksum
-- `file_downloaded` - File accessed
-- `file_deleted` - File removed
+| Token Type | Expiry | Usage |
+|------------|--------|-------|
+| Access Token | 1 hour | API requests |
+| Refresh Token | 7 days | Get new access token |
+
+### Environment Variables
+
+```env
+JWT_SECRET_KEY=your-secret-key-change-in-production
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+```
+
+---
+
+## Document Upload Request System
+
+Request and receive documents from clients.
+
+### Endpoints
 
 ```bash
-# View audit trail for a request
-curl "http://localhost:8001/api/documents/audit?request_id=<uuid>"
+# User endpoints
+GET /api/documents/user?user_id=<uuid>
+GET /api/documents/user/pending?user_id=<uuid>
+GET /api/documents/user/count?user_id=<uuid>
+POST /api/documents/user/upload (multipart/form-data)
+
+# Admin endpoints
+GET /api/documents/admin
+POST /api/documents/admin/request
+PATCH /api/documents/admin/{id}
+POST /api/documents/admin/{id}/dismiss
+DELETE /api/documents/admin/{id}
+
+# Utilities
+GET /api/documents/types
+GET /api/documents/stats
+GET /api/documents/overdue
+GET /api/documents/audit
 ```
 
 ---
 
 ## Recurring Task Engine
 
-Automatically generates tasks based on iCal RRULE recurrence rules (BAS reminders, income prompts, etc.).
+Automatic task generation based on iCal RRULE format.
 
 ### RRULE Examples
 
@@ -194,30 +235,15 @@ Automatically generates tasks based on iCal RRULE recurrence rules (BAS reminder
 | Monthly on 28th | `FREQ=MONTHLY;BYMONTHDAY=28` |
 | Quarterly BAS | `FREQ=MONTHLY;BYMONTH=1,4,7,10;BYMONTHDAY=28` |
 | Weekly Friday | `FREQ=WEEKLY;BYDAY=FR` |
-| Yearly June 30 | `FREQ=YEARLY;BYMONTH=6;BYMONTHDAY=30` |
 
 ### Endpoints
 
 ```bash
-# List templates
 GET /api/recurring/templates
-
-# Create template
 POST /api/recurring/templates
-{
-  "user_id": "uuid",
-  "title": "Monthly BAS Check",
-  "recurrence_rule": "FREQ=MONTHLY;BYMONTHDAY=21"
-}
-
-# Apply predefined template
-POST /api/recurring/predefined/quarterly_bas_submission?user_id=<uuid>
-
-# Trigger generation (for cron)
+POST /api/recurring/predefined/{key}?user_id=<uuid>
 POST /api/admin/tasks/trigger-recurring
-
-# Preview rule
-POST /api/recurring/preview?rule=FREQ%3DMONTHLY%3BBYMONTHDAY%3D28
+POST /api/recurring/preview?rule=<rrule>
 ```
 
 ---
@@ -228,20 +254,36 @@ POST /api/recurring/preview?rule=FREQ%3DMONTHLY%3BBYMONTHDAY%3D28
 - `GET /` - Health check
 - `GET /health` - Detailed status
 
+### Authentication (`/api/auth`)
+- `POST /login` - Login
+- `POST /refresh` - Refresh token
+- `POST /register` - Register (client)
+- `GET /me` - Current user info
+- `POST /change-password` - Change password
+- `POST /logout` - Logout
+- `GET /verify` - Verify token
+- `POST /admin/register` - Admin register
+- `PATCH /admin/users/{id}/role` - Set role
+- `POST /admin/users/{id}/set-password` - Set password
+- `GET /admin/roles` - List roles
+- `POST /admin/roles/add-admin` - Add admin
+- `POST /admin/roles/add-staff` - Add staff
+- `POST /seed-test-users` - Seed test data
+
 ### User (`/api/user`)
 - `GET /tasks` - User's tasks
 - `GET /profile` - Profile + setup state
 - `POST /profile` - Update profile
 - `POST /oscar` - Toggle Oscar
-- `PATCH /onboarding` - Update onboarding flags
+- `PATCH /onboarding` - Update onboarding
 - `GET /onboarding/status` - Get setup state
-- `GET /documents` - User's document requests
+- `GET /documents` - Document requests
 
 ### Admin (`/api/admin`)
-- User management (CRUD)
-- Profile override
+- User management
+- Profile management
 - Task management
-- CRM task management
+- CRM tasks
 - Luna escalation
 - Oscar wizard
 - CRM sync
@@ -250,9 +292,7 @@ POST /api/recurring/preview?rule=FREQ%3DMONTHLY%3BBYMONTHDAY%3D28
 ### Documents (`/api/documents`)
 - User document requests
 - File upload
-- Admin request management
-- Document types
-- Statistics
+- Admin management
 - Audit logs
 
 ### Knowledge Base (`/api/kb`)
@@ -263,26 +303,25 @@ POST /api/recurring/preview?rule=FREQ%3DMONTHLY%3BBYMONTHDAY%3D28
 - Template management
 - Predefined templates
 - Task generation
-- Rule preview/summary
-
----
-
-## File Storage
-
-Currently uses local file storage at `/app/backend/data/uploads/`.
-Files are organized by client ID for easy management.
-
-**S3 Migration**: The `FileStorage` class in `services/documents.py` is designed
-for easy migration to S3 - replace the `save_file` and `get_file_path` methods.
 
 ---
 
 ## Environment Variables
 
 ```env
+# Database
 DATABASE_URL=postgresql+asyncpg://user:pass@host:port/db?ssl=require
+
+# CORS
 CORS_ORIGINS=*
+
+# JWT Authentication
+JWT_SECRET_KEY=your-secret-key-change-in-production
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 ```
+
+## Total Endpoints: 60
 
 ## Related Projects
 
