@@ -105,6 +105,7 @@ async def login(
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
     refresh_token: str = Query(..., description="Refresh token from login"),
+    request: Request = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -116,11 +117,26 @@ async def refresh_token(
     token = await auth_service.refresh_tokens(refresh_token)
     
     if not token:
+        log_auth_action(
+            action=AuditAction.TOKEN_REFRESH,
+            details={"reason": "Invalid or expired refresh token"},
+            request=request,
+            success=False,
+            error_message="Invalid refresh token"
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token",
             headers={"WWW-Authenticate": "Bearer"}
         )
+    
+    # Log successful token refresh
+    log_auth_action(
+        action=AuditAction.TOKEN_REFRESH,
+        user_id=token.user_id,
+        user_email=token.email,
+        request=request
+    )
     
     return token
 
