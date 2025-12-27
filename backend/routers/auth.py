@@ -27,6 +27,27 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+# Helper to extract request metadata for audit
+def _get_request_metadata(request: Request) -> dict:
+    """Extract IP address and user agent from request for audit logging"""
+    ip_address = None
+    user_agent = request.headers.get("user-agent", "")[:500] if request else None
+    
+    if request:
+        # Check for forwarded headers
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            ip_address = forwarded.split(",")[0].strip()
+        else:
+            real_ip = request.headers.get("x-real-ip")
+            if real_ip:
+                ip_address = real_ip
+            elif hasattr(request, 'client') and request.client:
+                ip_address = request.client.host
+    
+    return {"ip_address": ip_address, "user_agent": user_agent}
+
+
 # ==================== PUBLIC ENDPOINTS ====================
 
 @router.post("/login", response_model=Token)
