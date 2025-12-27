@@ -469,7 +469,7 @@ class RecurringTaskEngine:
         logger.info(f"Recurring task processing complete: {results['tasks_generated']} tasks generated")
         return results
     
-    async def _generate_task_from_template(self, template: RecurringTaskTemplate) -> Optional[GeneratedTaskResult]:
+    async def _generate_task_from_template(self, template: RecurringTaskTemplate, triggered_by: Optional[str] = None) -> Optional[GeneratedTaskResult]:
         """
         Generate a single task from a template.
         """
@@ -512,6 +512,22 @@ class RecurringTaskEngine:
             
             if row:
                 logger.info(f"Generated task {task_id} from template {template.id}")
+                
+                # Log the generated task
+                log_action(
+                    action=AuditAction.RECURRING_TASK_GENERATED,
+                    resource_type=ResourceType.TASK,
+                    resource_id=task_id,
+                    user_id=triggered_by,
+                    details={
+                        "template_id": template.id,
+                        "template_title": template.title,
+                        "for_user": template.user_id,
+                        "due_date": str(due_date),
+                        "recurrence_summary": template.recurrence_summary
+                    }
+                )
+                
                 return GeneratedTaskResult(
                     template_id=template.id,
                     task_id=str(row.id),
