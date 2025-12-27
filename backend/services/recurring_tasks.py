@@ -381,7 +381,8 @@ class RecurringTaskEngine:
     async def process_recurring_tasks(
         self,
         user_id: Optional[str] = None,
-        force: bool = False
+        force: bool = False,
+        triggered_by: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Process all recurring task templates and generate tasks where due.
@@ -389,11 +390,23 @@ class RecurringTaskEngine:
         Args:
             user_id: Optional user ID to process only their templates
             force: If True, generate tasks even if not yet due
+            triggered_by: User ID who triggered the process
         
         Returns:
             Summary of processed templates and generated tasks
         """
         logger.info(f"Processing recurring tasks (user_id={user_id}, force={force})")
+        
+        # Log the trigger event
+        log_action(
+            action=AuditAction.RECURRING_TRIGGER,
+            resource_type=ResourceType.RECURRING_TEMPLATE,
+            user_id=triggered_by,
+            details={
+                "user_filter": user_id,
+                "force": force
+            }
+        )
         
         templates = self.storage.list_templates(user_id=user_id, active_only=True)
         
@@ -425,7 +438,7 @@ class RecurringTaskEngine:
                 
                 if should_generate:
                     # Generate the task
-                    task_result = await self._generate_task_from_template(template)
+                    task_result = await self._generate_task_from_template(template, triggered_by)
                     
                     if task_result:
                         results["tasks_generated"] += 1
