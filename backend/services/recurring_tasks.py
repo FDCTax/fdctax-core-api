@@ -282,7 +282,7 @@ class RecurringTaskStorage:
         
         return template
     
-    def update_template(self, template_id: str, data: RecurringTaskTemplateUpdate) -> Optional[RecurringTaskTemplate]:
+    def update_template(self, template_id: str, data: RecurringTaskTemplateUpdate, updated_by: Optional[str] = None) -> Optional[RecurringTaskTemplate]:
         """Update a recurring task template"""
         templates = self._load_templates()
         
@@ -303,6 +303,18 @@ class RecurringTaskStorage:
                 
                 templates[i].update(update_data)
                 self._save_templates(templates)
+                
+                # Log template update
+                log_action(
+                    action=AuditAction.RECURRING_TEMPLATE_UPDATE,
+                    resource_type=ResourceType.RECURRING_TEMPLATE,
+                    resource_id=template_id,
+                    user_id=updated_by,
+                    details={
+                        "title": templates[i].get('title'),
+                        "changes": update_data
+                    }
+                )
                 
                 return RecurringTaskTemplate(**templates[i])
         
