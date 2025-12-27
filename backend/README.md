@@ -678,6 +678,18 @@ All escalations are logged to the centralized audit system:
 - `POST /cleanup` - Cleanup old logs
 - `GET /my-activity` - Own activity
 
+### Luna Escalations (`/api/luna`)
+- `POST /escalate` - Create escalation from Luna
+- `GET /escalations` - List escalations (with filters)
+- `GET /escalations/stats` - Escalation statistics
+- `GET /escalations/{id}` - Get specific escalation
+- `PATCH /escalations/{id}/status` - Update status
+- `PATCH /escalations/{id}/assign` - Assign to staff
+- `GET /escalations/client/{id}` - Client's escalations
+- `GET /tags` - Available tags
+- `GET /priorities` - Priority levels
+- `GET /statuses` - Status options
+
 ---
 
 ## Environment Variables
