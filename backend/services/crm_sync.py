@@ -797,7 +797,7 @@ class CRMSyncService:
             updated_at=row.updated_at
         )
     
-    async def update_crm_task(self, task_id: int, task_data: CRMTaskUpdate) -> Optional[CRMTaskResponse]:
+    async def update_crm_task(self, task_id: int, task_data: CRMTaskUpdate, updated_by: Optional[str] = None) -> Optional[CRMTaskResponse]:
         """Update CRM task"""
         updates = ["updated_at = :updated_at"]
         params = {
@@ -825,6 +825,18 @@ class CRMSyncService:
         
         if not row:
             return None
+        
+        # Log CRM task update
+        log_action(
+            action=AuditAction.CRM_TASK_UPDATE,
+            resource_type=ResourceType.CRM_TASK,
+            resource_id=str(task_id),
+            user_id=updated_by,
+            details={
+                "title": row.title,
+                "changes": update_dict
+            }
+        )
         
         return CRMTaskResponse(
             id=row.id,
