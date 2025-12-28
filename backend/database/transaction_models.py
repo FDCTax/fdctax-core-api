@@ -221,8 +221,8 @@ class TransactionHistoryDB(Base):
     transaction = relationship("TransactionDB", back_populates="history")
     
     __table_args__ = (
-        Index('ix_history_transaction_time', 'transaction_id', 'timestamp'),
-        Index('ix_history_user', 'user_id', 'timestamp'),
+        Index('ix_bk_history_transaction_time', 'transaction_id', 'timestamp'),
+        Index('ix_bk_history_user', 'user_id', 'timestamp'),
     )
 
 
