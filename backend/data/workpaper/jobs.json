@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+    "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+    "year": "2024-25",
+    "status": "not_started",
+    "frozen_at": null,
+    "notes": "FDC Tax Return for 2024-25",
+    "created_at": "2025-12-28T07:57:07.258113+00:00",
+    "updated_at": null
+  }
+]
