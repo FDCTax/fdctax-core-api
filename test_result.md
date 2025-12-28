@@ -367,11 +367,14 @@ agent_communication:
     file: "/app/backend/services/workpaper/motor_vehicle_engine.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Calculates profit/loss on sale. Tested: Sale $32000, closing value $31434 = $773 loss (additional deduction)"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Balancing adjustment calculation working correctly. Sale price vs adjustable value comparison. Test showed $671.23 loss (additional deduction) applied correctly with business percentage."
 
   - task: "MV Freeze with Snapshot"
     implemented: true
