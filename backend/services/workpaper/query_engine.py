@@ -279,7 +279,7 @@ class QueryEngine:
             raise ValueError(f"Query not found: {query_id}")
         
         if query.status in [QueryStatus.RESOLVED.value, QueryStatus.CLOSED.value]:
-            raise ValueError(f"Query already resolved/closed")
+            raise ValueError("Query already resolved/closed")
         
         # Add resolution message if provided
         if resolution_message:
