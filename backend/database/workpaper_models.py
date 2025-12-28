@@ -120,7 +120,7 @@ class TransactionDB(Base):
     # Additional metadata
     vendor = Column(String(200), nullable=True)
     reference = Column(String(200), nullable=True)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)  # Renamed from 'metadata' (reserved in SQLAlchemy)
     
     created_at = Column(DateTime(timezone=True), default=utc_now)
     # Note: No updated_at - transactions are immutable
@@ -285,7 +285,7 @@ class TaskDB(Base):
     description = Column(Text, nullable=True)
     
     # Metadata for task-specific info
-    metadata = Column(JSON, default=dict)
+    task_data = Column(JSON, default=dict)  # Renamed from 'metadata' (reserved in SQLAlchemy)
     
     due_date = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
