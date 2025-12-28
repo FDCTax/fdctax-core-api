@@ -53,6 +53,22 @@ from services.workpaper.models import (
     ModuleDetail,
 )
 
+# Database-backed storage repositories (NEW - PostgreSQL)
+from services.workpaper.db_storage import (
+    WorkpaperJobRepository,
+    ModuleInstanceRepository,
+    TransactionRepository,
+    TransactionOverrideRepository,
+    OverrideRecordRepository,
+    QueryRepository,
+    QueryMessageRepository,
+    TaskRepository,
+    FreezeSnapshotRepository,
+    WorkpaperAuditLogRepository,
+    EffectiveTransactionBuilder,
+)
+
+# Legacy file-based storage (deprecated - kept for reference)
 from services.workpaper.storage import (
     job_storage,
     module_storage,
@@ -129,7 +145,20 @@ __all__ = [
     'JobDashboard',
     'ModuleDetail',
     
-    # Storage
+    # Database Repositories (NEW)
+    'WorkpaperJobRepository',
+    'ModuleInstanceRepository',
+    'TransactionRepository',
+    'TransactionOverrideRepository',
+    'OverrideRecordRepository',
+    'QueryRepository',
+    'QueryMessageRepository',
+    'TaskRepository',
+    'FreezeSnapshotRepository',
+    'WorkpaperAuditLogRepository',
+    'EffectiveTransactionBuilder',
+    
+    # Legacy Storage (deprecated)
     'job_storage',
     'module_storage',
     'transaction_storage',
