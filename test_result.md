@@ -322,11 +322,14 @@ agent_communication:
     file: "/app/backend/services/workpaper/motor_vehicle_engine.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "85c/km rate, 5000km cap, GST credit = deduction/11. Tested: 4500km = $3825 deduction, $347.73 GST"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Cents per KM method working correctly. 3000km × $0.85 = $2550 deduction, GST credit $231.82. Rate and cap applied correctly."
 
   - task: "MV Logbook Method"
     implemented: true
