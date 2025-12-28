@@ -169,6 +169,15 @@ api_router.include_router(workpaper_router)  # Workpaper platform
 from routers.motor_vehicle import router as mv_router
 api_router.include_router(mv_router)  # Motor Vehicle module
 
+# Transaction Engine / Bookkeeper Layer
+from routers.bookkeeper import router as bookkeeper_router
+from routers.bookkeeper import workpaper_router as workpaper_txn_router
+from routers.bookkeeper import myfdc_router, import_router
+api_router.include_router(bookkeeper_router)  # Bookkeeper transactions
+api_router.include_router(workpaper_txn_router)  # Workpaper transaction lock
+api_router.include_router(myfdc_router)  # MyFDC sync
+api_router.include_router(import_router)  # Bank/OCR import
+
 # Include the main router in the app
 app.include_router(api_router)
 
