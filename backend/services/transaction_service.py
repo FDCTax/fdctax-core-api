@@ -392,7 +392,7 @@ class TransactionRepository:
         if filters.flags:
             for flag in filters.flags:
                 conditions.append(
-                    TransactionDB.flags[flag].astext.cast(Boolean) == True
+                    TransactionDB.flags[flag].astext == "true"
                 )
         
         # Attachment filter
