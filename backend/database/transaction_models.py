@@ -177,10 +177,10 @@ class TransactionDB(Base):
     workpaper_links = relationship("TransactionWorkpaperLinkDB", back_populates="transaction", cascade="all, delete-orphan")
     
     __table_args__ = (
-        Index('ix_transactions_client_date', 'client_id', 'date'),
-        Index('ix_transactions_client_status', 'client_id', 'status_bookkeeper'),
-        Index('ix_transactions_client_category', 'client_id', 'category_bookkeeper'),
-        Index('ix_transactions_date_range', 'date', 'client_id'),
+        Index('ix_bk_transactions_client_date', 'client_id', 'date'),
+        Index('ix_bk_transactions_client_status', 'client_id', 'status_bookkeeper'),
+        Index('ix_bk_transactions_client_category', 'client_id', 'category_bookkeeper'),
+        Index('ix_bk_transactions_date_range', 'date', 'client_id'),
     )
 
 
