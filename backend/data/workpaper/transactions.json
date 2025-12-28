@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "1c1f2bff-3a23-42d4-9231-0d35be1f6b93",
+    "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+    "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+    "module_instance_id": "cbae40b0-1da4-4dd2-a81e-46959068a445",
+    "source": "manual",
+    "date": "2024-07-15",
+    "amount": 150.0,
+    "gst_amount": 13.64,
+    "category": "vehicle_fuel",
+    "description": "BP Fuel - Shell station",
+    "receipt_url": null,
+    "document_id": null,
+    "vendor": "BP",
+    "reference": null,
+    "metadata": {},
+    "created_at": "2025-12-28T07:57:46.539581+00:00"
+  },
+  {
+    "id": "3609852d-a863-48c3-9f67-a861bc83ee00",
+    "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+    "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+    "module_instance_id": "cbae40b0-1da4-4dd2-a81e-46959068a445",
+    "source": "manual",
+    "date": "2024-08-20",
+    "amount": 850.0,
+    "gst_amount": 77.27,
+    "category": "vehicle_registration",
+    "description": "Annual registration",
+    "receipt_url": null,
+    "document_id": null,
+    "vendor": "RTA",
+    "reference": null,
+    "metadata": {},
+    "created_at": "2025-12-28T07:57:46.610801+00:00"
+  }
+]
