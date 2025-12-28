@@ -7,6 +7,7 @@ from .auth import router as auth_router
 from .audit import router as audit_router
 from .luna import router as luna_router
 from .calendly import integrations_router, appointments_router
+from .workpaper import router as workpaper_router
 
 __all__ = [
     'user_router', 
@@ -18,5 +19,6 @@ __all__ = [
     'audit_router', 
     'luna_router',
     'integrations_router',
-    'appointments_router'
+    'appointments_router',
+    'workpaper_router',
 ]
