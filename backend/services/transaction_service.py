@@ -222,7 +222,7 @@ class LockingError(Exception):
 
 
 def check_bookkeeper_edit_permission(
-    transaction: TransactionDB,
+    transaction: BookkeeperTransactionDB,
     user_role: str,
     fields_to_update: Dict[str, Any]
 ) -> None:
