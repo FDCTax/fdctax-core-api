@@ -7,10 +7,17 @@ from .workpaper_models import (
     FreezeSnapshotDB, WorkpaperAuditLogDB
 )
 
+# Import motor vehicle models
+from .motor_vehicle_models import (
+    VehicleAssetDB, VehicleKMEntryDB, VehicleLogbookPeriodDB, VehicleFuelEstimateDB
+)
+
 __all__ = [
     'get_db', 'engine', 'AsyncSessionLocal', 'init_db', 'Base',
     # Workpaper models
     'WorkpaperJobDB', 'ModuleInstanceDB', 'TransactionDB', 'TransactionOverrideDB',
     'OverrideRecordDB', 'QueryDB', 'QueryMessageDB', 'TaskDB',
-    'FreezeSnapshotDB', 'WorkpaperAuditLogDB'
+    'FreezeSnapshotDB', 'WorkpaperAuditLogDB',
+    # Motor Vehicle models
+    'VehicleAssetDB', 'VehicleKMEntryDB', 'VehicleLogbookPeriodDB', 'VehicleFuelEstimateDB',
 ]
