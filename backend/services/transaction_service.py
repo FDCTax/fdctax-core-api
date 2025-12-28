@@ -14,10 +14,10 @@ from datetime import datetime, date, timezone
 from typing import List, Optional, Dict, Any, Tuple
 from decimal import Decimal
 import logging
-import json
 
-from sqlalchemy import select, update, delete, and_, or_, func, cast, String
+from sqlalchemy import select, update, delete, and_, or_, func, cast, String, Boolean
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel, Field
 
 from database.transaction_models import (
     TransactionDB, TransactionHistoryDB, TransactionAttachmentDB,
@@ -30,9 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 # ==================== PYDANTIC MODELS ====================
-
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 
 
 class TransactionCreate(BaseModel):
