@@ -14,7 +14,7 @@ from .motor_vehicle_models import (
 
 # Import transaction engine models (Bookkeeper layer)
 from .transaction_models import (
-    TransactionDB as BookkeeperTransactionDB,
+    BookkeeperTransactionDB,
     TransactionHistoryDB, TransactionAttachmentDB, TransactionWorkpaperLinkDB,
     TransactionStatus, GSTCode, TransactionSource, ModuleRouting, HistoryActionType
 )
@@ -27,7 +27,7 @@ __all__ = [
     'FreezeSnapshotDB', 'WorkpaperAuditLogDB',
     # Motor Vehicle models
     'VehicleAssetDB', 'VehicleKMEntryDB', 'VehicleLogbookPeriodDB', 'VehicleFuelEstimateDB',
-    # Transaction Engine models
+    # Transaction Engine models (Bookkeeper layer)
     'BookkeeperTransactionDB', 'TransactionHistoryDB', 'TransactionAttachmentDB',
     'TransactionWorkpaperLinkDB', 'TransactionStatus', 'GSTCode', 'TransactionSource',
     'ModuleRouting', 'HistoryActionType',
