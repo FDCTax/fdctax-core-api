@@ -291,8 +291,8 @@ class TransactionWorkpaperLinkDB(Base):
     transaction = relationship("TransactionDB", back_populates="workpaper_links")
     
     __table_args__ = (
-        Index('ix_workpaper_links_workpaper', 'workpaper_id'),
-        Index('ix_workpaper_links_module', 'workpaper_id', 'module'),
+        Index('ix_bk_workpaper_links_workpaper', 'workpaper_id'),
+        Index('ix_bk_workpaper_links_module', 'workpaper_id', 'module'),
     )
 
 
