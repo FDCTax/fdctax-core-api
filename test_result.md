@@ -352,11 +352,14 @@ agent_communication:
     file: "/app/backend/services/workpaper/motor_vehicle_engine.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Diminishing value (25%) and prime cost (12.5%), days pro-rata, car limit $68108. Tested: $38181 cost base, 258 days = $6747 depreciation"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Depreciation calculation working correctly. Diminishing value method, days pro-rata calculation, car limit applied. Depreciation amount $4685.55 calculated accurately for test vehicle."
 
   - task: "MV Balancing Adjustment"
     implemented: true
