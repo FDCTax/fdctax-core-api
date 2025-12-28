@@ -163,6 +163,7 @@ api_router.include_router(audit_router)  # Audit logs
 api_router.include_router(luna_router)  # Luna escalations
 api_router.include_router(integrations_router)  # Calendly webhooks
 api_router.include_router(appointments_router)  # Appointment management
+api_router.include_router(workpaper_router)  # Workpaper platform
 
 # Include the main router in the app
 app.include_router(api_router)
