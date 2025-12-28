@@ -337,11 +337,14 @@ agent_communication:
     file: "/app/backend/services/workpaper/motor_vehicle_engine.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Business % from logbook period, applies to all expenses + depreciation. Tested: 33% = $1650 expenses + $3150 depreciation = $4800 total"
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Logbook method working correctly. 40% business use applied to expenses and depreciation. Logbook period validation (84+ days) working. Admin approval process functional."
 
   - task: "MV Depreciation Calculation"
     implemented: true
