@@ -105,6 +105,14 @@ app = FastAPI(
     ### Integrations (/api/integrations)
     - Calendly webhooks
     - Integration status checks
+    
+    ### Workpaper Platform (/api/workpaper)
+    - Jobs: Tax jobs per client per year
+    - Modules: Motor Vehicle, FDC Income, Internet, Home Office, etc.
+    - Transactions: Financial data with overrides
+    - Queries: Structured communication engine
+    - Freeze: Period-based locking with snapshots
+    - Dashboard: Single-screen workpaper view
     """,
     version="1.0.0",
     lifespan=lifespan
