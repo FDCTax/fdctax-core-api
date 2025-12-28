@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
 from database.transaction_models import (
-    TransactionDB, TransactionHistoryDB, TransactionAttachmentDB,
+    BookkeeperTransactionDB, TransactionHistoryDB, TransactionAttachmentDB,
     TransactionWorkpaperLinkDB,
     TransactionStatus, GSTCode, TransactionSource, ModuleRouting,
     HistoryActionType, STATUS_HIERARCHY
