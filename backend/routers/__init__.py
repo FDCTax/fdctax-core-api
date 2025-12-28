@@ -9,6 +9,8 @@ from .luna import router as luna_router
 from .calendly import integrations_router, appointments_router
 # Use PostgreSQL-backed workpaper router (replaces file-based router)
 from .workpaper_db import router as workpaper_router
+# Motor Vehicle module router
+from .motor_vehicle import router as mv_router
 
 __all__ = [
     'user_router', 
@@ -22,4 +24,5 @@ __all__ = [
     'integrations_router',
     'appointments_router',
     'workpaper_router',
+    'mv_router',
 ]
