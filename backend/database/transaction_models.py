@@ -99,7 +99,7 @@ STATUS_HIERARCHY = {
 
 # ==================== DATABASE MODELS ====================
 
-class TransactionDB(Base):
+class BookkeeperTransactionDB(Base):
     """
     Main transaction ledger.
     
