@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "id": "f11a8a69-e6af-4d13-a426-9a3ab95a556c",
+    "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+    "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+    "task_type": "queries",
+    "status": "open",
+    "title": "You have 1 open query",
+    "description": null,
+    "metadata": {
+      "query_count": 1,
+      "query_ids": [
+        "734e421f-8d60-441a-8a3d-528a2dde031d"
+      ]
+    },
+    "due_date": null,
+    "completed_at": null,
+    "created_at": "2025-12-28T07:58:10.242116+00:00",
+    "updated_at": null
+  }
+]

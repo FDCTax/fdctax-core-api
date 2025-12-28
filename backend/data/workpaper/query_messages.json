@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "e15c4e93-855a-4d3e-a50b-e83b28637730",
+    "query_id": "734e421f-8d60-441a-8a3d-528a2dde031d",
+    "sender_type": "admin",
+    "sender_id": "de84d312-c2bb-4b77-bf78-52e34e25cc43",
+    "sender_email": "admin@fdctax.com",
+    "message_text": "Can you confirm how you use this vehicle for FDC business?",
+    "attachment_url": null,
+    "attachment_name": null,
+    "created_at": "2025-12-28T07:58:10.150155+00:00"
+  }
+]
