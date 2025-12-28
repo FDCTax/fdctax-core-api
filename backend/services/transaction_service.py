@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
 from database.transaction_models import (
-    BookkeeperTransactionDB, TransactionHistoryDB, TransactionAttachmentDB,
+    BookkeeperBookkeeperTransactionDB, TransactionHistoryDB, TransactionAttachmentDB,
     TransactionWorkpaperLinkDB,
     TransactionStatus, GSTCode, TransactionSource, ModuleRouting,
     HistoryActionType, STATUS_HIERARCHY
@@ -163,7 +163,7 @@ def _format_datetime(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat()
 
 
-def _db_to_transaction(db_obj: TransactionDB, attachment_count: int = 0) -> Transaction:
+def _db_to_transaction(db_obj: BookkeeperTransactionDB, attachment_count: int = 0) -> Transaction:
     """Convert database model to Pydantic model"""
     return Transaction(
         id=db_obj.id,
@@ -192,7 +192,7 @@ def _db_to_transaction(db_obj: TransactionDB, attachment_count: int = 0) -> Tran
     )
 
 
-def _get_snapshot_fields(db_obj: TransactionDB) -> Dict[str, Any]:
+def _get_snapshot_fields(db_obj: BookkeeperTransactionDB) -> Dict[str, Any]:
     """Get bookkeeper fields for snapshot"""
     return {
         "id": db_obj.id,
@@ -222,7 +222,7 @@ class LockingError(Exception):
 
 
 def check_bookkeeper_edit_permission(
-    transaction: BookkeeperTransactionDB,
+    transaction: BookkeeperBookkeeperTransactionDB,
     user_role: str,
     fields_to_update: Dict[str, Any]
 ) -> None:
@@ -287,7 +287,7 @@ class TransactionRepository:
     ) -> Transaction:
         """Create a new transaction"""
         
-        db_txn = TransactionDB(
+        db_txn = BookkeeperTransactionDB(
             client_id=data.client_id,
             date=_parse_date(data.date),
             amount=Decimal(str(data.amount)),
@@ -324,7 +324,7 @@ class TransactionRepository:
     async def get(self, transaction_id: str) -> Optional[Transaction]:
         """Get transaction by ID"""
         result = await self.session.execute(
-            select(BookkeeperTransactionDB).where(BookkeeperTransactionDB.id == transaction_id)
+            select(BookkeeperBookkeeperTransactionDB).where(BookkeeperBookkeeperTransactionDB.id == transaction_id)
         )
         db_txn = result.scalar_one_or_none()
         
@@ -340,10 +340,10 @@ class TransactionRepository:
         
         return _db_to_transaction(db_txn, attachment_count)
     
-    async def get_db(self, transaction_id: str) -> Optional[TransactionDB]:
+    async def get_db(self, transaction_id: str) -> Optional[BookkeeperTransactionDB]:
         """Get raw database object"""
         result = await self.session.execute(
-            select(BookkeeperTransactionDB).where(BookkeeperTransactionDB.id == transaction_id)
+            select(BookkeeperBookkeeperTransactionDB).where(BookkeeperBookkeeperTransactionDB.id == transaction_id)
         )
         return result.scalar_one_or_none()
     
@@ -355,63 +355,63 @@ class TransactionRepository:
     ) -> PaginatedResult:
         """List transactions with filters and cursor-based pagination"""
         
-        query = select(BookkeeperTransactionDB)
-        count_query = select(func.count(BookkeeperTransactionDB.id))
+        query = select(BookkeeperBookkeeperTransactionDB)
+        count_query = select(func.count(BookkeeperBookkeeperTransactionDB.id))
         
         # Build filter conditions
         conditions = []
         
         if filters.client_id:
-            conditions.append(BookkeeperTransactionDB.client_id == filters.client_id)
+            conditions.append(BookkeeperBookkeeperTransactionDB.client_id == filters.client_id)
         
         if filters.date_from:
-            conditions.append(BookkeeperTransactionDB.date >= _parse_date(filters.date_from))
+            conditions.append(BookkeeperBookkeeperTransactionDB.date >= _parse_date(filters.date_from))
         
         if filters.date_to:
-            conditions.append(BookkeeperTransactionDB.date <= _parse_date(filters.date_to))
+            conditions.append(BookkeeperBookkeeperTransactionDB.date <= _parse_date(filters.date_to))
         
         if filters.status:
-            conditions.append(BookkeeperTransactionDB.status_bookkeeper == TransactionStatus(filters.status))
+            conditions.append(BookkeeperBookkeeperTransactionDB.status_bookkeeper == TransactionStatus(filters.status))
         
         if filters.category:
-            conditions.append(BookkeeperTransactionDB.category_bookkeeper == filters.category)
+            conditions.append(BookkeeperBookkeeperTransactionDB.category_bookkeeper == filters.category)
         
         if filters.source:
-            conditions.append(BookkeeperTransactionDB.source == TransactionSource(filters.source))
+            conditions.append(BookkeeperBookkeeperTransactionDB.source == TransactionSource(filters.source))
         
         if filters.module_routing:
-            conditions.append(BookkeeperTransactionDB.module_routing == ModuleRouting(filters.module_routing))
+            conditions.append(BookkeeperBookkeeperTransactionDB.module_routing == ModuleRouting(filters.module_routing))
         
         if filters.is_duplicate is not None:
-            conditions.append(BookkeeperTransactionDB.is_duplicate == filters.is_duplicate)
+            conditions.append(BookkeeperBookkeeperTransactionDB.is_duplicate == filters.is_duplicate)
         
         if filters.is_late_receipt is not None:
-            conditions.append(BookkeeperTransactionDB.is_late_receipt == filters.is_late_receipt)
+            conditions.append(BookkeeperBookkeeperTransactionDB.is_late_receipt == filters.is_late_receipt)
         
         # Flag filtering
         if filters.flags:
             for flag in filters.flags:
                 conditions.append(
-                    BookkeeperTransactionDB.flags[flag].astext == "true"
+                    BookkeeperBookkeeperTransactionDB.flags[flag].astext == "true"
                 )
         
         # Attachment filter
         if filters.has_attachment is not None:
             subq = select(TransactionAttachmentDB.transaction_id).distinct()
             if filters.has_attachment:
-                conditions.append(BookkeeperTransactionDB.id.in_(subq))
+                conditions.append(BookkeeperBookkeeperTransactionDB.id.in_(subq))
             else:
-                conditions.append(~BookkeeperTransactionDB.id.in_(subq))
+                conditions.append(~BookkeeperBookkeeperTransactionDB.id.in_(subq))
         
         # Search (payee, description, notes)
         if filters.search:
             search_term = f"%{filters.search}%"
             conditions.append(
                 or_(
-                    BookkeeperTransactionDB.payee_raw.ilike(search_term),
-                    BookkeeperTransactionDB.description_raw.ilike(search_term),
-                    BookkeeperTransactionDB.notes_client.ilike(search_term),
-                    BookkeeperTransactionDB.notes_bookkeeper.ilike(search_term),
+                    BookkeeperBookkeeperTransactionDB.payee_raw.ilike(search_term),
+                    BookkeeperBookkeeperTransactionDB.description_raw.ilike(search_term),
+                    BookkeeperBookkeeperTransactionDB.notes_client.ilike(search_term),
+                    BookkeeperBookkeeperTransactionDB.notes_bookkeeper.ilike(search_term),
                 )
             )
         
@@ -433,19 +433,19 @@ class TransactionRepository:
                 cursor_id = cursor_parts[1]
                 query = query.where(
                     or_(
-                        BookkeeperTransactionDB.created_at < cursor_time,
+                        BookkeeperBookkeeperTransactionDB.created_at < cursor_time,
                         and_(
-                            BookkeeperTransactionDB.created_at == cursor_time,
-                            BookkeeperTransactionDB.id < cursor_id
+                            BookkeeperBookkeeperTransactionDB.created_at == cursor_time,
+                            BookkeeperBookkeeperTransactionDB.id < cursor_id
                         )
                     )
                 )
         
         # Order and limit
         query = query.order_by(
-            BookkeeperTransactionDB.date.desc(),
-            BookkeeperTransactionDB.created_at.desc(),
-            BookkeeperTransactionDB.id.desc()
+            BookkeeperBookkeeperTransactionDB.date.desc(),
+            BookkeeperBookkeeperTransactionDB.created_at.desc(),
+            BookkeeperBookkeeperTransactionDB.id.desc()
         ).limit(limit + 1)  # +1 to check if there are more
         
         result = await self.session.execute(query)
@@ -581,27 +581,27 @@ class TransactionRepository:
         conditions = []
         
         if "client_id" in criteria:
-            conditions.append(BookkeeperTransactionDB.client_id == criteria["client_id"])
+            conditions.append(BookkeeperBookkeeperTransactionDB.client_id == criteria["client_id"])
         if "status" in criteria:
-            conditions.append(BookkeeperTransactionDB.status_bookkeeper == TransactionStatus(criteria["status"]))
+            conditions.append(BookkeeperBookkeeperTransactionDB.status_bookkeeper == TransactionStatus(criteria["status"]))
         if "category" in criteria:
-            conditions.append(BookkeeperTransactionDB.category_bookkeeper == criteria["category"])
+            conditions.append(BookkeeperBookkeeperTransactionDB.category_bookkeeper == criteria["category"])
         if "transaction_ids" in criteria:
-            conditions.append(BookkeeperTransactionDB.id.in_(criteria["transaction_ids"]))
+            conditions.append(BookkeeperBookkeeperTransactionDB.id.in_(criteria["transaction_ids"]))
         if "date_from" in criteria:
-            conditions.append(BookkeeperTransactionDB.date >= _parse_date(criteria["date_from"]))
+            conditions.append(BookkeeperBookkeeperTransactionDB.date >= _parse_date(criteria["date_from"]))
         if "date_to" in criteria:
-            conditions.append(BookkeeperTransactionDB.date <= _parse_date(criteria["date_to"]))
+            conditions.append(BookkeeperBookkeeperTransactionDB.date <= _parse_date(criteria["date_to"]))
         
         if not conditions:
             raise ValueError("Bulk update requires at least one filter criterion")
         
         # Get affected transactions (for history)
-        query = select(BookkeeperTransactionDB).where(and_(*conditions))
+        query = select(BookkeeperBookkeeperTransactionDB).where(and_(*conditions))
         
         # Exclude locked transactions for non-admin
         if user_role != "admin":
-            query = query.where(BookkeeperTransactionDB.status_bookkeeper != TransactionStatus.LOCKED)
+            query = query.where(BookkeeperBookkeeperTransactionDB.status_bookkeeper != TransactionStatus.LOCKED)
         
         result = await self.session.execute(query)
         affected = result.scalars().all()
@@ -629,14 +629,14 @@ class TransactionRepository:
         # Apply bulk update
         affected_ids = [t.id for t in affected]
         await self.session.execute(
-            update(BookkeeperTransactionDB)
-            .where(BookkeeperTransactionDB.id.in_(affected_ids))
+            update(BookkeeperBookkeeperTransactionDB)
+            .where(BookkeeperBookkeeperTransactionDB.id.in_(affected_ids))
             .values(**update_values)
         )
         
         # Re-fetch to get after states
         result = await self.session.execute(
-            select(BookkeeperTransactionDB).where(BookkeeperTransactionDB.id.in_(affected_ids))
+            select(BookkeeperBookkeeperTransactionDB).where(BookkeeperBookkeeperTransactionDB.id.in_(affected_ids))
         )
         updated = result.scalars().all()
         after_states = [_get_snapshot_fields(t) for t in updated]
@@ -701,7 +701,7 @@ class TransactionRepository:
         """
         # Get transactions
         result = await self.session.execute(
-            select(BookkeeperTransactionDB).where(BookkeeperTransactionDB.id.in_(request.transaction_ids))
+            select(BookkeeperBookkeeperTransactionDB).where(BookkeeperBookkeeperTransactionDB.id.in_(request.transaction_ids))
         )
         transactions = result.scalars().all()
         
@@ -850,7 +850,7 @@ class MyFDCSyncService:
         )
         
         # Create with MYFDC_CREATE action
-        db_txn = TransactionDB(
+        db_txn = BookkeeperTransactionDB(
             client_id=client_id,
             date=_parse_date(create_data.date),
             amount=Decimal(str(create_data.amount)),
@@ -1004,7 +1004,7 @@ class ImportService:
     ) -> Transaction:
         """Internal import method"""
         
-        db_txn = TransactionDB(
+        db_txn = BookkeeperTransactionDB(
             client_id=client_id,
             date=_parse_date(data.get("date")),
             amount=Decimal(str(data.get("amount", 0))),
