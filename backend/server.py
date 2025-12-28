@@ -15,7 +15,7 @@ from database import init_db, get_db
 from routers import (
     user_router, admin_router, kb_router, recurring_router, 
     documents_router, auth_router, audit_router, luna_router,
-    integrations_router, appointments_router
+    integrations_router, appointments_router, workpaper_router
 )
 
 # Configure logging
