@@ -109,6 +109,23 @@ class AuditAction(str, Enum):
     KB_ENTRY_DELETE = "kb.entry_delete"
     KB_SEARCH = "kb.search"
     
+    # Workpaper Platform
+    WORKPAPER_JOB_CREATE = "workpaper.job_create"
+    WORKPAPER_JOB_UPDATE = "workpaper.job_update"
+    WORKPAPER_JOB_FREEZE = "workpaper.job_freeze"
+    WORKPAPER_MODULE_CREATE = "workpaper.module_create"
+    WORKPAPER_MODULE_UPDATE = "workpaper.module_update"
+    WORKPAPER_MODULE_FREEZE = "workpaper.module_freeze"
+    WORKPAPER_MODULE_REOPEN = "workpaper.module_reopen"
+    WORKPAPER_TRANSACTION_CREATE = "workpaper.transaction_create"
+    WORKPAPER_OVERRIDE_CREATE = "workpaper.override_create"
+    WORKPAPER_OVERRIDE_UPDATE = "workpaper.override_update"
+    WORKPAPER_QUERY_CREATE = "workpaper.query_create"
+    WORKPAPER_QUERY_SEND = "workpaper.query_send"
+    WORKPAPER_QUERY_RESPOND = "workpaper.query_respond"
+    WORKPAPER_QUERY_RESOLVE = "workpaper.query_resolve"
+    WORKPAPER_CALCULATE = "workpaper.calculate"
+    
     # Admin
     ADMIN_ACTION = "admin.action"
     SYSTEM_EVENT = "system.event"
@@ -126,6 +143,11 @@ class ResourceType(str, Enum):
     AUTH = "auth"
     SYSTEM = "system"
     APPOINTMENT = "appointment"
+    WORKPAPER_JOB = "workpaper_job"
+    WORKPAPER_MODULE = "workpaper_module"
+    WORKPAPER_TRANSACTION = "workpaper_transaction"
+    WORKPAPER_OVERRIDE = "workpaper_override"
+    WORKPAPER_QUERY = "workpaper_query"
 
 
 # ==================== MODELS ====================
