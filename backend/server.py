@@ -165,6 +165,10 @@ api_router.include_router(integrations_router)  # Calendly webhooks
 api_router.include_router(appointments_router)  # Appointment management
 api_router.include_router(workpaper_router)  # Workpaper platform
 
+# Motor Vehicle module
+from routers.motor_vehicle import router as mv_router
+api_router.include_router(mv_router)  # Motor Vehicle module
+
 # Include the main router in the app
 app.include_router(api_router)
 
