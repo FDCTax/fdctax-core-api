@@ -163,7 +163,7 @@ def _format_datetime(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat()
 
 
-def _db_to_transaction(db_obj: BookkeeperTransactionDB, attachment_count: int = 0) -> Transaction:
+def _db_to_transaction(db_obj: "BookkeeperTransactionDB", attachment_count: int = 0) -> Transaction:
     """Convert database model to Pydantic model"""
     return Transaction(
         id=db_obj.id,
@@ -192,7 +192,7 @@ def _db_to_transaction(db_obj: BookkeeperTransactionDB, attachment_count: int = 
     )
 
 
-def _get_snapshot_fields(db_obj: BookkeeperTransactionDB) -> Dict[str, Any]:
+def _get_snapshot_fields(db_obj: "BookkeeperTransactionDB") -> Dict[str, Any]:
     """Get bookkeeper fields for snapshot"""
     return {
         "id": db_obj.id,
