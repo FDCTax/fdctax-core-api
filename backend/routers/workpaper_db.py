@@ -743,7 +743,6 @@ async def send_query(
     """Send a draft query to the client"""
     query_repo = QueryRepository(db)
     message_repo = QueryMessageRepository(db)
-    task_repo = TaskRepository(db)
     
     query = await query_repo.get(query_id)
     if not query:
