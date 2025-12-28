@@ -306,7 +306,7 @@ __all__ = [
     'ModuleRouting',
     'HistoryActionType',
     'STATUS_HIERARCHY',
-    'TransactionDB',
+    'BookkeeperTransactionDB',
     'TransactionHistoryDB',
     'TransactionAttachmentDB',
     'TransactionWorkpaperLinkDB',
