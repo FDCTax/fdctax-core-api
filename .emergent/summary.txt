@@ -1,74 +1,82 @@
 <analysis>**original_problem_statement:**
-The user wants to build the backend for a FDC Tax Core + CRM Sync application. The primary goal is to build and verify the backend logic for CRM synchronization, manage user onboarding states, and integrate a Meet Oscar wizard. This system is intended to support a white-glove service layer, connecting the MyFDC Frontend to an internal CRM. The application should connect to a provided sandbox PostgreSQL database.
+The user's initial goal was to build the backend for a FDC Tax Core + CRM Sync application, connecting to a sandbox PostgreSQL database. The project has expanded significantly through a series of feature requests:
 
-The project has evolved through several tasks requested by the user:
-1.  **Initial Goal:** Build the core backend logic for CRM sync, user onboarding, and the Meet Oscar wizard.
-2.  **Task 2:** Implement a Recurring Task Engine to automate task generation for clients.
-3.  **Task 3:** Implement a Document Upload Request System for clients.
-4.  **Task 4:** Implement a JWT-based Authentication & Authorization Layer.
-5.  **Task 5 (Current):** Implement a comprehensive Audit Logging System.
+1.  **Initial Features:** CRM sync, user onboarding, and a Meet Oscar wizard.
+2.  **Recurring Task Engine:** An automated system for generating client tasks.
+3.  **Document Upload System:** A system for clients to upload requested documents.
+4.  **JWT Authentication & Authorization:** A complete JWT-based security layer.
+5.  **Audit Logging System:** A comprehensive system to track all major actions.
+6.  **Luna Escalation System:** An endpoint for an AI assistant (Luna) to escalate queries by creating CRM tasks.
+7.  **Calendly Integration:** A webhook to log Calendly appointments in the system.
+8.  **Workpaper Platform Architecture:** A major architectural overhaul to build a scalable platform for tax workpaper modules (e.g., Motor Vehicle, Home Office). This defined a new domain model and unified behavior patterns but was implemented using file-based storage due to initial database restrictions.
+9.  **Database Migration:** The user has now provided new database credentials, signaling the next step is to migrate the file-based systems to PostgreSQL.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A substantial FastAPI backend application has been developed. It successfully connects to a pre-existing PostgreSQL database containing  and  schemas. A critical constraint discovered early on is the lack of DDL (e.g., , ) permissions on the sandbox database.
+The application is a large FastAPI backend. Initially, it connected to a read-only PostgreSQL database. To overcome this limitation, all new features—including Recurring Tasks, Document Uploads, Audit Logs, Luna Escalations, Calendly Appointments, and the entire Workpaper Platform—were built using a file-based persistence strategy, storing data in JSON files under  and newly created service-specific directories.
 
-To circumvent this, features requiring new data structures (Recurring Tasks, Document Uploads, Audit Logs) have been implemented using a file-based persistence strategy, storing data in JSON files within the  directory.
-
-The application is modular, with distinct services, routers, and models for each major feature, including:
--   User & Profile Management ()
--   Admin functions ()
--   Knowledge Base search ()
--   Recurring Task Engine (file-based) ()
--   Document Upload System (file-based with local uploads) ()
--   JWT Authentication and Authorization ()
--   An incomplete Audit Logging system.
+The key components are:
+-   **Core Services:** User management, auth, and knowledge base search interacting with the original PostgreSQL DB.
+-   **File-Based Features:** Audit, Recurring Tasks, Documents, Luna, Calendly, and the new Workpaper Platform are fully functional but rely on JSON files for storage.
+-   **Workpaper Platform:** A comprehensive, modular architecture has been implemented () defining core entities like , , , and . It is ready to be migrated to a database.
+-   **Integrations:** The system includes integrations for Calendly (via webhooks and REST API) and a placeholder for Luna escalations.
 
 **Last working item**:
--   **Last item agent was working:** Implementing the Audit Logging System. The agent has created the foundational files  (for business logic) and  (for the API endpoint). The agent was about to start integrating the audit functionality into the rest of the application, beginning with the authentication router.
--   **Status:** IN PROGRESS
+The user provided new database credentials, likely lifting the previous DDL restrictions. The agent extracted these credentials and was about to investigate how to connect to the database with them to begin the migration process.
+
+-   **Last item agent was working:** Preparing to use new database credentials to migrate file-based persistence to PostgreSQL.
+-   **Status:** NOT STARTED
 -   **Agent Testing Done:** N
 -   **Which testing method agent to use?** backend testing agent
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
 -   **Issue 1: Database Permissions Limitation (P0)**
-    -   **Description:** The application cannot create or alter tables in the sandbox PostgreSQL database due to insufficient permissions.
-    -   **Attempted fixes:** The agent's attempts to run DDL commands (e.g., ) failed, confirming the restriction.
-    -   **Next debug checklist:** The permanent solution requires database permissions to be granted externally. For now, the next agent must continue using the established file-based (JSON) storage workaround for the new Audit Log feature and any subsequent features. The agent should integrate the audit logging logic into the existing services by calling the new audit service.
-    -   **Why fix this issue and what will be achieved with the fix?** The current file-based storage is not robust, scalable, or suitable for a production environment. Migrating this logic to a database is essential for data integrity, performance, and transactional safety.
-    -   **Status:** BLOCKED (on DB permissions), with a file-based workaround in place.
+    -   **Description:** The application was built around a read-only database, forcing the use of non-scalable JSON files for data persistence. The user has just provided new credentials that are expected to resolve this.
+    -   **Attempted fixes:** The original workaround was building a file-based storage system.
+    -   **Next debug checklist:**
+        1.  Update the database connection settings in  or the  file with the new credentials.
+        2.  Write a small script or use a tool to test DDL permissions (e.g., ).
+        3.  If successful, proceed with the migration task (Task 1 below). If it fails, inform the user that the new credentials still lack the required permissions.
+    -   **Why fix this issue and what will be achieved with the fix?** Migrating to PostgreSQL is critical for data integrity, scalability, performance, and enabling transactional safety. It will move the application from a prototype stage to a production-ready architecture.
+    -   **Status:** BLOCKED (pending verification of new credentials)
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Backend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1: Complete and Integrate the Audit Logging System (P0)**
-    -   **Where to resume:** The agent has created  and . The next step is to integrate the  function from the audit service into all other relevant services to record key events.
-        -   Start with  to log user login, role changes, and registration.
-        -   Continue with  (task updates),  (document actions), and  (task generation).
-    -   **What will be achieved with this?** A centralized audit trail for all significant user and system actions, fulfilling the latest user request.
-    -   **Status:** IN PROGRESS
+-   **Task 1: Migrate All File-Based Systems to PostgreSQL (P0)**
+    -   **Where to resume:** Now that new database credentials are available, the agent must begin migrating all features that use JSON files to the PostgreSQL database. The new domain model is already defined in .
+    -   **Migration Plan:**
+        1.  Verify DB connection and DDL permissions with the new credentials.
+        2.  Create SQLAlchemy models corresponding to the Pydantic models in .
+        3.  Use Alembic or SQLAlchemy to create the new tables in the database.
+        4.  Refactor the storage classes ( files) for each service (Workpaper, Audit, Luna, Calendly, Documents, Recurring Tasks) to use the SQLAlchemy session for database operations instead of reading/writing JSON files.
+        5.  Create a data migration script to move existing data from JSON files into the new PostgreSQL tables.
+    -   **What will be achieved with this?** A robust, scalable, and production-ready backend that leverages a relational database for all its data.
+    -   **Status:** NOT STARTED
     -   **Should Test frontend/backend/both after fix?** Backend
-    -   **Blocked on something:** Blocked on **Issue 1** for a permanent database solution, but can proceed with the file-based workaround.
+    -   **Blocked on something:** **Issue 1** (verifying DB permissions).
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Apply Role-Based Access Control (P1):** Use the  functionality and decorators from  to protect all  and  specific endpoints to enforce the new authentication layer.
-    -   **Update API Documentation (P2):** Update  to include details about the new Audit Logging endpoints and the logged actions.
+    -   **P1: Implement the Motor Vehicle Module:** Once the database migration is complete, implement the first full workpaper module (Motor Vehicle) as defined in the platform architecture ticket. This will serve as the reference for all future modules.
+    -   **P2: Apply Role-Based Access Control (RBAC):** The authentication service includes decorators like  and . These must be applied to all relevant API endpoints across the application to enforce security. This is a pending task from a previous session.
+    -   **P3: Update API Documentation:** Thoroughly update  to reflect the new database-driven architecture and remove references to the file-based workarounds.
+
 -   **Future Tasks:**
-    -   **Migrate to Cloud Storage:** Refactor the document upload feature in  to use a cloud storage provider like AWS S3 instead of the local filesystem ().
-    -   **Database Migration:** Once DB permissions are granted, refactor all file-based systems (, , ) to use PostgreSQL tables.
-    -   **Expand White-Glove Services:** Implement appointment scheduling and workpaper generation features.
+    -   **Migrate to Cloud Storage:** Refactor the document upload feature in  to use a cloud storage provider (e.g., AWS S3) instead of the local filesystem.
+    -   **Expand White-Glove Services:** Implement further features like appointment scheduling and workpaper generation based on the new platform.
 
 **Completed work in this session**
--   **FDC Tax Core + CRM Sync API MVP:** Implemented core backend logic, connecting to PostgreSQL and creating endpoints for user profiles, tasks, and knowledge base search. Adapted code to existing database schemas.
--   **Recurring Task Engine:** Built a file-based system to define and generate recurring client tasks, with corresponding API endpoints.
--   **Document Upload System:** Created a file-based system for admin-initiated document requests and client uploads, with files stored locally.
--   **Authentication & Authorization Layer:** Implemented a complete JWT-based authentication system with roles, password hashing, and endpoints for login, registration, and user management.
+-   **Audit Logging System:** Successfully implemented and integrated a file-based audit logging system across all services (auth, documents, tasks, etc.).
+-   **Luna Escalation System:** Created endpoints and services to allow an AI assistant to escalate queries, creating tasks and audit logs.
+-   **Calendly Webhook Integration:** Implemented a webhook to receive Calendly events, create appointment records, and log them.
+-   **FDC Core Workpaper Platform:** Built the entire foundational architecture for a new workpaper system, including a comprehensive domain model, service structure, and API endpoints, all using a file-based backend as a temporary measure.
 
 **Earlier issues found/mentioned but not fixed**
--   None. All previously identified bugs (e.g., SQL syntax errors) were resolved during the session.
+-   **RBAC Not Applied:** The decorators for role-based access control were created as part of the authentication feature but have not been applied to protect the various API endpoints.
 
 **Known issue recurrence from previous fork**
 -   None.
@@ -78,89 +86,85 @@ The application is modular, with distinct services, routers, and models for each
 
 **Key Technical Concepts**
 -   **Backend:** FastAPI
--   **Database:** PostgreSQL (with  and )
--   **Data Modeling:** Pydantic
+-   **Database:** PostgreSQL (with , ). Migration from file-based to DB is the next step.
 -   **Authentication:** JWT (, , )
--   **Architecture:** Modular design with a Service-Router pattern.
--   **Workaround:** File-based persistence (JSON files) to bypass database DDL restrictions.
--   **Task Scheduling:**  for parsing iCal RRULEs.
+-   **Architecture:** Modular Service-Router pattern. A comprehensive Workpaper Engine has been designed as the core of the platform.
+-   **Persistence:** Currently a mix of PostgreSQL (for legacy tables) and JSON files. The primary task is to unify everything on PostgreSQL.
+-   **External APIs:** Calendly API.
 
 **key DB schema**
-The application interacts with tables in two existing schemas. No new tables have been created.
--   : {id (text), email (text), password_hash (text), role (text)}
--   : {user_id (uuid), setup_state (jsonb), oscar_enabled (boolean)}
--   : {id (int), client_id (int), title (varchar)}
--   : {title (varchar), answer (text)}
+The following schema is defined in Pydantic models in  and **needs to be created in the PostgreSQL database**:
+
+-   : {id, client_id, year, status, frozen_at}
+-   : {id, job_id, module_type, label, status, config, output_summary}
+-   : {id, client_id, source, date, amount, gst_amount, category, description}
+-   : {id, transaction_id, job_id, overridden_fields..., reason, admin_user_id}
+-   : {id, module_instance_id, field_key, original_value, effective_value, reason, admin_user_id}
+-   : {id, client_id, job_id, module_instance_id, transaction_id, status, title, query_type}
+-   : {id, query_id, sender_type, sender_id, message_text}
+-   : {id, job_id, module_instance_id, snapshot_type, data}
+-   : {id, client_id, event_uri, event_type, scheduled_for, location, status}
+-   : {id, client_id, task_id, query, luna_response, confidence, status}
 
 **changes in tech stack**
--   Added , , and  for PostgreSQL interaction.
--   Added  and  for the recurring task engine.
--   Added  and  for the authentication layer.
+-   Added  for making external API calls to Calendly.
 
 **All files of reference**
--   **In-Progress:**
-    -   : The newly created service for handling audit logic.
-    -   : The router for audit-related endpoints.
--   **To be Modified:**
-    -   : To log authentication events.
-    -   : To log task-related events.
-    -   : To log document-related events.
-    -   : To log task generation events.
--   **Key Existing Files:**
-    -   : Main application file.
-    -   : API documentation.
-    -   : Directory containing all file-based databases.
+-   **/app/backend/services/workpaper/**: This new directory contains the entire logic for the platform architecture and is the primary focus for the database migration.
+-   **/app/backend/routers/workpaper.py**: The API for the new platform.
+-   **/app/backend/services/audit.py, calendly.py, documents.py, luna.py, recurring_tasks.py**: These services contain file-based logic that must be migrated to the database.
+-   **/app/Doadmin.txt**: Contains the new database credentials.
+-   **/app/backend/.env**: Will need to be updated with the new database credentials.
+-   **/app/backend/database/connection.py**: The database connection logic will need to be verified/updated.
 
 **Areas that need refactoring**:
--   The file-based persistence mechanism in , , and  is a temporary solution and should be replaced with database interactions once permissions are available.
--   The local file upload storage in  should be refactored to use a cloud storage solution like S3.
+-   **The entire persistence layer.** All services currently using  files that read/write to JSON (, , , , , ) must be refactored to use SQLAlchemy and the PostgreSQL database. This is the main upcoming task.
 
 **key api endpoints**
--   : User login.
--   : **(New)** To retrieve audit logs.
--   : To request a document from a user.
--   : For users to upload requested files.
--   : To manually run the recurring task generator.
--   : To get/set user profile information.
+-   : Manage workpaper jobs.
+-   : Manage individual workpaper modules.
+-   : Manage the query engine.
+-   : Endpoint for the Luna AI to create escalations.
+-   : Webhook for Calendly events.
+-   : Endpoint to retrieve audit logs.
 
 **Critical Info for New Agent**
--   **DDL Read-Only Database:** You **cannot** run  or  table commands. The current workaround is to use JSON files in  for data persistence for new features. You must follow this pattern for the audit log implementation.
--   **File-Based Workaround:** The services for recurring tasks, documents, and the new audit system are built on this file-based approach. Be prepared to work with this pattern.
--   **Incomplete Integration:** The Audit Logging system has been created but is **not integrated**. Your first task is to inject the  function into all relevant services and routers.
--   **Unprotected Endpoints:** The role-based access control from the authentication system has been implemented but not yet applied to protect most of the  and  endpoints.
+-   **DATABASE MIGRATION IS THE #1 PRIORITY.** The user has provided new database credentials. Your immediate task is to verify you have DDL permissions and then begin migrating all the file-based features (Workpaper, Audit, Luna, Calendly, etc.) to use the PostgreSQL database.
+-   **The architectural blueprint is already designed.** The  (Chat Message 255) and the code in  provide the complete domain model and logic. You are not designing from scratch; you are migrating an existing file-based implementation to a database.
+-   **Do not create new features until the migration is complete.** The entire platform's stability and scalability depend on moving off the temporary JSON file storage.
 
 **documents and test reports created in this job**
--    (API Documentation)
+-    (extensively updated)
+-    (used for backend testing)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (Chat 252):** Requested the implementation of an Authentication & Authorization Layer.
-2.  **Agent (Chat 298):** Confirmed completion of the Authentication layer.
-3.  **User (Chat 299):** Requested the implementation of an Audit Logging System.
-4.  **Agent (Chat 300):** Acknowledged the request and stated the plan.
-5.  **Agent (Chat 301):** Successfully created .
-6.  **Agent (Chat 302):** Acknowledged the file creation.
-7.  **Agent (Chat 303):** Successfully created .
-8.  **Agent (Chat 304):** Acknowledged the file creation and planned to integrate logging into the  router next. This was the last action.
+1.  **User (Chat 258):** Provided clear instructions on how to implement the workpaper platform architecture.
+2.  **Agent (Chat 259-310):** Successfully implemented the entire workpaper platform using a file-based storage system and tested it thoroughly.
+3.  **Agent (Chat 311):** Finished the workpaper platform implementation task.
+4.  **User (Chat 312):** Provided an artifact () containing new database credentials for backend access and instructed the agent to use them for database operations, including creating new tables. This signals the start of the migration phase.
+5.  **Agent (Chat 314-315):** Extracted the credentials and was preparing to investigate the database connection. This is the last action performed.
 
 **Project Health Check:**
--   **Broken:** None.
--   **Mocked:** The entire persistence layer for the Recurring Tasks, Document Request, and Audit Log systems is mocked using local JSON files due to database permission constraints.
+-   **Broken:** None. The application is functional.
+-   **Mocked:** The persistence layer for all major new features (Workpaper, Audit, Luna, Calendly, Documents, Recurring Tasks) is mocked using JSON files. This is the primary component that needs to be replaced with a real database implementation.
 
 **3rd Party Integrations**
--   PostgreSQL: Connected via user-provided credentials for a sandbox environment.
+-   **PostgreSQL:** Database for the application. New credentials have been provided to enable write/DDL access.
+-   **Calendly:** Integrated via webhook and REST API for appointment tracking. A Personal Access Token (PAT) is stored in .
 
 **Testing status**
--   **Testing agent used after significant changes:** NO
+-   **Testing agent used after significant changes:** NO (Agent used manual  scripts for extensive testing).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:** None. Testing has been conducted manually via  commands in bash scripts.
+-   **Test files created:** None.
 -   **Known regressions:** None.
 
 **Credentials to test flow:**
-Test users have been seeded into the file-based auth system. Use these for testing protected endpoints:
--   **Admin:**  / 
--   **Staff:**  / 
--   **Client:**  / 
+-   **Database:** Located in the artifact from the last user message ().
+-   **Test Users (from file-based auth):**
+    -   Admin:  / 
+    -   Staff:  / 
+    -   Client:  / 
 
 **What agent forgot to execute**
--   **Integrate Audit Logging:** The agent created the audit service but did not integrate the  function into any of the existing workflows (auth, tasks, documents) before the session ended.
--   **Apply RBAC Protection:** The agent built the authentication middleware and role-checking decorators but did not apply them to secure the existing  and  API endpoints.</analysis>
+-   The agent did not forget anything; it correctly identified the next logical step was to use the new database credentials.
+-   The task of applying Role-Based Access Control (RBAC) to all endpoints is still pending from the original handoff and should be addressed after the database migration.</analysis>
