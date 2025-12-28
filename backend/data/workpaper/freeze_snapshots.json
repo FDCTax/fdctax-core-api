@@ -1,1 +1,138 @@
-[]
+[
+  {
+    "id": "7de0141f-27e4-4f5e-b4e5-2c47c682d525",
+    "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+    "module_instance_id": "cbae40b0-1da4-4dd2-a81e-46959068a445",
+    "snapshot_type": "module",
+    "data": {
+      "module": {
+        "id": "cbae40b0-1da4-4dd2-a81e-46959068a445",
+        "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+        "module_type": "motor_vehicle",
+        "label": "Vehicle 1",
+        "status": "completed",
+        "config": {
+          "method": "cents_per_km",
+          "business_km": 4500
+        },
+        "output_summary": {
+          "method": "cents_per_km",
+          "business_km": 4500,
+          "capped_km": 4500,
+          "rate_per_km": 0.85,
+          "deduction": 3825.0,
+          "gst_credit": 347.73,
+          "warnings": [],
+          "errors": []
+        },
+        "calculation_inputs": {},
+        "frozen_at": null,
+        "created_at": "2025-12-28T07:57:07.258350+00:00",
+        "updated_at": "2025-12-28T07:58:21.949576+00:00"
+      },
+      "config": {
+        "method": "cents_per_km",
+        "business_km": 4500
+      },
+      "output_summary": {
+        "method": "cents_per_km",
+        "business_km": 4500,
+        "capped_km": 4500,
+        "rate_per_km": 0.85,
+        "deduction": 3825.0,
+        "gst_credit": 347.73,
+        "warnings": [],
+        "errors": []
+      },
+      "calculation_inputs": {},
+      "effective_transactions": [
+        {
+          "transaction_id": "1c1f2bff-3a23-42d4-9231-0d35be1f6b93",
+          "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+          "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+          "module_instance_id": "cbae40b0-1da4-4dd2-a81e-46959068a445",
+          "source": "manual",
+          "date": "2024-07-15",
+          "description": "BP Fuel - Shell station",
+          "receipt_url": null,
+          "vendor": "BP",
+          "original_amount": 150.0,
+          "original_gst_amount": 13.64,
+          "original_category": "vehicle_fuel",
+          "effective_amount": 150.0,
+          "effective_gst_amount": 13.64,
+          "effective_category": "vehicle_fuel",
+          "effective_business_pct": 100.0,
+          "has_override": false,
+          "override_id": null,
+          "override_reason": null,
+          "business_amount": 150.0,
+          "business_gst_amount": 13.64
+        },
+        {
+          "transaction_id": "3609852d-a863-48c3-9f67-a861bc83ee00",
+          "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+          "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+          "module_instance_id": "cbae40b0-1da4-4dd2-a81e-46959068a445",
+          "source": "manual",
+          "date": "2024-08-20",
+          "description": "Annual registration",
+          "receipt_url": null,
+          "vendor": "RTA",
+          "original_amount": 850.0,
+          "original_gst_amount": 77.27,
+          "original_category": "vehicle_registration",
+          "effective_amount": 850.0,
+          "effective_gst_amount": 77.27,
+          "effective_category": "vehicle_registration",
+          "effective_business_pct": 100.0,
+          "has_override": false,
+          "override_id": null,
+          "override_reason": null,
+          "business_amount": 850.0,
+          "business_gst_amount": 77.27
+        }
+      ],
+      "module_overrides": [],
+      "queries": [
+        {
+          "id": "734e421f-8d60-441a-8a3d-528a2dde031d",
+          "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1",
+          "job_id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+          "module_instance_id": "cbae40b0-1da4-4dd2-a81e-46959068a445",
+          "transaction_id": null,
+          "status": "resolved",
+          "title": "Vehicle usage confirmation",
+          "query_type": "text",
+          "request_config": {},
+          "response_data": null,
+          "created_by_admin_id": "de84d312-c2bb-4b77-bf78-52e34e25cc43",
+          "created_by_admin_email": "admin@fdctax.com",
+          "resolved_by_admin_id": "de84d312-c2bb-4b77-bf78-52e34e25cc43",
+          "resolved_at": "2025-12-28T07:58:21.901151+00:00",
+          "created_at": "2025-12-28T07:58:10.149893+00:00",
+          "updated_at": "2025-12-28T07:58:21.901184+00:00"
+        }
+      ],
+      "job": {
+        "id": "2d51fb00-3de5-4b59-8196-d20271a90586",
+        "year": "2024-25",
+        "client_id": "dab5bbb9-76ad-4a0d-850d-9508660e6af1"
+      },
+      "frozen_at": "2025-12-28T07:58:22.015258+00:00"
+    },
+    "summary": {
+      "method": "cents_per_km",
+      "business_km": 4500,
+      "capped_km": 4500,
+      "rate_per_km": 0.85,
+      "deduction": 3825.0,
+      "gst_credit": 347.73,
+      "warnings": [],
+      "errors": []
+    },
+    "created_by_admin_id": "de84d312-c2bb-4b77-bf78-52e34e25cc43",
+    "created_by_admin_email": "admin@fdctax.com",
+    "created_at": "2025-12-28T07:58:22.015308+00:00"
+  }
+]
