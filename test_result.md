@@ -102,96 +102,147 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Implement a comprehensive Audit Logging System that integrates across all major services and routes to track user and system actions for compliance and security monitoring."
+user_problem_statement: "Migrate workpaper engine from file-based JSON storage to PostgreSQL database. Phase 1: Core entities (WorkpaperJob, ModuleInstance, Transaction, TransactionOverride). Phase 2: Behaviour entities (OverrideRecord, Query, QueryMessage, Task). Phase 3: Audit + Freeze (FreezeSnapshot, WorkpaperAuditLog)."
 
 backend:
-  - task: "Audit Service Core"
+  - task: "PostgreSQL Database Tables Creation"
     implemented: true
     working: true
-    file: "/app/backend/services/audit.py"
+    file: "/app/backend/database/workpaper_models.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
-        comment: "AuditLogger class with file-based JSONL storage, filtering, statistics, and cleanup functionality"
+        comment: "Created 10 SQLAlchemy models: WorkpaperJobDB, ModuleInstanceDB, TransactionDB, TransactionOverrideDB, OverrideRecordDB, QueryDB, QueryMessageDB, TaskDB, FreezeSnapshotDB, WorkpaperAuditLogDB"
 
-  - task: "Audit Router Endpoints"
+  - task: "Database Repository Layer"
     implemented: true
     working: true
-    file: "/app/backend/routers/audit.py"
+    file: "/app/backend/services/workpaper/db_storage.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Endpoints for listing logs, stats, user activity, resource history, errors, cleanup. All protected by staff/admin roles."
+        comment: "Created repository classes for all entities with async CRUD operations. Includes EffectiveTransactionBuilder for computing overrides."
 
-  - task: "Auth Router Audit Integration"
+  - task: "PostgreSQL-Backed Workpaper Router"
     implemented: true
     working: true
-    file: "/app/backend/routers/auth.py"
+    file: "/app/backend/routers/workpaper_db.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Added audit logging for login, login_failed, logout, register, password_change, password_reset, role_change. Fixed dict vs object attribute issues."
+        comment: "Full API router migrated to use PostgreSQL repositories. All endpoints tested manually: jobs, modules, transactions, overrides, queries, freeze."
 
-  - task: "CRM Sync Service Audit Integration"
-    implemented: true
-    working: "NA"
-    file: "/app/backend/services/crm_sync.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Added audit logging for task.create, task.update, task.delete, task.complete, crm_task.create, crm_task.update"
-
-  - task: "Documents Service Audit Integration"
+  - task: "Jobs API - CRUD"
     implemented: true
     working: true
-    file: "/app/backend/services/documents.py"
+    file: "/app/backend/routers/workpaper_db.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /jobs, GET /jobs/{id}, PATCH /jobs/{id}, GET /clients/{id}/jobs - all working with PostgreSQL"
+
+  - task: "Modules API - CRUD"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/workpaper_db.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /modules, GET /modules/{id}, PATCH /modules/{id}, auto-creation with jobs working"
+
+  - task: "Transactions API"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/workpaper_db.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /transactions, GET /transactions with filters - tested with manual transactions"
+
+  - task: "Overrides API"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/workpaper_db.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /overrides/transaction, POST /overrides/module - both working with upsert logic"
+
+  - task: "Queries API"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/workpaper_db.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Create/send/resolve queries with message threading working. Task auto-update working."
+
+  - task: "Dashboard API"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/workpaper_db.py"
     stuck_count: 0
     priority: "medium"
     needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Integrated with centralized audit service for document.request_create, document.upload, document.request_dismiss, document.request_update"
+        comment: "GET /clients/{id}/jobs/{year}/dashboard returns job with modules, totals, query counts"
 
-  - task: "Recurring Tasks Service Audit Integration"
+  - task: "Freeze/Snapshot API"
     implemented: true
-    working: "NA"
-    file: "/app/backend/services/recurring_tasks.py"
+    working: true
+    file: "/app/backend/routers/workpaper_db.py"
     stuck_count: 0
     priority: "medium"
     needs_retesting: true
     status_history:
-      - working: "NA"
+      - working: true
         agent: "main"
-        comment: "Added audit logging for recurring.template_create, recurring.template_update, recurring.template_delete, recurring.trigger, recurring.task_generated"
+        comment: "POST /modules/{id}/freeze creates snapshot and updates status. Reopen requires admin role."
 
 metadata:
   created_by: "main_agent"
-  version: "1.0"
-  test_sequence: 1
+  version: "2.0"
+  test_sequence: 2
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Audit Router Endpoints"
-    - "Auth Router Audit Integration"
-    - "Documents Service Audit Integration"
+    - "Database Repository Layer"
+    - "Jobs API - CRUD"
+    - "Modules API - CRUD"
+    - "Transactions API"
+    - "Overrides API"
+    - "Queries API"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Implemented comprehensive audit logging integration. Key endpoints working: /api/audit (list logs), /api/audit/stats (statistics), /api/audit/actions (action types). Auth events (login, logout, register, role_change) and document events (request_create) are being logged. Test credentials: admin@fdctax.com/admin123, staff@fdctax.com/staff123, client@example.com/client123. Please test all audit endpoints and verify logs are created for various actions."
+    message: "PostgreSQL migration complete for workpaper engine. All 10 tables created. Full API migrated from file-based to database-backed storage. Test credentials: staff@fdctax.com/staff123, admin@fdctax.com/admin123. Test data: job_id=4fc51694-ebaf-40a0-a358-62da0d4fb9d7, client_id=test-client-001, year=2024-25. Please run comprehensive tests on all workpaper API endpoints."
