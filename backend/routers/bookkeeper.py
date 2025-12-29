@@ -8,10 +8,19 @@ Endpoints for the Bookkeeper Tab and transaction management:
 - GET /bookkeeper/transactions/{id}/history - Audit trail
 - POST /workpapers/transactions-lock - Lock for workpaper
 
-Permissions:
-- Bookkeeper: Full edit until LOCKED
-- Tax Agent: Read-only
-- Admin: Full access including unlock
+RBAC Permissions Matrix:
+┌──────────────────────────────────────────────┬────────┬───────┬───────────┬───────┐
+│ Endpoint                                     │ client │ staff │ tax_agent │ admin │
+├──────────────────────────────────────────────┼────────┼───────┼───────────┼───────┤
+│ GET /bookkeeper/transactions                 │   ❌   │   ✔️   │   ✔️      │   ✔️   │
+│ PATCH /bookkeeper/transactions/{id}          │   ❌   │   ✔️*  │   ❌      │   ✔️   │
+│ POST /bookkeeper/transactions/bulk-update    │   ❌   │   ✔️   │   ❌      │   ✔️   │
+│ GET /bookkeeper/transactions/{id}/history    │   ❌   │   ✔️   │   ✔️      │   ✔️   │
+│ POST /workpapers/transactions-lock           │   ❌   │   ❌   │   ✔️      │   ✔️   │
+│ POST /bookkeeper/transactions/{id}/unlock    │   ❌   │   ❌   │   ❌      │   ✔️   │
+│ POST /myfdc/transactions                     │   ✔️   │   ❌   │   ❌      │   ✔️   │
+└──────────────────────────────────────────────┴────────┴───────┴───────────┴───────┘
+* Staff can edit unless status=LOCKED (then only notes_bookkeeper)
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query as QueryParam, Request
@@ -21,7 +30,18 @@ from datetime import datetime
 import logging
 
 from database import get_db
-from middleware.auth import get_current_user_required, require_staff, require_admin, AuthUser
+from middleware.auth import (
+    get_current_user_required, 
+    require_staff, 
+    require_admin,
+    require_bookkeeper_read,
+    require_bookkeeper_write,
+    require_workpaper_lock,
+    require_myfdc_sync,
+    require_import,
+    AuthUser,
+    RoleChecker
+)
 
 from services.transaction_service import (
     TransactionRepository, MyFDCSyncService, ImportService,
