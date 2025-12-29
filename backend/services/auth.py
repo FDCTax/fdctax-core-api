@@ -352,7 +352,7 @@ class AuthService:
             return None
         
         return {
-            "id": row.id,
+            "id": str(row.id),
             "email": row.email,
             "password_hash": row.password_hash,
             "first_name": row.first_name,
