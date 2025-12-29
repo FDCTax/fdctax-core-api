@@ -260,15 +260,66 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Database Repository Layer"
-    - "Jobs API - CRUD"
-    - "Modules API - CRUD"
-    - "Transactions API"
-    - "Overrides API"
-    - "Queries API"
+    - "Environment Variable Audit"
+    - "CORS Configuration"
+    - "Health Check Endpoints"
+    - "Role Mapping Verification"
+    - "Integration Tests"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "INFRASTRUCTURE INTEGRATION COMPLETE. Created /app/backend/config.py for centralized configuration management. Updated server.py with production-safe CORS, health checks, and middleware. All acceptance criteria verified via integration tests."
+
+  - task: "Environment Variable Audit"
+    implemented: true
+    working: true
+    file: "/app/backend/config.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created Settings class with pydantic-settings. Validates DATABASE_URL, JWT_SECRET_KEY, ENVIRONMENT. Production validation prevents insecure defaults."
+
+  - task: "CORS Configuration"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Production origins: fdctax.com, myfdc.com, api.fdccore.com. Dev origins (localhost) auto-added in non-production. Tested with OPTIONS preflight - all origins returning correct headers."
+
+  - task: "Health Check Endpoints"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "4 endpoints: / (basic), /health (detailed with DB check), /health/ready (K8s readiness), /health/live (K8s liveness), /config/status (non-sensitive config)."
+
+  - task: "Role Mapping"
+    implemented: true
+    working: true
+    file: "/app/backend/services/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "4 roles verified: admin, staff (bookkeeper), tax_agent, client. JWT tokens include role claim. Email-based role assignment via _admin_emails, _staff_emails, _tax_agent_emails lists."
 
 agent_communication:
   - agent: "main"
