@@ -364,7 +364,7 @@ async def bulk_update_transactions(
 @router.get("/transactions/{transaction_id}/history", response_model=List[TransactionHistory])
 async def get_transaction_history(
     transaction_id: str,
-    current_user: AuthUser = Depends(require_staff),
+    current_user: AuthUser = Depends(require_bookkeeper_read),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -372,8 +372,10 @@ async def get_transaction_history(
     
     Returns all history entries ordered by timestamp (newest first).
     Each entry contains: action_type, user, role, before/after state, comment.
+    
+    RBAC: staff ✔️, tax_agent ✔️, admin ✔️, client ❌
     """
-    check_read_permission(current_user)
+    check_bookkeeper_tab_read_permission(current_user)
     
     repo = TransactionRepository(db)
     
@@ -403,6 +405,8 @@ async def unlock_transaction(
     - Comment is mandatory (minimum 10 characters)
     - Status returns to REVIEWED
     - History entry recorded
+    
+    RBAC: staff ❌, tax_agent ❌, admin ✔️, client ❌
     """
     repo = TransactionRepository(db)
     user_role = get_user_role(current_user)
