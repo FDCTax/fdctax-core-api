@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Build Unified Transaction Engine + Bookkeeper Layer: A canonical transaction ledger for the entire FDC system supporting Bookkeeper Tab, MyFDC ingestion, Workpaper routing, Audit trail, and Locking/versioning."
+user_problem_statement: "Infrastructure Integration & Deployment Preparation: Prepare the backend for production deployment so that MyFDC and FDC Tax can connect to the Transaction Engine reliably and securely."
 
 backend:
   - task: "PostgreSQL Database Tables Creation"
