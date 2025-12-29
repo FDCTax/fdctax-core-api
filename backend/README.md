@@ -197,6 +197,313 @@ JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
 ---
 
+## Unified Transaction Engine + Bookkeeper Layer
+
+The Transaction Engine is the **single source of truth** for all financial transactions in the FDC system. It provides a canonical ledger with full audit trail, role-based access control, and integration points for MyFDC client submissions, bank imports, and workpaper modules.
+
+### Key Features
+
+- **Canonical Ledger**: All transactions flow through a single `transactions` table
+- **Dual-Column Design**: Client fields (raw) + Bookkeeper fields (reviewed) for every transaction
+- **Full Audit Trail**: Every change recorded in `transaction_history`
+- **RBAC Enforcement**: Role-based permissions at endpoint and field level
+- **Workpaper Locking**: Transactions locked when consumed by workpapers
+- **Bulk Operations**: Atomic bulk updates with single history entry
+
+### Database Schema
+
+#### transactions Table
+```sql
+CREATE TABLE transactions (
+    id UUID PRIMARY KEY,
+    client_id VARCHAR NOT NULL,
+    date DATE NOT NULL,
+    amount DECIMAL(18,2) NOT NULL,
+    -- Client fields (raw from MyFDC)
+    payee_raw VARCHAR,
+    description_raw VARCHAR,
+    source transaction_source_enum,  -- BANK, MYFDC, OCR, MANUAL
+    category_client VARCHAR,
+    module_hint_client VARCHAR,
+    notes_client TEXT,
+    -- Bookkeeper fields (reviewed/overridden)
+    category_bookkeeper VARCHAR,
+    gst_code_bookkeeper gst_code_enum,
+    notes_bookkeeper TEXT,
+    status_bookkeeper transaction_status_enum,  -- NEW, PENDING, REVIEWED, READY_FOR_WORKPAPER, EXCLUDED, LOCKED
+    flags JSONB,  -- {late: bool, duplicate: bool, high_risk: bool}
+    module_routing module_routing_enum,  -- MOTOR_VEHICLE, HOME_OCCUPANCY, etc.
+    -- Lock state
+    locked_at TIMESTAMP,
+    locked_by_role VARCHAR,
+    -- Timestamps
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+#### transaction_history Table
+```sql
+CREATE TABLE transaction_history (
+    id UUID PRIMARY KEY,
+    transaction_id UUID REFERENCES transactions(id),
+    user_id UUID,
+    role VARCHAR,
+    action_type history_action_type_enum,  -- manual, bulk_recode, import, myfdc_create, lock, unlock, etc.
+    before_state JSONB,
+    after_state JSONB,
+    comment TEXT,
+    created_at TIMESTAMP
+);
+```
+
+### RBAC Permissions Matrix
+
+| Endpoint | client | staff | tax_agent | admin |
+|----------|--------|-------|-----------|-------|
+| `GET /api/bookkeeper/transactions` | ❌ | ✔️ | ✔️ (read-only) | ✔️ |
+| `PATCH /api/bookkeeper/transactions/{id}` | ❌ | ✔️* | ❌ | ✔️ |
+| `POST /api/bookkeeper/transactions/bulk-update` | ❌ | ✔️ | ❌ | ✔️ |
+| `GET /api/bookkeeper/transactions/{id}/history` | ❌ | ✔️ | ✔️ | ✔️ |
+| `POST /api/workpapers/transactions-lock` | ❌ | ❌ | ✔️ | ✔️ |
+| `POST /api/bookkeeper/transactions/{id}/unlock` | ❌ | ❌ | ❌ | ✔️ |
+| `POST /api/myfdc/transactions` | ✔️ | ❌ | ❌ | ✔️ |
+| `PATCH /api/myfdc/transactions/{id}` | ✔️ | ❌ | ❌ | ✔️ |
+
+*Staff can edit unless status=LOCKED (then only `notes_bookkeeper`)
+
+### Role Behaviours
+
+**Staff (Bookkeeper)**
+- Can edit any field until status = LOCKED
+- Cannot unlock transactions
+- Cannot modify locked transactions except `notes_bookkeeper`
+- Cannot call workpaper lock endpoint
+
+**Tax Agent**
+- Read-only access in Bookkeeper Tab
+- Can lock transactions via workpaper engine
+- Cannot unlock (admin only)
+
+**Admin**
+- Full access to all endpoints
+- Can override any field including locked transactions
+- Unlock requires comment (minimum 10 characters)
+
+**Client (MyFDC)**
+- Can create/update their own transactions via `/api/myfdc/*`
+- Cannot access Bookkeeper Tab endpoints
+- Updates rejected when status ≥ REVIEWED
+
+### API Endpoints
+
+#### Bookkeeper Tab (`/api/bookkeeper`)
+
+```bash
+# List transactions with filters
+GET /api/bookkeeper/transactions
+  ?client_id=<uuid>
+  &status=NEW|PENDING|REVIEWED|READY_FOR_WORKPAPER|EXCLUDED|LOCKED
+  &date_from=2024-01-01
+  &date_to=2024-12-31
+  &category=travel
+  &source=BANK|MYFDC|OCR|MANUAL
+  &module_routing=MOTOR_VEHICLE|HOME_OCCUPANCY|GENERAL
+  &flags=late,duplicate,high_risk
+  &search=keyword
+  &cursor=<cursor>
+  &limit=50
+
+# Get single transaction
+GET /api/bookkeeper/transactions/{id}
+
+# Update transaction (bookkeeper edit)
+PATCH /api/bookkeeper/transactions/{id}
+{
+  "category_bookkeeper": "Motor Vehicle",
+  "gst_code_bookkeeper": "GST",
+  "notes_bookkeeper": "Verified receipt",
+  "status_bookkeeper": "REVIEWED",
+  "module_routing": "MOTOR_VEHICLE",
+  "flags": {"late": false, "duplicate": false}
+}
+
+# Bulk update
+POST /api/bookkeeper/transactions/bulk-update
+{
+  "criteria": {
+    "client_id": "uuid",
+    "status": "NEW",
+    "transaction_ids": ["uuid1", "uuid2"]
+  },
+  "updates": {
+    "category_bookkeeper": "General Expenses",
+    "status_bookkeeper": "REVIEWED"
+  }
+}
+
+# Get audit trail
+GET /api/bookkeeper/transactions/{id}/history
+
+# Admin unlock (requires comment ≥10 chars)
+POST /api/bookkeeper/transactions/{id}/unlock?comment=Reopening%20for%20correction
+```
+
+#### Workpaper Lock (`/api/workpapers`)
+
+```bash
+# Lock transactions for workpaper (tax_agent, admin only)
+POST /api/workpapers/transactions-lock
+{
+  "transaction_ids": ["uuid1", "uuid2"],
+  "workpaper_id": "job-uuid",
+  "module": "MOTOR_VEHICLE",
+  "period": "2024-25"
+}
+
+# Response
+{
+  "success": true,
+  "locked_count": 2,
+  "total_requested": 2,
+  "workpaper_id": "job-uuid",
+  "module": "MOTOR_VEHICLE",
+  "period": "2024-25"
+}
+```
+
+#### MyFDC Sync (`/api/myfdc`)
+
+```bash
+# Create transaction from client app
+POST /api/myfdc/transactions?client_id=<client_id>
+{
+  "date": "2024-12-15",
+  "amount": 150.50,
+  "payee": "Office Supplies",
+  "description": "Printer paper and toner",
+  "category": "Office Expenses",
+  "module_hint": "GENERAL",
+  "notes": "Quarterly supply order"
+}
+
+# Update transaction from client app
+# Rejected if status ≥ REVIEWED
+PATCH /api/myfdc/transactions/{id}
+{
+  "amount": 155.00,
+  "notes": "Updated amount"
+}
+```
+
+#### Import (`/api/import`)
+
+```bash
+# Bulk import bank transactions (staff, admin)
+POST /api/import/bank?client_id=<client_id>
+[
+  {"date": "2024-12-01", "amount": 100, "payee": "Vendor A"},
+  {"date": "2024-12-02", "amount": 200, "payee": "Vendor B"}
+]
+
+# Bulk import OCR transactions (staff, admin)
+POST /api/import/ocr?client_id=<client_id>
+[...]
+```
+
+#### Reference Data
+
+```bash
+GET /api/bookkeeper/statuses      # Transaction status enum values
+GET /api/bookkeeper/gst-codes     # GST code enum values
+GET /api/bookkeeper/sources       # Transaction source enum values
+GET /api/bookkeeper/module-routings  # Module routing enum values
+```
+
+### Status Hierarchy
+
+```
+NEW → PENDING → REVIEWED → READY_FOR_WORKPAPER → LOCKED
+                    ↘ EXCLUDED (branch)
+```
+
+When status = LOCKED:
+- Transaction is consumed by a workpaper module
+- Only `notes_bookkeeper` editable (by staff)
+- Admin can unlock with comment
+
+### Locking Workflow
+
+1. **Prepare**: Staff reviews transactions, sets status to READY_FOR_WORKPAPER
+2. **Lock**: Tax agent calls `/api/workpapers/transactions-lock`
+3. **Snapshot**: System captures bookkeeper fields at lock time
+4. **Consume**: Workpaper module reads locked transactions
+5. **Unlock** (if needed): Admin unlocks with mandatory comment
+
+### Example Workflow
+
+```bash
+# 1. Login as staff
+TOKEN=$(curl -s -X POST "$API_URL/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"staff@fdctax.com","password":"staff123"}' \
+  | jq -r '.access_token')
+
+# 2. List unreviewed transactions
+curl -s "$API_URL/api/bookkeeper/transactions?status=NEW&client_id=test-client" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 3. Review a transaction
+curl -s -X PATCH "$API_URL/api/bookkeeper/transactions/{id}" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_bookkeeper": "Motor Vehicle",
+    "gst_code_bookkeeper": "GST",
+    "status_bookkeeper": "REVIEWED",
+    "module_routing": "MOTOR_VEHICLE"
+  }' | jq
+
+# 4. Bulk update multiple transactions
+curl -s -X POST "$API_URL/api/bookkeeper/transactions/bulk-update" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "criteria": {"client_id": "test-client", "status": "NEW"},
+    "updates": {"status_bookkeeper": "PENDING"}
+  }' | jq
+
+# 5. Login as tax_agent to lock for workpaper
+TAX_TOKEN=$(curl -s -X POST "$API_URL/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"taxagent@fdctax.com","password":"taxagent123"}' \
+  | jq -r '.access_token')
+
+# 6. Lock transactions for workpaper
+curl -s -X POST "$API_URL/api/workpapers/transactions-lock" \
+  -H "Authorization: Bearer $TAX_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transaction_ids": ["uuid1", "uuid2"],
+    "workpaper_id": "workpaper-job-uuid",
+    "module": "MOTOR_VEHICLE",
+    "period": "2024-25"
+  }' | jq
+```
+
+### Files
+
+| File | Description |
+|------|-------------|
+| `/app/backend/database/transaction_models.py` | SQLAlchemy models |
+| `/app/backend/services/transaction_service.py` | Business logic |
+| `/app/backend/routers/bookkeeper.py` | API router |
+| `/app/backend/middleware/auth.py` | RBAC decorators |
+| `/app/backend/tests/test_transaction_engine.py` | Transaction tests |
+| `/app/backend/tests/test_transaction_engine_rbac.py` | RBAC tests |
+
+---
+
 ## Document Upload Request System
 
 Request and receive documents from clients.
