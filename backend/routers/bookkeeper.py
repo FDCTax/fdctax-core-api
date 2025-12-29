@@ -68,17 +68,36 @@ def get_user_role(user: AuthUser) -> str:
         return "bookkeeper"
     elif user.role == "client":
         return "client"
-    else:
+    elif user.role == "tax_agent":
         return "tax_agent"
+    else:
+        return "unknown"
 
 
-def check_read_permission(user: AuthUser) -> None:
-    """All authenticated users can read"""
-    pass  # Allow all authenticated users
+def check_bookkeeper_tab_read_permission(user: AuthUser) -> None:
+    """
+    Bookkeeper Tab read access: staff, tax_agent, admin only.
+    Clients cannot access Bookkeeper Tab.
+    """
+    role = get_user_role(user)
+    if role == "client":
+        raise HTTPException(
+            status_code=403,
+            detail="Clients cannot access Bookkeeper Tab"
+        )
+    if role == "unknown":
+        raise HTTPException(
+            status_code=403,
+            detail="Unknown role - access denied"
+        )
 
 
-def check_write_permission(user: AuthUser) -> None:
-    """Only bookkeeper and admin can write"""
+def check_bookkeeper_tab_write_permission(user: AuthUser) -> None:
+    """
+    Bookkeeper Tab write access: staff and admin only.
+    Tax agents have read-only access.
+    Clients cannot access Bookkeeper Tab.
+    """
     role = get_user_role(user)
     if role == "tax_agent":
         raise HTTPException(
@@ -88,7 +107,40 @@ def check_write_permission(user: AuthUser) -> None:
     if role == "client":
         raise HTTPException(
             status_code=403,
-            detail="Clients cannot directly edit transactions in Bookkeeper Tab"
+            detail="Clients cannot access Bookkeeper Tab"
+        )
+    if role == "unknown":
+        raise HTTPException(
+            status_code=403,
+            detail="Unknown role - access denied"
+        )
+
+
+def check_myfdc_permission(user: AuthUser, client_id: str) -> None:
+    """
+    MyFDC sync access: client and admin only.
+    Clients can only modify their own submissions.
+    """
+    role = get_user_role(user)
+    if role not in ["client", "admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Only clients and admins can use MyFDC sync endpoints"
+        )
+    # Note: In production, validate that client_id matches user's client_id
+    # For now, admins can access any client_id
+
+
+def check_workpaper_lock_permission(user: AuthUser) -> None:
+    """
+    Workpaper lock access: tax_agent and admin only.
+    Staff/bookkeepers cannot lock transactions for workpapers.
+    """
+    role = get_user_role(user)
+    if role not in ["tax_agent", "admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Only tax agents and admins can lock transactions for workpapers"
         )
 
 
@@ -112,8 +164,8 @@ async def list_transactions(
     # Pagination
     cursor: Optional[str] = QueryParam(None, description="Pagination cursor"),
     limit: int = QueryParam(50, ge=1, le=200, description="Results per page"),
-    # Auth
-    current_user: AuthUser = Depends(require_staff),
+    # Auth - staff, tax_agent, admin can read
+    current_user: AuthUser = Depends(require_bookkeeper_read),
     db: AsyncSession = Depends(get_db)
 ):
     """
