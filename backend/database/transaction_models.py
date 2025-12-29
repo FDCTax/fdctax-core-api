@@ -205,7 +205,12 @@ class TransactionHistoryDB(Base):
     
     # What action
     action_type = Column(
-        SQLEnum(HistoryActionType, name='history_action_type_enum', create_type=False),
+        SQLEnum(
+            HistoryActionType, 
+            name='history_action_type_enum', 
+            create_type=False,
+            values_callable=lambda obj: [e.value for e in obj]
+        ),
         nullable=False
     )
     
