@@ -510,7 +510,7 @@ class AuthService:
         self.role_storage.set_user_role(user_id, role)
         
         return AuthUser(
-            id=row.id,
+            id=str(row.id),
             email=row.email,
             role=role,
             first_name=row.first_name,
