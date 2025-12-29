@@ -551,11 +551,14 @@ agent_communication:
     file: "/app/backend/routers/bookkeeper.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "GET /api/bookkeeper/transactions and GET /api/bookkeeper/transactions/{id}/history protected with require_bookkeeper_read (staff, tax_agent, admin). Clients blocked with 403."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Bookkeeper read access working correctly. Staff ✔️ (found 4 transactions), Tax Agent ✔️ (read-only access), Admin ✔️ (full access), Client ❌ (403 blocked). History access working for authorized roles."
 
   - task: "RBAC - Bookkeeper Write Access"
     implemented: true
@@ -563,11 +566,14 @@ agent_communication:
     file: "/app/backend/routers/bookkeeper.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "PATCH /api/bookkeeper/transactions/{id} and POST /api/bookkeeper/transactions/bulk-update protected with require_bookkeeper_write (staff, admin). Tax agents blocked with 403."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Bookkeeper write access working correctly. Staff ✔️ (can edit unlocked transactions, bulk update), Admin ✔️ (full edit access), Tax Agent ❌ (403 blocked), Client ❌ (403 blocked). Bulk update operations working atomically."
 
   - task: "RBAC - Workpaper Lock Access"
     implemented: true
@@ -575,11 +581,14 @@ agent_communication:
     file: "/app/backend/routers/bookkeeper.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/workpapers/transactions-lock protected with require_workpaper_lock (tax_agent, admin). Staff blocked with 403. Tested: tax_agent successfully locked transactions."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Workpaper lock access working correctly. Tax Agent ✔️ (successfully locked 1 transaction), Admin ✔️ (can lock transactions), Staff ❌ (403 blocked), Client ❌ (403 blocked). Locking creates proper workpaper snapshots."
 
   - task: "RBAC - Admin Unlock Access"
     implemented: true
@@ -587,11 +596,14 @@ agent_communication:
     file: "/app/backend/routers/bookkeeper.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST /api/bookkeeper/transactions/{id}/unlock protected with require_admin. Staff and tax_agent blocked with 403. Admin successfully unlocked."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Admin unlock access working correctly. Admin ✔️ (successfully unlocked with comment requirement), Staff ❌ (403 blocked), Tax Agent ❌ (403 blocked), Client ❌ (403 blocked). Comment validation working (min 10 chars)."
 
   - task: "RBAC - MyFDC Sync Access"
     implemented: true
@@ -599,11 +611,26 @@ agent_communication:
     file: "/app/backend/routers/bookkeeper.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "POST/PATCH /api/myfdc/transactions protected with require_myfdc_sync (client, admin). Staff blocked with 403. Clients can create their own submissions."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: MyFDC sync access working correctly. Client ✔️ (can create own transactions), Admin ✔️ (can create for any client), Staff ❌ (403 blocked), Tax Agent ❌ (403 blocked). Client-admin separation enforced properly."
+
+  - task: "RBAC - Locked Transaction Behavior"
+    implemented: true
+    working: true
+    file: "/app/backend/services/transaction_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Locked transaction behavior working correctly. Staff can edit notes_bookkeeper on LOCKED transactions ✔️, Staff cannot edit other fields on LOCKED transactions (400 error, not 403) ✔️, Admin can edit any field on LOCKED transactions ✔️. Proper field-level restrictions enforced."
 
 test_plan:
   current_focus:
