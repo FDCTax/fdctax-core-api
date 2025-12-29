@@ -384,14 +384,18 @@ class DeploymentReadinessTester:
         """Test 5: Error Handling"""
         print("\n=== Testing Error Handling ===")
         
-        # Test 404 for non-existent resources
-        status, data, headers = await self.make_request("GET", "/bookkeeper/transactions/non-existent-id")
-        
-        self.log_test(
-            "404 for non-existent resources",
-            status == 404,
-            f"Status: {status} (expected 404)"
-        )
+        # Test 404 for non-existent resources (with authentication)
+        staff_token = await self.authenticate("staff")
+        if staff_token:
+            status, data, headers = await self.make_request(
+                "GET", "/bookkeeper/transactions/non-existent-id", staff_token
+            )
+            
+            self.log_test(
+                "404 for non-existent resources",
+                status == 404,
+                f"Status: {status} (expected 404)"
+            )
         
         # Test 403 for unauthorized access (client accessing bookkeeper)
         client_token = await self.authenticate("client")
