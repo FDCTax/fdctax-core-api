@@ -163,7 +163,8 @@ POST /api/auth/seed-test-users?admin_key=fdc-seed-2025
 |-------|----------|------|
 | admin@fdctax.com | admin123 | admin |
 | staff@fdctax.com | staff123 | staff |
-| client@example.com | client123 | client |
+| taxagent@fdctax.com | taxagent123 | tax_agent |
+| client@fdctax.com | client123 | client |
 
 ### Using Authentication in Requests
 
