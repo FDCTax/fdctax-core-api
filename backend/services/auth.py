@@ -381,13 +381,14 @@ class AuthService:
             logger.warning(f"Login failed: invalid password - {email}")
             return None
         
-        # Get role
-        role = self.role_storage.get_user_role(user["id"], email)
+        # Get role - ensure user_id is string
+        user_id = str(user["id"])
+        role = self.role_storage.get_user_role(user_id, email)
         
         logger.info(f"Login successful: {email} (role: {role})")
         
         return AuthUser(
-            id=user["id"],
+            id=user_id,
             email=user["email"],
             role=role,
             first_name=user.get("first_name"),
