@@ -164,6 +164,8 @@ class AuthRoleStorage:
             return UserRole.admin.value
         if email_lower in data.get("_staff_emails", []):
             return UserRole.staff.value
+        if email_lower in data.get("_tax_agent_emails", []):
+            return UserRole.tax_agent.value
         
         # Default role
         return data.get("_default_role", UserRole.client.value)
@@ -192,6 +194,15 @@ class AuthRoleStorage:
             data["_staff_emails"] = []
         if email.lower() not in data["_staff_emails"]:
             data["_staff_emails"].append(email.lower())
+            self._save_roles(data)
+    
+    def add_tax_agent_email(self, email: str):
+        """Add an email to tax_agent list"""
+        data = self._load_roles()
+        if "_tax_agent_emails" not in data:
+            data["_tax_agent_emails"] = []
+        if email.lower() not in data["_tax_agent_emails"]:
+            data["_tax_agent_emails"].append(email.lower())
             self._save_roles(data)
     
     def list_admin_emails(self) -> List[str]:
