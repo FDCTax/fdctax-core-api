@@ -1,0 +1,29 @@
+# FDC Core - Kubernetes ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fdc-core-config
+  labels:
+    app: fdc-core
+data:
+  # Environment
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  
+  # CORS - Production origins only
+  CORS_ORIGINS: "https://fdctax.com,https://www.fdctax.com,https://myfdc.com,https://www.myfdc.com,https://api.fdccore.com"
+  
+  # Storage
+  STORAGE_REF_BASE: "s3://fdc-core-uploads"
+  UPLOAD_MAX_SIZE_MB: "50"
+  
+  # API Settings
+  API_TITLE: "FDC Tax Core API"
+  API_VERSION: "1.0.0"
+  API_RATE_LIMIT: "100"
+  
+  # JWT Settings (non-sensitive)
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  JWT_ALGORITHM: "HS256"

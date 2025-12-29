@@ -1,0 +1,14 @@
+# FDC Core - Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fdc-core-data
+  labels:
+    app: fdc-core
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Gi

@@ -1,0 +1,16 @@
+# FDC Core - Kubernetes Namespace Configuration
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fdc-production
+  labels:
+    app: fdc-core
+    environment: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fdc-staging
+  labels:
+    app: fdc-core
+    environment: staging

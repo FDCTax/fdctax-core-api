@@ -1,0 +1,302 @@
+# FDC Core - CI/CD Pipeline
+# Runs on push to main branch
+# Tests, builds, and deploys the backend
+
+name: FDC Core CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PYTHON_VERSION: '3.11'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/fdc-core-backend
+
+jobs:
+  # ==================== LINT & TYPE CHECK ====================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install ruff mypy
+      
+      - name: Run Ruff (linting)
+        run: |
+          cd backend
+          ruff check . --ignore E501,F401
+      
+      - name: Run type checking
+        run: |
+          cd backend
+          mypy server.py --ignore-missing-imports --no-error-summary || true
+
+  # ==================== UNIT TESTS ====================
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio pytest-cov aiohttp
+      
+      - name: Create test environment
+        run: |
+          cd backend
+          cat > .env.test << EOF
+          ENVIRONMENT=test
+          DEBUG=true
+          DATABASE_URL=postgresql+asyncpg://test_user:test_password@localhost:5432/test_db
+          JWT_SECRET_KEY=test-secret-key-for-ci-pipeline-only-32chars
+          JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+          JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+          CORS_ORIGINS=http://localhost:3000
+          STORAGE_REF_BASE=local://uploads
+          LOG_LEVEL=WARNING
+          EOF
+      
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      
+      - name: Run database migrations
+        run: |
+          cd backend
+          cp .env.test .env
+          python -c "import asyncio; from database import init_db; asyncio.run(init_db())"
+      
+      - name: Run Transaction Engine tests
+        run: |
+          cd backend
+          python -m pytest tests/test_transaction_engine.py -v --tb=short
+      
+      - name: Run RBAC tests
+        run: |
+          cd backend
+          python -m pytest tests/test_transaction_engine_rbac.py -v --tb=short
+      
+      - name: Run Infrastructure tests
+        run: |
+          cd backend
+          python -m pytest tests/test_infrastructure.py -v --tb=short
+      
+      - name: Run all tests with coverage
+        run: |
+          cd backend
+          python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing
+      
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          files: backend/coverage.xml
+          fail_ci_if_error: false
+
+  # ==================== BUILD DOCKER IMAGE ====================
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+      
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_SHA=${{ github.sha }}
+            VERSION=${{ github.ref_name }}
+
+  # ==================== DEPLOY TO STAGING ====================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://staging-api.fdccore.com
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to staging
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_STAGING }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+        run: |
+          echo "$KUBECONFIG_DATA" | base64 -d > kubeconfig.yaml
+          export KUBECONFIG=kubeconfig.yaml
+          
+          # Update deployment with new image
+          kubectl set image deployment/fdc-core-backend \
+            backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build.outputs.image_digest }} \
+            -n fdc-staging
+          
+          # Wait for rollout
+          kubectl rollout status deployment/fdc-core-backend -n fdc-staging --timeout=300s
+      
+      - name: Run post-deployment verification
+        run: |
+          cd backend/scripts
+          chmod +x verify_deployment.sh
+          ./verify_deployment.sh https://staging-api.fdccore.com
+
+  # ==================== DEPLOY TO PRODUCTION ====================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, deploy-staging]
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://api.fdccore.com
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to production
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
+        run: |
+          echo "$KUBECONFIG_DATA" | base64 -d > kubeconfig.yaml
+          export KUBECONFIG=kubeconfig.yaml
+          
+          # Update deployment with new image
+          kubectl set image deployment/fdc-core-backend \
+            backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build.outputs.image_digest }} \
+            -n fdc-production
+          
+          # Wait for rollout
+          kubectl rollout status deployment/fdc-core-backend -n fdc-production --timeout=300s
+      
+      - name: Run post-deployment verification
+        run: |
+          cd backend/scripts
+          chmod +x verify_deployment.sh
+          ./verify_deployment.sh https://api.fdccore.com
+      
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Production deployment successful"
+          echo "Image: ${{ needs.build.outputs.image_tag }}"
+          echo "Digest: ${{ needs.build.outputs.image_digest }}"
+
+  # ==================== ROLLBACK (Manual Trigger) ====================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && failure()
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Rollback to previous version
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          NAMESPACE: fdc-${{ github.event.inputs.environment }}
+        run: |
+          echo "$KUBECONFIG_DATA" | base64 -d > kubeconfig.yaml
+          export KUBECONFIG=kubeconfig.yaml
+          
+          kubectl rollout undo deployment/fdc-core-backend -n $NAMESPACE
+          kubectl rollout status deployment/fdc-core-backend -n $NAMESPACE --timeout=300s
+          
+          echo "✅ Rollback completed"
