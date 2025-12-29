@@ -541,5 +541,79 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "UNIFIED TRANSACTION ENGINE IMPLEMENTATION COMPLETE. Fixed critical UnmappedClassError bug in SQLAlchemy relationships. Fixed enum value handling for HistoryActionType. All endpoints tested manually via curl and working. Test credentials: staff@fdctax.com/staff123 (bookkeeper), admin@fdctax.com/admin123 (admin). Main endpoints: GET/PATCH /api/bookkeeper/transactions, POST /api/bookkeeper/transactions/bulk-update, POST /api/workpapers/transactions-lock, POST /api/bookkeeper/transactions/{id}/unlock, POST /api/myfdc/transactions. Please run comprehensive tests covering: 1) Transaction CRUD via MyFDC and Bookkeeper endpoints, 2) History tracking for all action types, 3) Locking rules (only notes editable when LOCKED), 4) Bulk update atomicity, 5) Workpaper snapshot creation, 6) Permission enforcement (tax_agent=read-only, admin=full access including unlock)."
+
+  - agent: "main"
+    message: "RBAC IMPLEMENTATION COMPLETE. All Transaction Engine endpoints now protected with role-based access control. New test user created: taxagent@fdctax.com/taxagent123 (tax_agent role). Test credentials: staff@fdctax.com/staff123 (staff), admin@fdctax.com/admin123 (admin), taxagent@fdctax.com/taxagent123 (tax_agent), client@fdctax.com/client123 (client). RBAC tested manually via curl - all permissions enforced correctly."
+
+  - task: "RBAC - Bookkeeper Read Access"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/bookkeeper/transactions and GET /api/bookkeeper/transactions/{id}/history protected with require_bookkeeper_read (staff, tax_agent, admin). Clients blocked with 403."
+
+  - task: "RBAC - Bookkeeper Write Access"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PATCH /api/bookkeeper/transactions/{id} and POST /api/bookkeeper/transactions/bulk-update protected with require_bookkeeper_write (staff, admin). Tax agents blocked with 403."
+
+  - task: "RBAC - Workpaper Lock Access"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/workpapers/transactions-lock protected with require_workpaper_lock (tax_agent, admin). Staff blocked with 403. Tested: tax_agent successfully locked transactions."
+
+  - task: "RBAC - Admin Unlock Access"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST /api/bookkeeper/transactions/{id}/unlock protected with require_admin. Staff and tax_agent blocked with 403. Admin successfully unlocked."
+
+  - task: "RBAC - MyFDC Sync Access"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "POST/PATCH /api/myfdc/transactions protected with require_myfdc_sync (client, admin). Staff blocked with 403. Clients can create their own submissions."
+
+test_plan:
+  current_focus:
+    - "RBAC - Bookkeeper Read Access"
+    - "RBAC - Bookkeeper Write Access"
+    - "RBAC - Workpaper Lock Access"
+    - "RBAC - Admin Unlock Access"
+    - "RBAC - MyFDC Sync Access"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
   - agent: "testing"
     message: "UNIFIED TRANSACTION ENGINE COMPREHENSIVE TESTING COMPLETED - ALL 29 TESTS PASSED (100% SUCCESS RATE). Tested all core functionality: 1) Authentication (staff/admin), 2) Reference Data (4 endpoints), 3) MyFDC Transaction Creation (3 transactions), 4) Transaction Listing with Filters (client_id, status, date_range, search), 5) Single Transaction Operations (GET, PATCH, history), 6) Bulk Update Operations (atomic updates), 7) Workpaper Locking System (lock/unlock with snapshots), 8) Admin Unlock Functionality (role enforcement), 9) MyFDC Sync Rules (status hierarchy), 10) Permission Enforcement (admin vs staff), 11) History Tracking (all action types). All business rules working: locked transactions only allow notes edits, admin can unlock with comment, MyFDC updates rejected when status>=REVIEWED, bulk updates are atomic, history entries created for all actions. Created test data: 3 transactions, 1 workpaper job, client test-client-txengine-001. All database models, service layer, and API endpoints fully functional."
