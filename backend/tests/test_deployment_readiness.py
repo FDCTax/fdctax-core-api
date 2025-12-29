@@ -232,7 +232,6 @@ class DeploymentReadinessTester:
         
         # 1. Client creates transaction via POST /api/myfdc/transactions
         transaction_data = {
-            "client_id": "test-client-deployment-001",
             "date": "2024-01-15",
             "amount": 500.00,
             "gst_amount": 50.00,
@@ -243,7 +242,8 @@ class DeploymentReadinessTester:
         }
         
         status, data, headers = await self.make_request(
-            "POST", "/myfdc/transactions", client_token, transaction_data
+            "POST", "/myfdc/transactions", client_token, transaction_data,
+            params={"client_id": "test-client-deployment-001"}
         )
         
         create_success = status in [200, 201] and isinstance(data, dict) and data.get("id")
