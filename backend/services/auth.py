@@ -50,6 +50,7 @@ class UserRole(str, Enum):
     admin = "admin"
     staff = "staff"
     client = "client"
+    tax_agent = "tax_agent"  # Read-only in Bookkeeper Tab, can lock for workpapers
 
 
 # ==================== MODELS ====================
