@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Migrate workpaper engine from file-based JSON storage to PostgreSQL database. Phase 1: Core entities (WorkpaperJob, ModuleInstance, Transaction, TransactionOverride). Phase 2: Behaviour entities (OverrideRecord, Query, QueryMessage, Task). Phase 3: Audit + Freeze (FreezeSnapshot, WorkpaperAuditLog)."
+user_problem_statement: "Build Unified Transaction Engine + Bookkeeper Layer: A canonical transaction ledger for the entire FDC system supporting Bookkeeper Tab, MyFDC ingestion, Workpaper routing, Audit trail, and Locking/versioning."
 
 backend:
   - task: "PostgreSQL Database Tables Creation"
