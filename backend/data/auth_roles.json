@@ -17,6 +17,9 @@
     "dab5bbb9-76ad-4a0d-850d-9508660e6af1": "client",
     "77bf9e40-ef2d-46fd-8f64-3c00f5baaeac": "admin",
     "c8fe4a57-8cbb-439b-bb32-65e891f51dd9": "tax_agent",
-    "f6df3912-acde-4318-a8f7-305277d4cf1b": "client"
+    "f6df3912-acde-4318-a8f7-305277d4cf1b": "client",
+    "a5815e87-df68-4c44-ad73-a15362bda9aa": "admin",
+    "3bbb6226-b131-4cd1-8f27-5bfb70f8b9d4": "staff",
+    "6e40f7f5-deb1-4d64-86f8-a08f15195839": "client"
   }
 }
