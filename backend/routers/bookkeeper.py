@@ -448,7 +448,7 @@ workpaper_router = APIRouter(prefix="/workpapers", tags=["Workpaper Transactions
 @workpaper_router.post("/transactions-lock")
 async def lock_transactions_for_workpaper(
     request: WorkpaperLockRequest,
-    current_user: AuthUser = Depends(require_staff),
+    current_user: AuthUser = Depends(require_workpaper_lock),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -467,8 +467,11 @@ async def lock_transactions_for_workpaper(
     4. Write history event
     
     Returns count of locked transactions.
+    
+    RBAC: staff ❌, tax_agent ✔️, admin ✔️, client ❌
+    Note: Staff/bookkeepers prepare data but tax agents lock for workpapers.
     """
-    check_write_permission(current_user)
+    check_workpaper_lock_permission(current_user)
     
     repo = TransactionRepository(db)
     user_role = get_user_role(current_user)
