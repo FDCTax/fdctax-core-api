@@ -633,12 +633,7 @@ agent_communication:
         comment: "✅ VERIFIED: Locked transaction behavior working correctly. Staff can edit notes_bookkeeper on LOCKED transactions ✔️, Staff cannot edit other fields on LOCKED transactions (400 error, not 403) ✔️, Admin can edit any field on LOCKED transactions ✔️. Proper field-level restrictions enforced."
 
 test_plan:
-  current_focus:
-    - "RBAC - Bookkeeper Read Access"
-    - "RBAC - Bookkeeper Write Access"
-    - "RBAC - Workpaper Lock Access"
-    - "RBAC - Admin Unlock Access"
-    - "RBAC - MyFDC Sync Access"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
