@@ -192,6 +192,7 @@ class DeploymentReadinessTester:
                 "OPTIONS", "/health", headers=headers
             )
             
+            # Headers are returned in lowercase
             cors_success = (status == 200 and
                            response_headers.get("access-control-allow-origin") == origin and
                            "true" in response_headers.get("access-control-allow-credentials", "").lower())
