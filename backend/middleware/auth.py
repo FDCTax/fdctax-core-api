@@ -170,6 +170,24 @@ require_staff = RoleChecker([UserRole.admin.value, UserRole.staff.value])
 require_client = RoleChecker([UserRole.client.value])
 require_any_authenticated = RoleChecker([UserRole.admin.value, UserRole.staff.value, UserRole.client.value])
 
+# ==================== TRANSACTION ENGINE RBAC ====================
+# Role checkers following the RBAC permissions matrix for Transaction Engine
+
+# Bookkeeper Tab - Read access: staff, tax_agent, admin
+require_bookkeeper_read = RoleChecker([UserRole.admin.value, UserRole.staff.value, "tax_agent"])
+
+# Bookkeeper Tab - Write access: staff, admin (no tax_agent, no client)
+require_bookkeeper_write = RoleChecker([UserRole.admin.value, UserRole.staff.value])
+
+# Workpaper Lock - Only tax_agent and admin can lock for workpapers
+require_workpaper_lock = RoleChecker([UserRole.admin.value, "tax_agent"])
+
+# MyFDC Sync - Only client and admin can create via MyFDC
+require_myfdc_sync = RoleChecker([UserRole.admin.value, UserRole.client.value])
+
+# Import (Bank/OCR) - Only staff and admin can import
+require_import = RoleChecker([UserRole.admin.value, UserRole.staff.value])
+
 
 # ==================== DECORATOR ====================
 
