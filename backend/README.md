@@ -36,8 +36,9 @@ The API uses JWT (JSON Web Tokens) for authentication with role-based access con
 | Role | Description | Access |
 |------|-------------|--------|
 | `admin` | Full system access | All endpoints |
-| `staff` | White-glove service team | Admin + user endpoints |
-| `client` | FDC educator/client | User endpoints only |
+| `staff` | White-glove service team (bookkeeper) | Admin + user endpoints, edit transactions until LOCKED |
+| `tax_agent` | Tax practitioner | Read-only in Bookkeeper Tab, can lock for workpapers |
+| `client` | FDC educator/client | User endpoints + MyFDC sync only |
 
 ### Authentication Flow
 
