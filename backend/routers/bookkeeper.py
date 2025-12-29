@@ -590,7 +590,7 @@ import_router = APIRouter(prefix="/import", tags=["Transaction Import"])
 async def import_bank_transactions(
     client_id: str,
     transactions: List[Dict[str, Any]],
-    current_user: AuthUser = Depends(require_staff),
+    current_user: AuthUser = Depends(require_import),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -599,8 +599,10 @@ async def import_bank_transactions(
     - Source = BANK
     - Status = NEW
     - Records import history
+    
+    RBAC: staff ✔️, tax_agent ❌, admin ✔️, client ❌
     """
-    check_write_permission(current_user)
+    check_bookkeeper_tab_write_permission(current_user)
     
     import_service = ImportService(db)
     
@@ -637,7 +639,7 @@ async def import_bank_transactions(
 async def import_ocr_transactions(
     client_id: str,
     transactions: List[Dict[str, Any]],
-    current_user: AuthUser = Depends(require_staff),
+    current_user: AuthUser = Depends(require_import),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -646,8 +648,10 @@ async def import_ocr_transactions(
     - Source = OCR
     - Status = NEW
     - Records import history
+    
+    RBAC: staff ✔️, tax_agent ❌, admin ✔️, client ❌
     """
-    check_write_permission(current_user)
+    check_bookkeeper_tab_write_permission(current_user)
     
     import_service = ImportService(db)
     
