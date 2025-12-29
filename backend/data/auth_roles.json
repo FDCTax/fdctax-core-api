@@ -1,27 +1,19 @@
 {
   "_default_role": "client",
   "_admin_emails": [
-    "admin@fdctax.com",
-    "admin@example.com"
+    "admin@fdctax.com"
   ],
   "_staff_emails": [
-    "staff@fdctax.com",
-    "staff@example.com"
+    "staff@fdctax.com"
   ],
   "_tax_agent_emails": [
     "taxagent@fdctax.com"
   ],
   "users": {
-    "de84d312-c2bb-4b77-bf78-52e34e25cc43": "admin",
-    "28a2fa4a-53cd-490f-8ac8-960509f3ddf0": "staff",
-    "dab5bbb9-76ad-4a0d-850d-9508660e6af1": "client",
-    "77bf9e40-ef2d-46fd-8f64-3c00f5baaeac": "admin",
-    "c8fe4a57-8cbb-439b-bb32-65e891f51dd9": "tax_agent",
-    "f6df3912-acde-4318-a8f7-305277d4cf1b": "client",
     "a5815e87-df68-4c44-ad73-a15362bda9aa": "admin",
     "3bbb6226-b131-4cd1-8f27-5bfb70f8b9d4": "staff",
     "6e40f7f5-deb1-4d64-86f8-a08f15195839": "client",
-    "633ba736-b8b4-47dd-99a3-3a028fae96ff": "client",
+    "633ba736-b8b4-47dd-99a3-3a028fae96ff": "tax_agent",
     "d63568c9-59ac-46be-bfcd-8ab90ae61e6f": "client"
   }
 }
