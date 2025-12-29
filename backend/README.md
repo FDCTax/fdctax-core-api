@@ -1276,7 +1276,20 @@ CALENDLY_PAT=your-calendly-personal-access-token
 CALENDLY_WEBHOOK_SECRET=your-webhook-signing-key
 ```
 
-## Total Endpoints: 90+
+## Total Endpoints: 110+
+
+---
+
+## 🛡️ Stability Guardrail: Transaction Engine
+
+> **The Transaction Engine is now a stable, unified ledger.**
+> 
+> - Do **NOT** rename ORM classes, tables, or enums without a dedicated refactor ticket
+> - Do **NOT** modify schema fields without architectural approval
+> - All future modules (Home Occupancy, Utilities, Internet, etc.) **MUST** consume this engine as-is
+> - Database models: `BookkeeperTransactionDB`, `TransactionHistoryDB`, `TransactionAttachmentDB`, `TransactionWorkpaperLinkDB`
+
+---
 
 ## Related Projects
 
