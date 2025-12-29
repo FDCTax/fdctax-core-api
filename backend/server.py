@@ -316,11 +316,70 @@ api_router.include_router(import_router)  # Bank/OCR import
 # Include the main router in the app
 app.include_router(api_router)
 
-# CORS middleware
+# ==================== MIDDLEWARE ====================
+
+# CORS middleware with production-safe configuration
+cors_config = get_cors_config()
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    **cors_config
 )
+
+
+# Request logging middleware (useful for debugging)
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all requests with timing information"""
+    import time
+    start_time = time.time()
+    
+    # Generate request ID
+    request_id = request.headers.get("X-Request-ID", f"req-{int(start_time * 1000)}")
+    
+    # Log request
+    if settings.debug_enabled:
+        logger.debug(f"[{request_id}] {request.method} {request.url.path}")
+    
+    try:
+        response = await call_next(request)
+        
+        # Calculate processing time
+        process_time = time.time() - start_time
+        
+        # Add headers
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Process-Time"] = str(round(process_time * 1000, 2))
+        
+        # Log response
+        if settings.debug_enabled or response.status_code >= 400:
+            logger.info(f"[{request_id}] {request.method} {request.url.path} -> {response.status_code} ({process_time:.3f}s)")
+        
+        return response
+    except Exception as e:
+        logger.error(f"[{request_id}] Request failed: {str(e)}")
+        raise
+
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle uncaught exceptions"""
+    logger.error(f"Unhandled exception: {exc}")
+    if settings.debug_enabled:
+        logger.error(traceback.format_exc())
+    
+    # Don't expose internal errors in production
+    if settings.is_production:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"}
+        )
+    else:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": str(exc),
+                "type": type(exc).__name__,
+                "traceback": traceback.format_exc() if settings.debug_enabled else None
+            }
+        )
