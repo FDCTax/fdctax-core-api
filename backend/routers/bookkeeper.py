@@ -220,11 +220,15 @@ async def list_transactions(
 @router.get("/transactions/{transaction_id}", response_model=Transaction)
 async def get_transaction(
     transaction_id: str,
-    current_user: AuthUser = Depends(require_staff),
+    current_user: AuthUser = Depends(require_bookkeeper_read),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get a single transaction by ID"""
-    check_read_permission(current_user)
+    """
+    Get a single transaction by ID.
+    
+    RBAC: staff ✔️, tax_agent ✔️ (read-only), admin ✔️, client ❌
+    """
+    check_bookkeeper_tab_read_permission(current_user)
     
     repo = TransactionRepository(db)
     txn = await repo.get(transaction_id)
@@ -241,7 +245,7 @@ async def get_transaction(
 async def update_transaction(
     transaction_id: str,
     request: TransactionUpdate,
-    current_user: AuthUser = Depends(require_staff),
+    current_user: AuthUser = Depends(require_bookkeeper_write),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -256,8 +260,10 @@ async def update_transaction(
     - If status = LOCKED: only notes_bookkeeper can be edited (except by admin)
     - All changes are recorded in history
     - Bookkeeper cannot set status to LOCKED directly
+    
+    RBAC: staff ✔️ (unless LOCKED), tax_agent ❌, admin ✔️, client ❌
     """
-    check_write_permission(current_user)
+    check_bookkeeper_tab_write_permission(current_user)
     
     repo = TransactionRepository(db)
     user_role = get_user_role(current_user)
