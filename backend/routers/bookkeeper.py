@@ -183,8 +183,10 @@ async def list_transactions(
     - flags: Comma-separated (late, duplicate, high_risk)
     
     Returns paginated results with cursor for next page.
+    
+    RBAC: staff ✔️, tax_agent ✔️ (read-only), admin ✔️, client ❌
     """
-    check_read_permission(current_user)
+    check_bookkeeper_tab_read_permission(current_user)
     
     # Parse flags
     flag_list = None
