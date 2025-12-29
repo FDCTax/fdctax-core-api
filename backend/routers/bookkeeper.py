@@ -519,7 +519,7 @@ myfdc_router = APIRouter(prefix="/myfdc", tags=["MyFDC Sync"])
 async def myfdc_create_transaction(
     client_id: str,
     data: Dict[str, Any],
-    current_user: AuthUser = Depends(get_current_user_required),
+    current_user: AuthUser = Depends(require_myfdc_sync),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -528,7 +528,12 @@ async def myfdc_create_transaction(
     - Source = MYFDC
     - Status = NEW
     - Records creation history
+    
+    RBAC: client ✔️, staff ❌, tax_agent ❌, admin ✔️
+    Note: Clients create their own submissions. Admins can create on behalf of clients.
     """
+    check_myfdc_permission(current_user, client_id)
+    
     sync_service = MyFDCSyncService(db)
     
     txn = await sync_service.sync_create(
@@ -544,7 +549,7 @@ async def myfdc_create_transaction(
 async def myfdc_update_transaction(
     transaction_id: str,
     data: Dict[str, Any],
-    current_user: AuthUser = Depends(get_current_user_required),
+    current_user: AuthUser = Depends(require_myfdc_sync),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -553,6 +558,9 @@ async def myfdc_update_transaction(
     Rules:
     - If status = NEW or PENDING → update client fields
     - If status ≥ REVIEWED → do not overwrite, log rejection
+    
+    RBAC: client ✔️, staff ❌, tax_agent ❌, admin ✔️
+    Note: Clients can update their submissions until reviewed.
     """
     sync_service = MyFDCSyncService(db)
     
