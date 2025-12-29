@@ -296,7 +296,7 @@ class InfrastructureTester:
         
         create_success = status in [200, 201]
         if create_success:
-            self.test_transaction_id = data.get("id")
+            self.test_transaction_id = data.get("transaction", {}).get("id")
         
         self.log_test(
             "MyFDC transaction creation",
