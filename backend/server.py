@@ -1,14 +1,20 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
 import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+import traceback
 
 # Load environment variables first
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Import configuration
+from config import get_settings, get_cors_config, validate_environment
 
 # Import database and routers
 from database import init_db, get_db
@@ -18,9 +24,13 @@ from routers import (
     integrations_router, appointments_router, workpaper_router
 )
 
-# Configure logging
+# Get settings
+settings = get_settings()
+
+# Configure logging based on environment
+log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
