@@ -247,9 +247,9 @@ class DeploymentReadinessTester:
             params={"client_id": "test-client-deployment-001"}
         )
         
-        create_success = status in [200, 201] and isinstance(data, dict) and data.get("id")
+        create_success = status in [200, 201] and isinstance(data, dict) and data.get("transaction", {}).get("id")
         if create_success:
-            self.test_transaction_id = data.get("id")
+            self.test_transaction_id = data.get("transaction", {}).get("id")
         
         self.log_test(
             "1. Client creates transaction via POST /api/myfdc/transactions",
