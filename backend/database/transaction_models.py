@@ -218,7 +218,7 @@ class TransactionHistoryDB(Base):
     comment = Column(Text, nullable=True)  # Required for unlock, workpaper_override
     
     # Relationship
-    transaction = relationship("TransactionDB", back_populates="history")
+    transaction = relationship("BookkeeperTransactionDB", back_populates="history")
     
     __table_args__ = (
         Index('ix_bk_history_transaction_time', 'transaction_id', 'timestamp'),
@@ -254,7 +254,7 @@ class TransactionAttachmentDB(Base):
     file_size = Column(Numeric, nullable=True)
     
     # Relationship
-    transaction = relationship("TransactionDB", back_populates="attachments")
+    transaction = relationship("BookkeeperTransactionDB", back_populates="attachments")
 
 
 class TransactionWorkpaperLinkDB(Base):
@@ -288,7 +288,7 @@ class TransactionWorkpaperLinkDB(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now)
     
     # Relationships
-    transaction = relationship("TransactionDB", back_populates="workpaper_links")
+    transaction = relationship("BookkeeperTransactionDB", back_populates="workpaper_links")
     
     __table_args__ = (
         Index('ix_bk_workpaper_links_workpaper', 'workpaper_id'),
