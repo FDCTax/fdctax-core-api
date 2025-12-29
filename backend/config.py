@@ -160,12 +160,19 @@ class Settings(BaseSettings):
         
         # Production origins (always allowed)
         production_origins = [
+            # Australian domains (production)
+            "https://fdctax.com.au",
+            "https://www.fdctax.com.au",
+            "https://myfdc.com.au",
+            "https://www.myfdc.com.au",
+            # API domain
+            "https://api.fdccore.com",
+            "https://backend.fdctax.com.au",
+            # Legacy .com domains (if needed)
             "https://fdctax.com",
             "https://www.fdctax.com",
             "https://myfdc.com",
             "https://www.myfdc.com",
-            "https://api.fdccore.com",
-            "https://backend.fdctax.com",
         ]
         
         # Development origins (only in dev/staging)
