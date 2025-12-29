@@ -320,7 +320,7 @@ class AuthService:
         """Get user from database by email"""
         query = text("""
             SELECT id, email, password_hash, first_name, last_name, is_active
-            FROM myfdc.users 
+            FROM public.users 
             WHERE email = :email
         """)
         result = await self.db.execute(query, {"email": email})
@@ -342,7 +342,7 @@ class AuthService:
         """Get user from database by ID"""
         query = text("""
             SELECT id, email, password_hash, first_name, last_name, is_active
-            FROM myfdc.users 
+            FROM public.users 
             WHERE id = :user_id
         """)
         result = await self.db.execute(query, {"user_id": user_id})
@@ -486,7 +486,7 @@ class AuthService:
         # Create user
         user_id = str(uuid.uuid4())
         query = text("""
-            INSERT INTO myfdc.users (id, email, password_hash, first_name, last_name, is_active, created_at)
+            INSERT INTO public.users (id, email, password_hash, first_name, last_name, is_active, created_at)
             VALUES (:id, :email, :password_hash, :first_name, :last_name, true, :created_at)
             RETURNING id, email, first_name, last_name
         """)
@@ -535,7 +535,7 @@ class AuthService:
         # Update password
         new_hash = get_password_hash(new_password)
         query = text("""
-            UPDATE myfdc.users 
+            UPDATE public.users 
             SET password_hash = :password_hash, updated_at = :updated_at
             WHERE id = :user_id
         """)
@@ -553,7 +553,7 @@ class AuthService:
         """Admin: Set user's password directly"""
         new_hash = get_password_hash(new_password)
         query = text("""
-            UPDATE myfdc.users 
+            UPDATE public.users 
             SET password_hash = :password_hash, updated_at = :updated_at
             WHERE id = :user_id
             RETURNING id
