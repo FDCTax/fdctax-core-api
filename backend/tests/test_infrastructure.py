@@ -314,15 +314,15 @@ class InfrastructureTester:
             params={"client_id": self.test_client_id}
         )
         
-        list_success = status == 200 and isinstance(data, list)
+        list_success = status == 200 and isinstance(data.get("items"), list)
         transaction_found = False
         if list_success:
-            transaction_found = any(tx.get("id") == self.test_transaction_id for tx in data)
+            transaction_found = any(tx.get("id") == self.test_transaction_id for tx in data.get("items", []))
         
         self.log_test(
             "FDC Tax transaction listing",
             list_success and transaction_found,
-            f"Status: {status}, Transactions: {len(data) if list_success else 0}, Found: {'✓' if transaction_found else '✗'}"
+            f"Status: {status}, Transactions: {len(data.get('items', [])) if list_success else 0}, Found: {'✓' if transaction_found else '✗'}"
         )
         
         # Step 3: FDC Tax (staff) updates transaction
@@ -339,13 +339,40 @@ class InfrastructureTester:
         self.log_test(
             "FDC Tax transaction update",
             update_success,
-            f"Status: {status}, Category: {data.get('category') if update_success else 'Failed'}"
+            f"Status: {status}, Category: {data.get('category_bookkeeper') if update_success else 'Failed'}"
         )
+        
+        # Step 3.5: Create a workpaper job for locking (staff creates job)
+        job_data = {
+            "client_id": self.test_client_id,
+            "year": "2024-25",
+            "notes": "Infrastructure test workpaper job",
+            "auto_create_modules": True
+        }
+        
+        status, data, headers = await self.make_authenticated_request(
+            "POST", "/workpaper/jobs", "staff", job_data
+        )
+        
+        job_create_success = status in [200, 201]
+        workpaper_job_id = None
+        if job_create_success:
+            workpaper_job_id = data.get("id")
+        
+        self.log_test(
+            "Workpaper job creation",
+            job_create_success,
+            f"Status: {status}, Job ID: {workpaper_job_id if job_create_success else 'Failed'}"
+        )
+        
+        if not workpaper_job_id:
+            self.log_test("Tax Agent transaction lock", False, "Cannot lock without workpaper job")
+            return
         
         # Step 4: Tax Agent locks transaction for workpaper
         lock_data = {
             "transaction_ids": [self.test_transaction_id],
-            "workpaper_id": "test-workpaper-infra",
+            "workpaper_id": workpaper_job_id,
             "module": "GENERAL",
             "period": "2024-25"
         }
