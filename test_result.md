@@ -394,3 +394,129 @@ agent_communication:
     message: "COMPREHENSIVE TESTING COMPLETED - ALL 32 TESTS PASSED (100% SUCCESS RATE). Tested: Authentication (staff/admin), Reference Data (3 endpoints), Job Operations (8 tests), Module Operations (3 tests), Transaction Operations (3 tests), Override Operations (3 tests), Query Operations (6 tests), Dashboard (1 test), Freeze Operations (3 tests), Database Integrity (2 tests). Created new test job with 9 modules, transactions, overrides, queries, and freeze snapshots. All PostgreSQL tables verified. API fully functional."
   - agent: "testing"
     message: "MOTOR VEHICLE MODULE COMPREHENSIVE TESTING COMPLETED - ALL 30 TESTS PASSED (100% SUCCESS RATE). Tested all 17 API endpoints across 6 categories: Reference Data (3), Module Detail/Config (2), KM Tracking (4), Asset Management (3), Logbook Periods (2), Fuel Estimates (1), Calculations (1), Freeze/Reopen (1). All 4 calculation methods verified: Cents/km ($2550 for 3000km), Logbook (40% business use with depreciation), Estimated Fuel ($666 for 4000km), Actual Expenses (100% business use). Depreciation, balancing adjustments, GST rules, freeze snapshots all working correctly. Created test job: 4d4e1b8d-609a-4591-9d91-1f20c174c024, module: d6b35add-7b85-47f7-a79b-824d5b159bee. PostgreSQL integration fully functional."
+
+  # ==================== UNIFIED TRANSACTION ENGINE ====================
+
+  - task: "Transaction Engine Database Tables"
+    implemented: true
+    working: true
+    file: "/app/backend/database/transaction_models.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created 4 SQLAlchemy models: BookkeeperTransactionDB, TransactionHistoryDB, TransactionAttachmentDB, TransactionWorkpaperLinkDB. Fixed relationship mapping bug (UnmappedClassError). Fixed enum value handling with values_callable for HistoryActionType."
+
+  - task: "Transaction Engine Service Layer"
+    implemented: true
+    working: true
+    file: "/app/backend/services/transaction_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created TransactionRepository with CRUD operations, MyFDCSyncService, ImportService. Includes permission checks, locking logic, history tracking."
+
+  - task: "Transaction Engine API Router"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Complete API: GET/PATCH transactions, bulk-update, history, unlock, workpaper lock. MyFDC sync endpoints for create/update. Import endpoints for bank/OCR. Smoke tested manually - all endpoints working."
+
+  - task: "Transaction CRUD Operations"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Tested: Create via MyFDC (POST /myfdc/transactions), List with filters (GET /bookkeeper/transactions), Get single (GET /bookkeeper/transactions/{id}), Update (PATCH /bookkeeper/transactions/{id}). All working."
+
+  - task: "Transaction History Tracking"
+    implemented: true
+    working: true
+    file: "/app/backend/services/transaction_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "History entries created on: create (myfdc_create), update (manual), lock, unlock, bulk_recode. GET /bookkeeper/transactions/{id}/history returns full audit trail."
+
+  - task: "Transaction Locking Logic"
+    implemented: true
+    working: true
+    file: "/app/backend/services/transaction_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Tested: Lock via POST /workpapers/transactions-lock (creates snapshot, sets LOCKED status). When locked: only notes_bookkeeper editable by non-admin. Admin unlock via POST /bookkeeper/transactions/{id}/unlock requires 10+ char comment."
+
+  - task: "Bulk Update Operations"
+    implemented: true
+    working: true
+    file: "/app/backend/services/transaction_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Tested POST /bookkeeper/transactions/bulk-update. Updated 3 transactions atomically by client_id criteria. Single history entry created for bulk action."
+
+  - task: "Workpaper Snapshot on Lock"
+    implemented: true
+    working: true
+    file: "/app/backend/services/transaction_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "When locking transactions for workpaper: snapshot of bookkeeper fields stored in transaction_workpaper_links table with workpaper_id, module, period."
+
+  - task: "Permission Enforcement"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bookkeeper.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Role mapping: admin=admin, staff/accountant=bookkeeper, others=tax_agent/client. Bookkeeper can edit until LOCKED. Admin can edit any field and unlock. Tax agent read-only."
+
+test_plan:
+  current_focus:
+    - "Transaction CRUD Operations"
+    - "Transaction History Tracking"
+    - "Transaction Locking Logic"
+    - "Bulk Update Operations"
+    - "Workpaper Snapshot on Lock"
+    - "Permission Enforcement"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "UNIFIED TRANSACTION ENGINE IMPLEMENTATION COMPLETE. Fixed critical UnmappedClassError bug in SQLAlchemy relationships. Fixed enum value handling for HistoryActionType. All endpoints tested manually via curl and working. Test credentials: staff@fdctax.com/staff123 (bookkeeper), admin@fdctax.com/admin123 (admin). Main endpoints: GET/PATCH /api/bookkeeper/transactions, POST /api/bookkeeper/transactions/bulk-update, POST /api/workpapers/transactions-lock, POST /api/bookkeeper/transactions/{id}/unlock, POST /api/myfdc/transactions. Please run comprehensive tests covering: 1) Transaction CRUD via MyFDC and Bookkeeper endpoints, 2) History tracking for all action types, 3) Locking rules (only notes editable when LOCKED), 4) Bulk update atomicity, 5) Workpaper snapshot creation, 6) Permission enforcement (tax_agent=read-only, admin=full access including unlock)."
