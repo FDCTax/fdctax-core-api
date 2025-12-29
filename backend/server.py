@@ -143,27 +143,109 @@ app = FastAPI(
     - Freeze: Period-based locking with snapshots
     - Dashboard: Single-screen workpaper view
     """,
-    version="1.0.0",
-    lifespan=lifespan
+    version=settings.API_VERSION,
+    lifespan=lifespan,
+    docs_url="/api/docs" if settings.debug_enabled else None,
+    redoc_url="/api/redoc" if settings.debug_enabled else None,
 )
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
 
-# Health check endpoint
+# ==================== HEALTH CHECK ENDPOINTS ====================
+
 @api_router.get("/", tags=["Health"])
 async def root():
+    """Basic health check - returns 200 if service is running"""
     return {
         "message": "FDC Tax Core + CRM Sync API",
         "status": "healthy",
-        "version": "1.0.0"
+        "version": settings.API_VERSION,
+        "environment": settings.ENVIRONMENT,
     }
 
 
 @api_router.get("/health", tags=["Health"])
 async def health_check():
-    """Detailed health check"""
+    """
+    Detailed health check for load balancers and uptime monitors.
+    
+    Returns:
+    - 200: All systems operational
+    - 503: Database or critical service unavailable
+    
+    Used by:
+    - Kubernetes liveness/readiness probes
+    - Load balancer health checks
+    - Uptime monitoring services
+    """
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": settings.API_VERSION,
+        "environment": settings.ENVIRONMENT,
+        "checks": {}
+    }
+    
+    # Check PostgreSQL connection
+    try:
+        from database import engine
+        from sqlalchemy import text
+        
+        async with engine.begin() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            result.fetchone()
+        
+        health_status["checks"]["database"] = {
+            "status": "connected",
+            "type": "postgresql"
+        }
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["database"] = {
+            "status": "disconnected",
+            "error": str(e)
+        }
+    
+    # Check MongoDB connection (legacy)
+    try:
+        from database import mongo_client
+        if mongo_client:
+            await mongo_client.admin.command('ping')
+            health_status["checks"]["mongodb"] = {
+                "status": "connected",
+                "type": "mongodb"
+            }
+    except Exception as e:
+        # MongoDB is optional, just log warning
+        health_status["checks"]["mongodb"] = {
+            "status": "unavailable",
+            "note": "Legacy service - migration in progress"
+        }
+    
+    # Check configuration
+    env_status = validate_environment()
+    health_status["checks"]["configuration"] = {
+        "status": "valid" if env_status["valid"] else "invalid",
+        "warnings": len(env_status.get("warnings", [])),
+        "errors": len(env_status.get("errors", []))
+    }
+    
+    # Return appropriate status code
+    if health_status["status"] == "unhealthy":
+        raise HTTPException(status_code=503, detail=health_status)
+    
+    return health_status
+
+
+@api_router.get("/health/ready", tags=["Health"])
+async def readiness_check():
+    """
+    Kubernetes readiness probe.
+    Returns 200 only when the service can accept traffic.
+    """
     try:
         from database import engine
         from sqlalchemy import text
@@ -171,14 +253,38 @@ async def health_check():
         async with engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
         
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "service": "FDC Tax Core + CRM Sync"
-        }
+        return {"status": "ready", "timestamp": datetime.now(timezone.utc).isoformat()}
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
+        raise HTTPException(status_code=503, detail={"status": "not_ready", "error": str(e)})
+
+
+@api_router.get("/health/live", tags=["Health"])
+async def liveness_check():
+    """
+    Kubernetes liveness probe.
+    Returns 200 if the process is running (doesn't check dependencies).
+    """
+    return {"status": "alive", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+@api_router.get("/config/status", tags=["Health"])
+async def config_status():
+    """
+    Configuration status check (non-sensitive).
+    Useful for debugging deployment issues.
+    """
+    env_status = validate_environment()
+    
+    return {
+        "environment": settings.ENVIRONMENT,
+        "debug": settings.debug_enabled,
+        "cors_origins_count": len(settings.cors_origins_list),
+        "configuration_valid": env_status["valid"],
+        "warnings": env_status.get("warnings", []),
+        "variables": env_status.get("variables", {}),
+        # Don't expose actual errors in production
+        "errors": env_status.get("errors", []) if not settings.is_production else ["Hidden in production"]
+    }
 
 
 # Include all routers
