@@ -16,6 +16,10 @@ load_dotenv(ROOT_DIR / '.env')
 # Import configuration
 from config import get_settings, get_cors_config, validate_environment
 
+# Import logging and error tracking
+from logging_config import setup_logging, get_logger
+from sentry_integration import init_sentry, capture_exception, set_user, set_tag
+
 # Import database and routers
 from database import init_db, get_db
 from routers import (
@@ -27,13 +31,22 @@ from routers import (
 # Get settings
 settings = get_settings()
 
-# Configure logging based on environment
-log_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
-logging.basicConfig(
-    level=log_level,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# Configure structured logging
+# Use JSON format in production, plain text in development
+setup_logging(
+    level=settings.LOG_LEVEL,
+    json_format=settings.is_production,
+    service_name="fdc-core"
 )
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+# Initialize Sentry error tracking
+if settings.SENTRY_DSN:
+    init_sentry(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        traces_sample_rate=0.1 if settings.is_production else 0.0,
+    )
 
 
 @asynccontextmanager
