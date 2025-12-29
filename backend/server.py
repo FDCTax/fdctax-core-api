@@ -40,13 +40,32 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan handler"""
     # Startup
+    logger.info("=" * 60)
     logger.info("Starting FDC Tax Core + CRM Sync API...")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
+    logger.info(f"Debug Mode: {settings.debug_enabled}")
+    logger.info("=" * 60)
+    
+    # Validate environment
+    env_status = validate_environment()
+    if not env_status["valid"]:
+        for error in env_status["errors"]:
+            logger.error(f"Configuration Error: {error}")
+        if settings.is_production:
+            raise RuntimeError("Cannot start in production with invalid configuration")
+    
+    for warning in env_status.get("warnings", []):
+        logger.warning(f"Configuration Warning: {warning}")
+    
+    # Initialize database
     try:
         await init_db()
         logger.info("PostgreSQL connection established")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
+    
+    logger.info("FDC Tax Core API started successfully")
     
     yield
     
@@ -56,7 +75,7 @@ async def lifespan(app: FastAPI):
 
 # Create the main app
 app = FastAPI(
-    title="FDC Tax Core + CRM Sync API",
+    title=settings.API_TITLE,
     description="""
     Backend API for FDC Tax CRM sync, user onboarding state, and Meet Oscar wizard integration.
     
