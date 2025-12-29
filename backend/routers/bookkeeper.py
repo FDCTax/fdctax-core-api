@@ -302,7 +302,7 @@ async def update_transaction(
 @router.post("/transactions/bulk-update")
 async def bulk_update_transactions(
     request: BulkUpdateRequest,
-    current_user: AuthUser = Depends(require_staff),
+    current_user: AuthUser = Depends(require_bookkeeper_write),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -317,8 +317,10 @@ async def bulk_update_transactions(
     - Single history entry for bulk action
     - Returns count of updated rows
     - LOCKED transactions are skipped (except for admin)
+    
+    RBAC: staff ✔️, tax_agent ❌, admin ✔️, client ❌
     """
-    check_write_permission(current_user)
+    check_bookkeeper_tab_write_permission(current_user)
     
     repo = TransactionRepository(db)
     user_role = get_user_role(current_user)
