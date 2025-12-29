@@ -381,6 +381,9 @@ async def global_exception_handler(request: Request, exc: Exception):
     if settings.debug_enabled:
         logger.error(traceback.format_exc())
     
+    # Capture to Sentry
+    capture_exception(exc, request_path=str(request.url.path), request_method=request.method)
+    
     # Don't expose internal errors in production
     if settings.is_production:
         return JSONResponse(
