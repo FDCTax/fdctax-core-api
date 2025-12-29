@@ -940,7 +940,31 @@ All escalations are logged to the centralized audit system:
 - `GET /admin/roles` - List roles
 - `POST /admin/roles/add-admin` - Add admin
 - `POST /admin/roles/add-staff` - Add staff
+- `POST /admin/roles/add-tax-agent` - Add tax agent
 - `POST /seed-test-users` - Seed test data
+
+### Bookkeeper Transactions (`/api/bookkeeper`) - NEW
+- `GET /transactions` - List with filters and pagination
+- `GET /transactions/{id}` - Get single transaction
+- `PATCH /transactions/{id}` - Update transaction (RBAC enforced)
+- `POST /transactions/bulk-update` - Atomic bulk update
+- `GET /transactions/{id}/history` - Audit trail
+- `POST /transactions/{id}/unlock` - Admin unlock (admin only)
+- `GET /statuses` - Transaction status enum
+- `GET /gst-codes` - GST code enum
+- `GET /sources` - Transaction source enum
+- `GET /module-routings` - Module routing enum
+
+### Workpaper Transactions (`/api/workpapers`) - NEW
+- `POST /transactions-lock` - Lock for workpaper (tax_agent, admin)
+
+### MyFDC Sync (`/api/myfdc`) - NEW
+- `POST /transactions` - Create transaction (client, admin)
+- `PATCH /transactions/{id}` - Update transaction (client, admin)
+
+### Import (`/api/import`) - NEW
+- `POST /bank` - Bulk import bank transactions (staff, admin)
+- `POST /ocr` - Bulk import OCR transactions (staff, admin)
 
 ### User (`/api/user`)
 - `GET /tasks` - User's tasks
