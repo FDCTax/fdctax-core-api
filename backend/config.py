@@ -173,6 +173,9 @@ class Settings(BaseSettings):
             "https://www.fdctax.com",
             "https://myfdc.com",
             "https://www.myfdc.com",
+            # Emergent deployment domains
+            "https://txengine.preview.emergentagent.com",
+            "https://txengine.emergent.host",
         ]
         
         # Development origins (only in dev/staging)
