@@ -281,7 +281,6 @@ class InfrastructureTester:
         
         # Step 1: MyFDC (client) creates transaction
         transaction_data = {
-            "client_id": self.test_client_id,
             "amount": 500.00,
             "gst_amount": 50.00,
             "description": "Infrastructure test transaction",
@@ -292,7 +291,7 @@ class InfrastructureTester:
         }
         
         status, data, headers = await self.make_authenticated_request(
-            "POST", "/myfdc/transactions", "client", transaction_data
+            "POST", f"/myfdc/transactions?client_id={self.test_client_id}", "client", transaction_data
         )
         
         create_success = status in [200, 201]
