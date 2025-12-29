@@ -272,7 +272,7 @@ test_plan:
 
 agent_communication:
   - agent: "main"
-    message: "Motor Vehicle module fully implemented with PostgreSQL backend. All features complete: 4 calculation methods (cents/km, logbook, actual expenses, estimated fuel), KM tracking, asset purchase/sale, depreciation (diminishing value), balancing adjustments, GST rules, freeze with snapshot. Test credentials: staff@fdctax.com/staff123. Test module_id=2964c10d-e1d7-4168-a2e8-d18234ce384a has been frozen after testing - use a different module or reopen to test. All endpoints under /api/workpaper/mv/ prefix."
+    message: "Motor Vehicle module fully implemented with PostgreSQL backend. All features complete: 4 calculation methods (cents/km, logbook, actual expenses, estimated fuel), KM tracking, asset purchase/sale, depreciation (diminishing value), balancing adjustments, GST rules, freeze with snapshot. Test credentials: staff@fdctax.com/staff123. Test module_id=txengine has been frozen after testing - use a different module or reopen to test. All endpoints under /api/workpaper/mv/ prefix."
 
   - task: "Motor Vehicle Database Tables"
     implemented: true
