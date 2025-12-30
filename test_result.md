@@ -880,11 +880,14 @@ test_plan:
     file: "/app/backend/routers/ingestion.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Parse endpoint working. Returns columns, preview (20 rows), row_count, auto-detected mapping_suggestions. Detects bank formats (ANZ, CBA, Westpac)."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: File parsing working correctly. Staff ✔️ (detected 5 columns: Date, Amount, Description, Merchant, Category), Auto-mapping ✔️ (correctly mapped date→Date, amount→Amount, description→Description, payee→Merchant, category→Category), Tax Agent ❌ (403 blocked). Column detection and mapping suggestions fully functional."
 
   - task: "Ingestion Import - POST /api/ingestion/import"
     implemented: true
