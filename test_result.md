@@ -925,11 +925,14 @@ test_plan:
     file: "/app/backend/routers/ingestion.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "List batches endpoint working. Supports client_id, job_id, status filters. Returns batch details with import stats."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Batch listing working correctly. Staff ✔️ (found 4 batches), Admin ✔️ (full access), Tax Agent ✔️ (read-only access), Client ❌ (403 blocked). Filtering working ✔️ (client_id filter returned 2 batches). Query parameters (limit, offset, filters) all functional."
 
   - task: "Ingestion RBAC"
     implemented: true
