@@ -56,11 +56,7 @@ class LodgeITExportQueueDB(Base):
     last_exported_at = Column(DateTime(timezone=True), nullable=True)
     
     # Indexes - use extend_existing to avoid conflicts
-    __table_args__ = (
-        Index('idx_lodgeit_queue_status', 'status', postgresql_if_not_exists=True),
-        Index('idx_lodgeit_queue_client_status', 'client_id', 'status', postgresql_if_not_exists=True),
-        {'extend_existing': True}
-    )
+    __table_args__ = {'extend_existing': True}
     
     def to_dict(self):
         return {
@@ -94,12 +90,7 @@ class LodgeITAuditLogDB(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     # Indexes - use extend_existing to avoid conflicts
-    __table_args__ = (
-        Index('idx_lodgeit_audit_user', 'user_id', postgresql_if_not_exists=True),
-        Index('idx_lodgeit_audit_action', 'action', postgresql_if_not_exists=True),
-        Index('idx_lodgeit_audit_timestamp', 'timestamp', postgresql_if_not_exists=True),
-        {'extend_existing': True}
-    )
+    __table_args__ = {'extend_existing': True}
     
     def to_dict(self):
         return {
