@@ -267,7 +267,7 @@ async def export_clients(
         audit_log = LodgeITAuditLogDB(
             user_id=user_id,
             user_email=user_email,
-            action=LodgeITAction.EXPORT,
+            action=LodgeITAction.EXPORT.value,
             client_ids=client_ids,
             success=True,
             details={"exported_count": len(client_ids)}
@@ -293,7 +293,7 @@ async def export_clients(
         audit_log = LodgeITAuditLogDB(
             user_id=user_id,
             user_email=user_email,
-            action=LodgeITAction.EXPORT,
+            action=LodgeITAction.EXPORT.value,
             client_ids=client_ids,
             success=False,
             error_message=str(e)
