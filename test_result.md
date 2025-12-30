@@ -895,11 +895,14 @@ test_plan:
     file: "/app/backend/routers/ingestion.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Import endpoint working. Imports transactions with column mapping. Duplicate detection working - same client_id + date + amount + description = duplicate. Returns imported_count, skipped_duplicates, errors."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Transaction import working correctly. Staff ✔️ (imported 3 transactions successfully), Duplicate Detection ✔️ (re-import skipped 3 duplicates), Tax Agent ❌ (403 blocked). Column mapping validation working (requires date + amount). Import statistics accurate: imported_count=3, skipped_duplicates=3, error_count=0."
 
   - task: "Ingestion Rollback - POST /api/ingestion/rollback"
     implemented: true
