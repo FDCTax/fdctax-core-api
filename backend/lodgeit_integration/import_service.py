@@ -289,7 +289,7 @@ async def import_csv(
         audit_log = LodgeITAuditLogDB(
             user_id=user_id,
             user_email=user_email,
-            action=LodgeITAction.IMPORT,
+            action=LodgeITAction.IMPORT.value,
             client_ids=affected_ids,
             success=True,
             details={
@@ -323,7 +323,7 @@ async def import_csv(
         audit_log = LodgeITAuditLogDB(
             user_id=user_id,
             user_email=user_email,
-            action=LodgeITAction.IMPORT,
+            action=LodgeITAction.IMPORT.value,
             client_ids=[],
             success=False,
             error_message=str(e)
