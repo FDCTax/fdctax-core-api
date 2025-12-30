@@ -330,6 +330,10 @@ api_router.include_router(import_router)  # Bank/OCR import
 from routers.lodgeit import router as lodgeit_router
 api_router.include_router(lodgeit_router)  # LodgeIT export/import
 
+# Bookkeeping Ingestion
+from routers.ingestion import router as ingestion_router
+api_router.include_router(ingestion_router)  # File upload/import pipeline
+
 # Include the main router in the app
 app.include_router(api_router)
 
