@@ -910,11 +910,14 @@ test_plan:
     file: "/app/backend/routers/ingestion.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: false
         agent: "main"
         comment: "Rollback endpoint implemented but requires import_batch_id column in transactions table. Migration needs admin privileges to ALTER TABLE. Returns helpful error message."
+      - working: false
+        agent: "testing"
+        comment: "✅ VERIFIED: Rollback endpoint correctly failing as expected. Staff ✔️ (400 error with helpful message about missing import_batch_id column), Tax Agent ❌ (403 blocked). Error handling working properly - returns clear message that migration is needed. This is expected behavior until database migration is applied."
 
   - task: "Ingestion Batches - GET /api/ingestion/batches"
     implemented: true
