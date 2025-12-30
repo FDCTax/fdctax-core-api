@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Test Suite for LodgeIT Integration Module
-Tests all LodgeIT endpoints with RBAC authentication
+Comprehensive Backend Test Suite for Bookkeeping Ingestion Module
+Tests all ingestion endpoints with RBAC authentication and file upload functionality
 """
 
 import asyncio
 import json
 import os
 import sys
+import tempfile
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 
@@ -23,8 +24,15 @@ TAX_AGENT_CREDENTIALS = {"email": "taxagent@fdctax.com", "password": "taxagent12
 STAFF_CREDENTIALS = {"email": "staff@fdctax.com", "password": "staff123"}
 CLIENT_CREDENTIALS = {"email": "client@fdctax.com", "password": "client123"}
 
-# Test data for LodgeIT
-TEST_CLIENT_IDS = [143003, 143004, 143005]  # Existing client IDs for testing
+# Test data for ingestion
+TEST_CLIENT_ID = "test-client-ingestion-001"
+TEST_JOB_ID = "test-job-ingestion-001"
+
+# Test CSV content as specified in the review request
+TEST_CSV_CONTENT = """Date,Amount,Description,Merchant,Category
+2025-02-01,250.00,New office supplies,Staples,Supplies
+2025-02-02,-75.00,Team lunch,Pizza Place,Entertainment
+2025-02-03,500.00,Freelance work,Client XYZ,Income"""
 
 class LodgeITAPITester:
     def __init__(self):
