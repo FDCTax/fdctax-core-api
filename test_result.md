@@ -719,3 +719,101 @@ test_plan:
   test_priority: "high_first"
   - agent: "testing"
     message: "UNIFIED TRANSACTION ENGINE COMPREHENSIVE TESTING COMPLETED - ALL 29 TESTS PASSED (100% SUCCESS RATE). Tested all core functionality: 1) Authentication (staff/admin), 2) Reference Data (4 endpoints), 3) MyFDC Transaction Creation (3 transactions), 4) Transaction Listing with Filters (client_id, status, date_range, search), 5) Single Transaction Operations (GET, PATCH, history), 6) Bulk Update Operations (atomic updates), 7) Workpaper Locking System (lock/unlock with snapshots), 8) Admin Unlock Functionality (role enforcement), 9) MyFDC Sync Rules (status hierarchy), 10) Permission Enforcement (admin vs staff), 11) History Tracking (all action types). All business rules working: locked transactions only allow notes edits, admin can unlock with comment, MyFDC updates rejected when status>=REVIEWED, bulk updates are atomic, history entries created for all actions. Created test data: 3 transactions, 1 workpaper job, client test-client-txengine-001. All database models, service layer, and API endpoints fully functional."
+## LodgeIT Integration Module
+
+  - task: "LodgeIT Export Queue - GET /api/lodgeit/export-queue"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Endpoint returns list of clients pending export. Tested with tax_agent role. Returns client details including name, email, business_name. RBAC enforced (admin, tax_agent only)."
+
+  - task: "LodgeIT Queue Stats - GET /api/lodgeit/export-queue/stats"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Returns queue statistics: pending, exported, failed, total counts. Verified counts match database state."
+
+  - task: "LodgeIT Queue Add - POST /api/lodgeit/queue/add"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Manually adds client to export queue with trigger_reason='manual'. Returns queue_id and client_name. Duplicate adds return existing queue entry. Audit log created."
+
+  - task: "LodgeIT Export - POST /api/lodgeit/export"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Exports clients to LodgeIT CSV format. Returns CSV with all required columns (39 fields). Updates queue status to 'exported'. Audit log created with exported_count."
+
+  - task: "LodgeIT ITR Template - POST /api/lodgeit/export-itr-template"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Generates ITR JSON template for client. Returns comprehensive template with taxpayer, contact, income, deductions sections. Includes transaction summary from Transaction Engine."
+
+  - task: "LodgeIT Audit Log - GET /api/lodgeit/audit-log"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Returns audit log entries for all LodgeIT operations. Tracks action type, client_ids, success status, user info, timestamps. Supports filtering by action type."
+
+  - task: "LodgeIT RBAC - admin/tax_agent access"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "RBAC verified: admin and tax_agent have full access. Staff and client receive 403 'Access denied. Required roles: ['admin', 'tax_agent']'. All endpoints protected with RoleChecker."
+
+  - task: "LodgeIT Database Tables"
+    implemented: true
+    working: true
+    file: "/app/backend/migrations/lodgeit_setup.sql"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created lodgeit_export_queue and lodgeit_audit_log tables in PostgreSQL. Indexes created for status, client_id, user_id, action, timestamp. Tables working correctly."
+
