@@ -326,6 +326,10 @@ api_router.include_router(workpaper_txn_router)  # Workpaper transaction lock
 api_router.include_router(myfdc_router)  # MyFDC sync
 api_router.include_router(import_router)  # Bank/OCR import
 
+# LodgeIT Integration
+from routers.lodgeit import router as lodgeit_router
+api_router.include_router(lodgeit_router)  # LodgeIT export/import
+
 # Include the main router in the app
 app.include_router(api_router)
 
