@@ -103,7 +103,7 @@ async def get_export_queue(
     
     Returns all clients in the export queue with status 'pending'.
     
-    **Permissions:** accountant, admin
+    **Permissions:** tax_agent, admin
     """
     service = QueueService(db)
     queue = await service.get_pending_exports()
@@ -118,7 +118,7 @@ async def get_queue_stats(
     """
     Get export queue statistics.
     
-    **Permissions:** accountant, admin
+    **Permissions:** tax_agent, admin
     """
     service = QueueService(db)
     stats = await service.get_queue_stats()
@@ -137,7 +137,7 @@ async def export_to_lodgeit(
     Generates a CSV file containing the specified clients in LodgeIT format.
     Updates the export queue status for each client.
     
-    **Permissions:** accountant, admin
+    **Permissions:** tax_agent, admin
     
     **Request Body:**
     - client_ids: List of client IDs to export
@@ -184,7 +184,7 @@ async def import_from_lodgeit(
     - Creates new records for unknown client IDs
     - Logs all changes for audit compliance
     
-    **Permissions:** accountant, admin (force_overwrite requires admin)
+    **Permissions:** tax_agent, admin (force_overwrite requires admin)
     
     **Request:**
     - file: CSV file in LodgeIT format
@@ -237,7 +237,7 @@ async def export_itr_template(
     Produces a JSON template containing the client's tax information
     in the format required by LodgeIT for ITR lodgement.
     
-    **Permissions:** accountant, admin
+    **Permissions:** tax_agent, admin
     
     **Request Body:**
     - client_id: Client ID for ITR template
@@ -274,7 +274,7 @@ async def add_to_queue(
     """
     Manually add a client to the export queue.
     
-    **Permissions:** accountant, admin
+    **Permissions:** tax_agent, admin
     
     **Request Body:**
     - client_id: Client ID to add
@@ -302,7 +302,7 @@ async def remove_from_queue(
     """
     Remove a client from the export queue.
     
-    **Permissions:** accountant, admin
+    **Permissions:** tax_agent, admin
     """
     service = QueueService(db)
     result = await service.remove_from_queue(
@@ -328,7 +328,7 @@ async def get_audit_log(
     """
     Get LodgeIT audit log entries.
     
-    **Permissions:** accountant, admin
+    **Permissions:** tax_agent, admin
     """
     from sqlalchemy import text
     
