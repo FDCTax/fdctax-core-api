@@ -727,11 +727,14 @@ test_plan:
     file: "/app/backend/routers/lodgeit.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Endpoint returns list of clients pending export. Tested with tax_agent role. Returns client details including name, email, business_name. RBAC enforced (admin, tax_agent only)."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Export queue endpoint working correctly. Admin ✔️ (1 queue entry), Tax Agent ✔️ (1 queue entry), Staff ❌ (403 blocked), Client ❌ (403 blocked). RBAC properly enforced."
 
   - task: "LodgeIT Queue Stats - GET /api/lodgeit/export-queue/stats"
     implemented: true
@@ -739,11 +742,14 @@ test_plan:
     file: "/app/backend/routers/lodgeit.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Returns queue statistics: pending, exported, failed, total counts. Verified counts match database state."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Queue statistics working correctly. Returns proper stats: pending=1, exported=1, failed=0, total=2. Staff access properly blocked (403)."
 
   - task: "LodgeIT Queue Add - POST /api/lodgeit/queue/add"
     implemented: true
@@ -751,11 +757,14 @@ test_plan:
     file: "/app/backend/routers/lodgeit.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Manually adds client to export queue with trigger_reason='manual'. Returns queue_id and client_name. Duplicate adds return existing queue entry. Audit log created."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Queue add functionality working correctly. Successfully added client 143003 to queue, duplicate add returns existing entry message. RBAC enforced: Staff ❌ (403), Client ❌ (403)."
 
   - task: "LodgeIT Export - POST /api/lodgeit/export"
     implemented: true
@@ -763,11 +772,14 @@ test_plan:
     file: "/app/backend/routers/lodgeit.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Exports clients to LodgeIT CSV format. Returns CSV with all required columns (39 fields). Updates queue status to 'exported'. Audit log created with exported_count."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Export functionality working correctly. Successfully exported clients [143003, 143004] to CSV format with 39 columns. Required headers present: ClientID, FirstName, LastName, Email, ABN, BusinessName. Queue status updated from 'pending' to 'exported'. Staff access blocked (403)."
 
   - task: "LodgeIT ITR Template - POST /api/lodgeit/export-itr-template"
     implemented: true
@@ -775,11 +787,26 @@ test_plan:
     file: "/app/backend/routers/lodgeit.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Generates ITR JSON template for client. Returns comprehensive template with taxpayer, contact, income, deductions sections. Includes transaction summary from Transaction Engine."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: ITR template generation working correctly. Generated template for client 143003 with all required sections: _meta, taxpayer, contact, agent, income, deductions, offsets, medicare, gst, summary, lodgement. _meta includes financial_year=2025-26 and source_system=FDC_Core. Staff access blocked (403)."
+
+  - task: "LodgeIT Queue Remove - DELETE /api/lodgeit/queue/{client_id}"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/lodgeit.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Queue removal working correctly. Successfully removed client 143005 from pending queue. RBAC enforced: Staff ❌ (403 blocked)."
 
   - task: "LodgeIT Audit Log - GET /api/lodgeit/audit-log"
     implemented: true
@@ -787,11 +814,14 @@ test_plan:
     file: "/app/backend/routers/lodgeit.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Returns audit log entries for all LodgeIT operations. Tracks action type, client_ids, success status, user info, timestamps. Supports filtering by action type."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Audit log working correctly. Retrieved 9 audit entries with proper structure. Actions tracked: export, itr_export, queue_add, queue_remove. Supports limit, offset, action query params. Staff access blocked (403)."
 
   - task: "LodgeIT RBAC - admin/tax_agent access"
     implemented: true
@@ -799,11 +829,14 @@ test_plan:
     file: "/app/backend/routers/lodgeit.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "RBAC verified: admin and tax_agent have full access. Staff and client receive 403 'Access denied. Required roles: ['admin', 'tax_agent']'. All endpoints protected with RoleChecker."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: RBAC matrix fully functional. Admin ✔️ (full access), Tax Agent ✔️ (full access), Staff ❌ (403 on all endpoints), Client ❌ (403 on all endpoints). All 7 LodgeIT endpoints properly protected."
 
   - task: "LodgeIT Database Tables"
     implemented: true
