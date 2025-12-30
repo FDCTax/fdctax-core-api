@@ -504,6 +504,131 @@ curl -s -X POST "$API_URL/api/workpapers/transactions-lock" \
 
 ---
 
+## LodgeIT Integration Module
+
+Integration with LodgeIT practice management system for client data export and ITR template generation.
+
+### Permissions
+
+| Endpoint | Admin | Tax Agent | Staff | Client |
+|----------|-------|-----------|-------|--------|
+| GET /api/lodgeit/* | ✅ | ✅ | ❌ | ❌ |
+| POST /api/lodgeit/* | ✅ | ✅ | ❌ | ❌ |
+| DELETE /api/lodgeit/* | ✅ | ✅ | ❌ | ❌ |
+
+### API Endpoints
+
+#### Export Queue Management
+
+```bash
+# Get clients pending export
+GET /api/lodgeit/export-queue
+Response: [
+  {
+    "id": 1,
+    "client_id": 143003,
+    "status": "pending",
+    "trigger_reason": "manual",
+    "client_name": "Sarah Test",
+    "client_email": "sarah.test@example.com",
+    "business_name": "Sarah FDC"
+  }
+]
+
+# Get queue statistics
+GET /api/lodgeit/export-queue/stats
+Response: {"pending": 1, "exported": 5, "failed": 0, "total": 6}
+
+# Add client to queue manually
+POST /api/lodgeit/queue/add
+Body: {"client_id": 143003}
+Response: {
+  "success": true,
+  "message": "Client added to queue",
+  "queue_id": 1,
+  "client_id": 143003,
+  "client_name": "Sarah Test"
+}
+
+# Remove client from queue
+DELETE /api/lodgeit/queue/{client_id}
+```
+
+#### Export Operations
+
+```bash
+# Export clients to LodgeIT CSV format
+POST /api/lodgeit/export
+Body: {"client_ids": [143003, 143004]}
+Response: CSV file with 39 LodgeIT-compliant columns
+
+# CSV Headers include:
+# ClientID, ClientType, Title, FirstName, MiddleName, LastName,
+# Email, Phone, ABN, ACN, BusinessName, GSTRegistered,
+# ResidentialAddress1-6, PostalAddress1-6, BusinessAddress1-6, etc.
+
+# Generate ITR JSON template for client
+POST /api/lodgeit/export-itr-template
+Body: {"client_id": 143003}
+Response: {
+  "success": true,
+  "client_id": 143003,
+  "template": {
+    "_meta": {"format": "LodgeIT_ITR_v2", "financial_year": "2025-26"},
+    "taxpayer": {...},
+    "contact": {...},
+    "income": {...},
+    "deductions": {...},
+    "gst": {...},
+    "summary": {...}
+  }
+}
+```
+
+#### Audit Logging
+
+```bash
+# Get audit log entries
+GET /api/lodgeit/audit-log?limit=50&offset=0&action=export
+Response: [
+  {
+    "id": 1,
+    "user_id": "uuid",
+    "user_email": "taxagent@fdctax.com",
+    "action": "export",
+    "client_ids": [143003],
+    "success": true,
+    "details": {"exported_count": 1},
+    "timestamp": "2025-12-30T23:08:02.210533+00:00"
+  }
+]
+```
+
+### Database Triggers
+
+The system supports automatic queue population via PostgreSQL triggers:
+
+| Trigger | Event | Action |
+|---------|-------|--------|
+| Onboarding Complete | `onboarding_completed` changes false → true | Add client to export queue |
+| Address Change | Any `*_address_*` field changes | Add client to export queue |
+| Manual | `POST /api/lodgeit/queue/add` | Add client via API |
+
+### Files
+
+| File | Description |
+|------|-------------|
+| `/app/backend/routers/lodgeit.py` | API router |
+| `/app/backend/lodgeit_integration/export_service.py` | CSV export service |
+| `/app/backend/lodgeit_integration/import_service.py` | CSV import service |
+| `/app/backend/lodgeit_integration/itr_export.py` | ITR template generator |
+| `/app/backend/lodgeit_integration/queue_service.py` | Queue management |
+| `/app/backend/lodgeit_integration/models.py` | SQLAlchemy models |
+| `/app/backend/migrations/lodgeit_setup.sql` | Database migration |
+| `/app/backend/tests/test_lodgeit_integration.py` | Integration tests |
+
+---
+
 ## Document Upload Request System
 
 Request and receive documents from clients.
