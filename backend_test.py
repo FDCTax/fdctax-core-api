@@ -23,28 +23,21 @@ TAX_AGENT_CREDENTIALS = {"email": "taxagent@fdctax.com", "password": "taxagent12
 STAFF_CREDENTIALS = {"email": "staff@fdctax.com", "password": "staff123"}
 CLIENT_CREDENTIALS = {"email": "client@fdctax.com", "password": "client123"}
 
-# Test data
-TEST_JOB_ID = "4fc51694-ebaf-40a0-a358-62da0d4fb9d7"
-TEST_CLIENT_ID = "test-client-001"
-TEST_YEAR = "2024-25"
+# Test data for LodgeIT
+TEST_CLIENT_IDS = [143003, 143004, 143005]  # Existing client IDs for testing
 
-# New test data for comprehensive testing
-NEW_CLIENT_ID = "test-client-002"
-NEW_YEAR = "2023-24"
-
-class WorkpaperAPITester:
+class LodgeITAPITester:
     def __init__(self):
         self.session = None
-        self.staff_token = None
         self.admin_token = None
+        self.tax_agent_token = None
+        self.staff_token = None
+        self.client_token = None
         self.test_results = []
         
         # Test data storage
-        self.new_job_id = None
-        self.new_module_id = None
-        self.new_transaction_id = None
-        self.new_query_id = None
-        self.new_snapshot_id = None
+        self.test_queue_id = None
+        self.test_export_data = None
     
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
