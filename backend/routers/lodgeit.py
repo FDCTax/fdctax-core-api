@@ -9,7 +9,10 @@ Provides REST API endpoints for LodgeIT integration:
 - POST /api/lodgeit/queue/add - Manually add to queue
 
 Permissions:
-- Only accountant and admin roles can access these endpoints
+- admin: full access
+- tax_agent: full access
+- staff: no access
+- client: no access
 """
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
@@ -36,8 +39,8 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/lodgeit", tags=["LodgeIT Integration"])
 
-# Permission checker - only accountant and admin can access
-require_lodgeit_access = RoleChecker(["admin", "staff", "accountant"])
+# Permission checker - only tax_agent and admin can access LodgeIT endpoints
+require_lodgeit_access = RoleChecker(["admin", "tax_agent"])
 
 
 # ==================== REQUEST/RESPONSE MODELS ====================
