@@ -141,7 +141,7 @@ class QueueService:
             audit_log = LodgeITAuditLogDB(
                 user_id=user_id,
                 user_email=user_email,
-                action=LodgeITAction.QUEUE_ADD,
+                action=LodgeITAction.QUEUE_ADD.value,
                 client_ids=[client_id],
                 success=True,
                 details={"trigger_reason": trigger_reason}
@@ -189,7 +189,7 @@ class QueueService:
             audit_log = LodgeITAuditLogDB(
                 user_id=user_id,
                 user_email=user_email,
-                action=LodgeITAction.QUEUE_REMOVE,
+                action=LodgeITAction.QUEUE_REMOVE.value,
                 client_ids=[client_id],
                 success=True
             )
