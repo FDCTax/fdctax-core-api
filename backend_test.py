@@ -1038,7 +1038,12 @@ class LodgeITAPITester:
 
 async def main():
     """Main test runner"""
-    async with LodgeITAPITester() as tester:
+    print("🔧 COMPREHENSIVE BACKEND API TESTING SUITE")
+    print("=" * 60)
+    
+    # Test Bookkeeping Ingestion Module
+    print("\n🗂️  TESTING BOOKKEEPING INGESTION MODULE")
+    async with IngestionAPITester() as tester:
         await tester.run_all_tests()
 
 
