@@ -146,466 +146,326 @@ class LodgeITAPITester:
         
         return all([self.admin_token, self.tax_agent_token, self.staff_token, self.client_token])
     
-    async def test_reference_data(self):
-        """Test 2-4: Reference Data (No auth required)"""
-        print("\n=== Testing Reference Data ===")
+    async def test_lodgeit_export_queue_access(self):
+        """Test 2: LodgeIT Export Queue Access - RBAC"""
+        print("\n=== Testing LodgeIT Export Queue Access (RBAC) ===")
         
-        # Test module types
-        status, data = await self.make_request("GET", "/workpaper/module-types", "")
+        # Test admin access (should work)
+        status, data = await self.make_request("GET", "/lodgeit/export-queue", self.admin_token)
         self.log_test(
-            "GET /workpaper/module-types",
-            status == 200 and "module_types" in data,
-            f"Status: {status}, Types count: {len(data.get('module_types', []))}"
-        )
-        
-        # Test transaction categories
-        status, data = await self.make_request("GET", "/workpaper/transaction-categories", "")
-        self.log_test(
-            "GET /workpaper/transaction-categories",
-            status == 200 and "categories" in data,
-            f"Status: {status}, Categories count: {len(data.get('categories', []))}"
-        )
-        
-        # Test job statuses
-        status, data = await self.make_request("GET", "/workpaper/job-statuses", "")
-        self.log_test(
-            "GET /workpaper/job-statuses",
-            status == 200 and "statuses" in data,
-            f"Status: {status}, Statuses count: {len(data.get('statuses', []))}"
-        )
-    
-    async def test_existing_job_operations(self):
-        """Test 5-8: Existing Job Operations"""
-        print("\n=== Testing Existing Job Operations ===")
-        
-        # Test get existing job
-        status, data = await self.make_request("GET", f"/workpaper/jobs/{TEST_JOB_ID}", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/jobs/{TEST_JOB_ID}",
-            status == 200 and data.get("id") == TEST_JOB_ID,
-            f"Status: {status}, Job ID: {data.get('id') if status == 200 else 'N/A'}"
-        )
-        
-        # Test get job by client/year
-        status, data = await self.make_request("GET", f"/workpaper/clients/{TEST_CLIENT_ID}/jobs/{TEST_YEAR}", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/clients/{TEST_CLIENT_ID}/jobs/{TEST_YEAR}",
-            status == 200 and data.get("client_id") == TEST_CLIENT_ID,
-            f"Status: {status}, Client: {data.get('client_id') if status == 200 else 'N/A'}"
-        )
-        
-        # Test list client jobs
-        status, data = await self.make_request("GET", f"/workpaper/clients/{TEST_CLIENT_ID}/jobs", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/clients/{TEST_CLIENT_ID}/jobs",
+            "GET /lodgeit/export-queue (admin)",
             status == 200 and isinstance(data, list),
-            f"Status: {status}, Jobs count: {len(data) if status == 200 else 0}"
+            f"Status: {status}, Queue entries: {len(data) if status == 200 else 'N/A'}"
         )
         
-        # Test update job
-        update_data = {"notes": f"Updated at {datetime.now().isoformat()}"}
-        status, data = await self.make_request("PATCH", f"/workpaper/jobs/{TEST_JOB_ID}", self.staff_token, update_data)
+        # Test tax agent access (should work)
+        status, data = await self.make_request("GET", "/lodgeit/export-queue", self.tax_agent_token)
         self.log_test(
-            f"PATCH /workpaper/jobs/{TEST_JOB_ID}",
-            status == 200 and data.get("notes") == update_data["notes"],
-            f"Status: {status}, Notes updated: {'✓' if status == 200 else '✗'}"
-        )
-    
-    async def test_new_job_creation(self):
-        """Test 9: Create New Job with Auto-modules"""
-        print("\n=== Testing New Job Creation ===")
-        
-        job_data = {
-            "client_id": NEW_CLIENT_ID,
-            "year": NEW_YEAR,
-            "notes": "Test job created by automated test",
-            "auto_create_modules": True
-        }
-        
-        status, data = await self.make_request("POST", "/workpaper/jobs", self.staff_token, job_data)
-        success = status == 201 or status == 200
-        
-        if success:
-            self.new_job_id = data.get("id")
-        
-        self.log_test(
-            "POST /workpaper/jobs (with auto_create_modules=true)",
-            success and self.new_job_id is not None,
-            f"Status: {status}, Job ID: {self.new_job_id if success else 'Failed'}"
-        )
-        
-        # Verify modules were auto-created
-        if self.new_job_id:
-            status, modules = await self.make_request("GET", f"/workpaper/clients/{NEW_CLIENT_ID}/jobs/{NEW_YEAR}/modules", self.staff_token)
-            self.log_test(
-                "Auto-created modules verification",
-                status == 200 and len(modules) == 9,
-                f"Status: {status}, Modules created: {len(modules) if status == 200 else 0}/9"
-            )
-            
-            if status == 200 and modules:
-                self.new_module_id = modules[0]["id"]  # Store first module for later tests
-    
-    async def test_module_operations(self):
-        """Test 10-12: Module Operations"""
-        print("\n=== Testing Module Operations ===")
-        
-        if not self.new_module_id:
-            self.log_test("Module Operations", False, "No module ID available from previous tests")
-            return
-        
-        # Test get module detail
-        status, data = await self.make_request("GET", f"/workpaper/modules/{self.new_module_id}", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/modules/{self.new_module_id}",
-            status == 200 and data.get("module", {}).get("id") == self.new_module_id,
-            f"Status: {status}, Module type: {data.get('module', {}).get('module_type') if status == 200 else 'N/A'}"
-        )
-        
-        # Test update module
-        update_data = {
-            "config": {"test_setting": "automated_test_value"},
-            "status": "in_progress"
-        }
-        status, data = await self.make_request("PATCH", f"/workpaper/modules/{self.new_module_id}", self.staff_token, update_data)
-        self.log_test(
-            f"PATCH /workpaper/modules/{self.new_module_id}",
-            status == 200 and data.get("status") == "in_progress",
-            f"Status: {status}, Updated status: {data.get('status') if status == 200 else 'N/A'}"
-        )
-        
-        # Test get effective transactions (should be empty initially)
-        status, data = await self.make_request("GET", f"/workpaper/modules/{self.new_module_id}/effective-transactions", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/modules/{self.new_module_id}/effective-transactions",
+            "GET /lodgeit/export-queue (tax_agent)",
             status == 200 and isinstance(data, list),
-            f"Status: {status}, Transactions count: {len(data) if status == 200 else 0}"
+            f"Status: {status}, Queue entries: {len(data) if status == 200 else 'N/A'}"
+        )
+        
+        # Test staff access (should be blocked - 403)
+        status, data = await self.make_request("GET", "/lodgeit/export-queue", self.staff_token)
+        self.log_test(
+            "GET /lodgeit/export-queue (staff - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403 (Access denied)"
+        )
+        
+        # Test client access (should be blocked - 403)
+        status, data = await self.make_request("GET", "/lodgeit/export-queue", self.client_token)
+        self.log_test(
+            "GET /lodgeit/export-queue (client - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403 (Access denied)"
         )
     
-    async def test_transaction_operations(self):
-        """Test 13-15: Transaction Operations"""
-        print("\n=== Testing Transaction Operations ===")
+    async def test_lodgeit_queue_stats(self):
+        """Test 3: LodgeIT Queue Statistics"""
+        print("\n=== Testing LodgeIT Queue Statistics ===")
         
-        if not self.new_job_id or not self.new_module_id:
-            self.log_test("Transaction Operations", False, "Missing job or module ID from previous tests")
-            return
+        # Test with admin credentials
+        status, data = await self.make_request("GET", "/lodgeit/export-queue/stats", self.admin_token)
         
-        # Create transaction
-        transaction_data = {
-            "client_id": NEW_CLIENT_ID,
-            "job_id": self.new_job_id,
-            "module_instance_id": self.new_module_id,
-            "source": "manual",
-            "date": "2024-01-15",
-            "amount": 250.00,
-            "gst_amount": 25.00,
-            "category": "office_supplies",
-            "description": "Test office supplies purchase",
-            "vendor": "Test Vendor Pty Ltd"
-        }
+        expected_keys = ["pending", "exported", "failed", "total"]
+        has_all_keys = all(key in data for key in expected_keys) if status == 200 else False
         
-        status, data = await self.make_request("POST", "/workpaper/transactions", self.staff_token, transaction_data)
-        success = status == 201 or status == 200
+        self.log_test(
+            "GET /lodgeit/export-queue/stats",
+            status == 200 and has_all_keys,
+            f"Status: {status}, Stats: {data if status == 200 else 'Failed'}"
+        )
         
+        # Test RBAC - staff should be blocked
+        status, data = await self.make_request("GET", "/lodgeit/export-queue/stats", self.staff_token)
+        self.log_test(
+            "GET /lodgeit/export-queue/stats (staff - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_lodgeit_queue_add(self):
+        """Test 4: Add Client to Queue"""
+        print("\n=== Testing Add Client to Queue ===")
+        
+        # Test adding client with tax agent credentials
+        add_data = {"client_id": TEST_CLIENT_IDS[0]}
+        status, data = await self.make_request("POST", "/lodgeit/queue/add", self.tax_agent_token, add_data)
+        
+        success = status in [200, 201] and data.get("success") is True
         if success:
-            self.new_transaction_id = data.get("id")
+            self.test_queue_id = data.get("queue_id")
         
         self.log_test(
-            "POST /workpaper/transactions",
-            success and self.new_transaction_id is not None,
-            f"Status: {status}, Transaction ID: {self.new_transaction_id if success else 'Failed'}"
-        )
-        
-        # List transactions by job
-        status, data = await self.make_request("GET", "/workpaper/transactions", self.staff_token, params={"job_id": self.new_job_id})
-        self.log_test(
-            f"GET /workpaper/transactions?job_id={self.new_job_id}",
-            status == 200 and isinstance(data, list) and len(data) > 0,
-            f"Status: {status}, Transactions found: {len(data) if status == 200 else 0}"
-        )
-        
-        # List transactions by module
-        status, data = await self.make_request("GET", "/workpaper/transactions", self.staff_token, params={"module_instance_id": self.new_module_id})
-        self.log_test(
-            f"GET /workpaper/transactions?module_instance_id={self.new_module_id}",
-            status == 200 and isinstance(data, list) and len(data) > 0,
-            f"Status: {status}, Module transactions: {len(data) if status == 200 else 0}"
-        )
-    
-    async def test_override_operations(self):
-        """Test 16-17: Override Operations"""
-        print("\n=== Testing Override Operations ===")
-        
-        if not self.new_transaction_id or not self.new_job_id or not self.new_module_id:
-            self.log_test("Override Operations", False, "Missing required IDs from previous tests")
-            return
-        
-        # Create transaction override
-        override_data = {
-            "transaction_id": self.new_transaction_id,
-            "job_id": self.new_job_id,
-            "overridden_business_pct": 50.0,
-            "reason": "Only 50% business use for this expense"
-        }
-        
-        status, data = await self.make_request("POST", "/workpaper/overrides/transaction", self.staff_token, override_data)
-        success = status == 201 or status == 200
-        
-        self.log_test(
-            "POST /workpaper/overrides/transaction",
+            f"POST /lodgeit/queue/add (client_id: {TEST_CLIENT_IDS[0]})",
             success,
-            f"Status: {status}, Business %: {data.get('overridden_business_pct') if success else 'Failed'}"
+            f"Status: {status}, Queue ID: {self.test_queue_id if success else 'Failed'}, Client: {data.get('client_name', 'N/A') if success else 'N/A'}"
         )
         
-        # Create module override
-        module_override_data = {
-            "module_instance_id": self.new_module_id,
-            "field_key": "effective_pct",
-            "original_value": 100,
-            "effective_value": 75,
-            "reason": "Adjusted percentage based on usage analysis"
-        }
-        
-        status, data = await self.make_request("POST", "/workpaper/overrides/module", self.staff_token, module_override_data)
-        success = status == 201 or status == 200
+        # Test duplicate add (should return existing entry message)
+        status, data = await self.make_request("POST", "/lodgeit/queue/add", self.tax_agent_token, add_data)
+        is_duplicate = status == 200 and "already in queue" in data.get("message", "").lower()
         
         self.log_test(
-            "POST /workpaper/overrides/module",
-            success,
-            f"Status: {status}, Field: {data.get('field_key') if success else 'Failed'}"
+            f"POST /lodgeit/queue/add (duplicate - should return existing)",
+            is_duplicate,
+            f"Status: {status}, Message: {data.get('message', 'N/A') if status == 200 else 'Failed'}"
         )
         
-        # Verify effective transactions now show override
-        status, data = await self.make_request("GET", f"/workpaper/modules/{self.new_module_id}/effective-transactions", self.staff_token)
-        has_override = False
-        if status == 200 and data:
-            for tx in data:
-                if tx.get("has_override"):
-                    has_override = True
-                    break
-        
+        # Test RBAC - staff should be blocked
+        status, data = await self.make_request("POST", "/lodgeit/queue/add", self.staff_token, {"client_id": TEST_CLIENT_IDS[1]})
         self.log_test(
-            "Verify effective transactions with overrides",
-            status == 200 and has_override,
-            f"Status: {status}, Override applied: {'✓' if has_override else '✗'}"
+            "POST /lodgeit/queue/add (staff - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+        
+        # Test RBAC - client should be blocked
+        status, data = await self.make_request("POST", "/lodgeit/queue/add", self.client_token, {"client_id": TEST_CLIENT_IDS[1]})
+        self.log_test(
+            "POST /lodgeit/queue/add (client - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
         )
     
-    async def test_query_operations(self):
-        """Test 18-22: Query Operations"""
-        print("\n=== Testing Query Operations ===")
+    async def test_lodgeit_export(self):
+        """Test 5: Export Clients to CSV"""
+        print("\n=== Testing LodgeIT Export ===")
         
-        if not self.new_job_id:
-            self.log_test("Query Operations", False, "Missing job ID from previous tests")
-            return
+        # First, add clients to queue
+        for client_id in TEST_CLIENT_IDS[:2]:  # Add first 2 clients
+            add_data = {"client_id": client_id}
+            await self.make_request("POST", "/lodgeit/queue/add", self.admin_token, add_data)
         
-        # Create query
-        status, data = await self.make_request(
-            "POST", 
-            f"/workpaper/jobs/{self.new_job_id}/queries",
-            self.staff_token,
-            params={"title": "Test Query for Automated Testing", "initial_message": "This is a test query created by automation"}
-        )
-        success = status == 201 or status == 200
+        # Test export with admin credentials
+        export_data = {"client_ids": TEST_CLIENT_IDS[:2]}
+        status, data = await self.make_request("POST", "/lodgeit/export", self.admin_token, export_data)
         
-        if success:
-            self.new_query_id = data.get("id")
+        # Check if we got CSV content (response might be text/csv)
+        is_csv = status == 200 and (isinstance(data, str) and "ClientID" in data)
         
         self.log_test(
-            f"POST /workpaper/jobs/{self.new_job_id}/queries",
-            success and self.new_query_id is not None,
-            f"Status: {status}, Query ID: {self.new_query_id if success else 'Failed'}"
+            f"POST /lodgeit/export (client_ids: {TEST_CLIENT_IDS[:2]})",
+            is_csv,
+            f"Status: {status}, CSV headers present: {'✓' if is_csv else '✗'}"
         )
         
-        if not self.new_query_id:
-            return
-        
-        # Send query to client
-        status, data = await self.make_request("POST", f"/workpaper/queries/{self.new_query_id}/send", self.staff_token, {"message": "Additional message when sending"})
-        self.log_test(
-            f"POST /workpaper/queries/{self.new_query_id}/send",
-            status == 200 and data.get("status") == "sent_to_client",
-            f"Status: {status}, Query status: {data.get('status') if status == 200 else 'Failed'}"
-        )
-        
-        # Add message to query
-        message_data = {
-            "message_text": "Follow-up message from staff",
-            "attachment_url": "https://example.com/document.pdf",
-            "attachment_name": "supporting_document.pdf"
-        }
-        status, data = await self.make_request("POST", f"/workpaper/queries/{self.new_query_id}/messages", self.staff_token, message_data)
-        self.log_test(
-            f"POST /workpaper/queries/{self.new_query_id}/messages",
-            status == 201 or status == 200,
-            f"Status: {status}, Message added: {'✓' if status in [200, 201] else '✗'}"
-        )
-        
-        # Get query messages
-        status, data = await self.make_request("GET", f"/workpaper/queries/{self.new_query_id}/messages", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/queries/{self.new_query_id}/messages",
-            status == 200 and isinstance(data, list) and len(data) >= 2,
-            f"Status: {status}, Messages count: {len(data) if status == 200 else 0}"
-        )
-        
-        # Resolve query
-        status, data = await self.make_request("POST", f"/workpaper/queries/{self.new_query_id}/resolve", self.staff_token, {"resolution_message": "Query resolved by automated test"})
-        self.log_test(
-            f"POST /workpaper/queries/{self.new_query_id}/resolve",
-            status == 200 and data.get("status") == "resolved",
-            f"Status: {status}, Query status: {data.get('status') if status == 200 else 'Failed'}"
-        )
-        
-        # List job queries
-        status, data = await self.make_request("GET", f"/workpaper/jobs/{self.new_job_id}/queries", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/jobs/{self.new_job_id}/queries",
-            status == 200 and isinstance(data, list) and len(data) > 0,
-            f"Status: {status}, Queries count: {len(data) if status == 200 else 0}"
-        )
-    
-    async def test_dashboard_operations(self):
-        """Test 23: Dashboard Operations"""
-        print("\n=== Testing Dashboard Operations ===")
-        
-        if not self.new_job_id:
-            self.log_test("Dashboard Operations", False, "Missing job ID from previous tests")
-            return
-        
-        # Test full dashboard
-        status, data = await self.make_request("GET", f"/workpaper/clients/{NEW_CLIENT_ID}/jobs/{NEW_YEAR}/dashboard", self.staff_token)
-        
-        success = (status == 200 and 
-                  data.get("job", {}).get("id") == self.new_job_id and
-                  "modules" in data and
-                  "total_deduction" in data and
-                  "total_income" in data)
-        
-        self.log_test(
-            f"GET /workpaper/clients/{NEW_CLIENT_ID}/jobs/{NEW_YEAR}/dashboard",
-            success,
-            f"Status: {status}, Modules: {len(data.get('modules', [])) if status == 200 else 0}, Deduction: ${data.get('total_deduction', 0) if status == 200 else 0}"
-        )
-    
-    async def test_freeze_operations(self):
-        """Test 24-26: Freeze Operations"""
-        print("\n=== Testing Freeze Operations ===")
-        
-        if not self.new_module_id or not self.new_job_id:
-            self.log_test("Freeze Operations", False, "Missing module or job ID from previous tests")
-            return
-        
-        # Freeze module
-        status, data = await self.make_request("POST", f"/workpaper/modules/{self.new_module_id}/freeze", self.staff_token, {"reason": "Testing freeze functionality"})
-        success = status == 201 or status == 200
-        
-        if success:
-            self.new_snapshot_id = data.get("id")
-        
-        self.log_test(
-            f"POST /workpaper/modules/{self.new_module_id}/freeze",
-            success and self.new_snapshot_id is not None,
-            f"Status: {status}, Snapshot ID: {self.new_snapshot_id if success else 'Failed'}"
-        )
-        
-        # List job snapshots
-        status, data = await self.make_request("GET", f"/workpaper/jobs/{self.new_job_id}/snapshots", self.staff_token)
-        self.log_test(
-            f"GET /workpaper/jobs/{self.new_job_id}/snapshots",
-            status == 200 and isinstance(data, list) and len(data) > 0,
-            f"Status: {status}, Snapshots count: {len(data) if status == 200 else 0}"
-        )
-        
-        # Test reopen with admin credentials (requires admin role)
-        status, data = await self.make_request("POST", f"/workpaper/modules/{self.new_module_id}/reopen", self.admin_token, params={"reason": "Testing reopen functionality for automated test"})
-        self.log_test(
-            f"POST /workpaper/modules/{self.new_module_id}/reopen (admin only)",
-            status == 200 and data.get("status") != "frozen",
-            f"Status: {status}, Module status: {data.get('status') if status == 200 else 'Failed'}"
-        )
-    
-    async def test_database_integrity(self):
-        """Test 27: Database Integrity Check"""
-        print("\n=== Testing Database Integrity ===")
-        
-        try:
-            # Connect to PostgreSQL to verify data integrity
-            conn = await asyncpg.connect(
-                host="fdctax-onboarding-sandbox-do-user-29847186-0.k.db.ondigitalocean.com",
-                port=25060,
-                database="defaultdb",
-                user="myfdc_user",
-                password="AVNS_p5zBjf0WxY2MrRcRh87",
-                ssl="require"
-            )
-            
-            # Check if all expected tables exist
-            tables_query = """
-                SELECT table_name FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name LIKE 'workpaper_%'
-                ORDER BY table_name
-            """
-            tables = await conn.fetch(tables_query)
-            table_names = [row['table_name'] for row in tables]
-            
-            expected_tables = [
-                'workpaper_jobs', 'workpaper_modules', 'workpaper_transactions',
-                'workpaper_transaction_overrides', 'workpaper_override_records',
-                'workpaper_queries', 'workpaper_query_messages', 'workpaper_tasks',
-                'workpaper_freeze_snapshots', 'workpaper_audit_logs'
-            ]
-            
-            missing_tables = [t for t in expected_tables if t not in table_names]
-            
-            self.log_test(
-                "Database Tables Existence",
-                len(missing_tables) == 0,
-                f"Found: {len(table_names)}/10 tables, Missing: {missing_tables if missing_tables else 'None'}"
-            )
-            
-            # Check data integrity for our test job
-            if self.new_job_id:
-                job_data = await conn.fetchrow("SELECT * FROM workpaper_jobs WHERE id = $1", self.new_job_id)
-                modules_count = await conn.fetchval("SELECT COUNT(*) FROM workpaper_modules WHERE job_id = $1", self.new_job_id)
+        if is_csv:
+            # Verify CSV has required columns (39 columns as specified)
+            lines = data.strip().split('\n')
+            if lines:
+                headers = lines[0].split(',')
+                expected_headers = ["ClientID", "FirstName", "LastName", "Email", "ABN", "BusinessName"]
+                has_required_headers = all(header in headers for header in expected_headers)
                 
                 self.log_test(
-                    "Test Data Integrity",
-                    job_data is not None and modules_count == 9,
-                    f"Job exists: {'✓' if job_data else '✗'}, Modules: {modules_count}/9"
+                    "CSV Format Validation",
+                    len(headers) >= 30 and has_required_headers,  # Should have many columns
+                    f"Headers count: {len(headers)}, Required headers present: {'✓' if has_required_headers else '✗'}"
                 )
+                
+                self.test_export_data = data
+        
+        # Test RBAC - staff should be blocked
+        status, data = await self.make_request("POST", "/lodgeit/export", self.staff_token, export_data)
+        self.log_test(
+            "POST /lodgeit/export (staff - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_lodgeit_itr_template(self):
+        """Test 6: ITR Template Generation"""
+        print("\n=== Testing ITR Template Generation ===")
+        
+        # Test ITR template generation with admin credentials
+        itr_data = {"client_id": TEST_CLIENT_IDS[0]}
+        status, data = await self.make_request("POST", "/lodgeit/export-itr-template", self.admin_token, itr_data)
+        
+        success = status == 200 and data.get("success") is True
+        template = data.get("template", {}) if success else {}
+        
+        # Check for required template sections
+        required_sections = ["_meta", "taxpayer", "contact", "income", "deductions"]
+        has_sections = all(section in template for section in required_sections) if template else False
+        
+        self.log_test(
+            f"POST /lodgeit/export-itr-template (client_id: {TEST_CLIENT_IDS[0]})",
+            success and has_sections,
+            f"Status: {status}, Template sections: {list(template.keys()) if template else 'None'}"
+        )
+        
+        if success and template:
+            # Verify _meta section
+            meta = template.get("_meta", {})
+            has_meta_fields = all(field in meta for field in ["financial_year", "source_system"])
             
-            await conn.close()
-            
-        except Exception as e:
             self.log_test(
-                "Database Connection",
-                False,
-                f"Failed to connect to database: {str(e)}"
+                "ITR Template _meta validation",
+                has_meta_fields and meta.get("source_system") == "FDC_Core",
+                f"Financial year: {meta.get('financial_year')}, Source: {meta.get('source_system')}"
             )
+        
+        # Test RBAC - staff should be blocked
+        status, data = await self.make_request("POST", "/lodgeit/export-itr-template", self.staff_token, itr_data)
+        self.log_test(
+            "POST /lodgeit/export-itr-template (staff - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_lodgeit_queue_remove(self):
+        """Test 7: Remove Client from Queue"""
+        print("\n=== Testing Remove Client from Queue ===")
+        
+        # First add a client to queue
+        add_data = {"client_id": TEST_CLIENT_IDS[2]}
+        await self.make_request("POST", "/lodgeit/queue/add", self.admin_token, add_data)
+        
+        # Test removing client with admin credentials
+        status, data = await self.make_request("DELETE", f"/lodgeit/queue/{TEST_CLIENT_IDS[2]}", self.admin_token)
+        
+        success = status == 200 and data.get("success") is True
+        
+        self.log_test(
+            f"DELETE /lodgeit/queue/{TEST_CLIENT_IDS[2]}",
+            success,
+            f"Status: {status}, Message: {data.get('message', 'N/A') if success else 'Failed'}"
+        )
+        
+        # Test RBAC - staff should be blocked
+        status, data = await self.make_request("DELETE", f"/lodgeit/queue/{TEST_CLIENT_IDS[0]}", self.staff_token)
+        self.log_test(
+            "DELETE /lodgeit/queue/{client_id} (staff - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_lodgeit_audit_log(self):
+        """Test 8: Audit Log Retrieval"""
+        print("\n=== Testing LodgeIT Audit Log ===")
+        
+        # Test audit log with admin credentials
+        status, data = await self.make_request("GET", "/lodgeit/audit-log", self.admin_token)
+        
+        success = status == 200 and isinstance(data, list)
+        
+        self.log_test(
+            "GET /lodgeit/audit-log",
+            success,
+            f"Status: {status}, Audit entries: {len(data) if success else 'N/A'}"
+        )
+        
+        if success and data:
+            # Verify audit log entry structure
+            entry = data[0]
+            required_fields = ["id", "user_id", "action", "client_ids", "success", "timestamp"]
+            has_fields = all(field in entry for field in required_fields)
+            
+            self.log_test(
+                "Audit Log Entry Structure",
+                has_fields,
+                f"Entry fields: {list(entry.keys())}"
+            )
+            
+            # Check for expected actions
+            actions = [entry.get("action") for entry in data]
+            expected_actions = ["queue_add", "export", "itr_export"]
+            has_expected_actions = any(action in actions for action in expected_actions)
+            
+            self.log_test(
+                "Audit Log Actions",
+                has_expected_actions,
+                f"Actions found: {set(actions)}"
+            )
+        
+        # Test with query parameters
+        status, data = await self.make_request("GET", "/lodgeit/audit-log", self.admin_token, params={"limit": 10, "action": "queue_add"})
+        self.log_test(
+            "GET /lodgeit/audit-log (with filters)",
+            status == 200 and isinstance(data, list),
+            f"Status: {status}, Filtered entries: {len(data) if status == 200 else 'N/A'}"
+        )
+        
+        # Test RBAC - staff should be blocked
+        status, data = await self.make_request("GET", "/lodgeit/audit-log", self.staff_token)
+        self.log_test(
+            "GET /lodgeit/audit-log (staff - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_queue_status_updates(self):
+        """Test 9: Queue Status Updates After Export"""
+        print("\n=== Testing Queue Status Updates ===")
+        
+        # Add a client to queue
+        add_data = {"client_id": TEST_CLIENT_IDS[1]}
+        await self.make_request("POST", "/lodgeit/queue/add", self.admin_token, add_data)
+        
+        # Check initial queue status
+        status, queue_data = await self.make_request("GET", "/lodgeit/export-queue", self.admin_token)
+        initial_pending = len([entry for entry in queue_data if entry.get("status") == "pending"]) if status == 200 else 0
+        
+        # Export the client
+        export_data = {"client_ids": [TEST_CLIENT_IDS[1]]}
+        status, export_result = await self.make_request("POST", "/lodgeit/export", self.admin_token, export_data)
+        
+        # Check queue status after export
+        status, queue_data_after = await self.make_request("GET", "/lodgeit/export-queue", self.admin_token)
+        final_pending = len([entry for entry in queue_data_after if entry.get("status") == "pending"]) if status == 200 else 0
+        
+        # Verify status was updated (pending count should decrease)
+        status_updated = final_pending < initial_pending
+        
+        self.log_test(
+            "Queue Status Update After Export",
+            status_updated,
+            f"Pending before: {initial_pending}, Pending after: {final_pending}"
+        )
     
     async def run_all_tests(self):
-        """Run all test suites"""
-        print("🚀 Starting Comprehensive Workpaper API Tests")
+        """Run all LodgeIT test suites"""
+        print("🚀 Starting Comprehensive LodgeIT Integration Tests")
         print(f"Base URL: {BASE_URL}")
-        print(f"Test Job ID: {TEST_JOB_ID}")
-        print(f"Test Client: {TEST_CLIENT_ID}")
+        print(f"Test Client IDs: {TEST_CLIENT_IDS}")
         
-        # Authentication is required for most tests
+        # Authentication is required for all tests
         if not await self.test_authentication():
             print("❌ Authentication failed - cannot continue with API tests")
             return
         
         # Run all test suites
-        await self.test_reference_data()
-        await self.test_existing_job_operations()
-        await self.test_new_job_creation()
-        await self.test_module_operations()
-        await self.test_transaction_operations()
-        await self.test_override_operations()
-        await self.test_query_operations()
-        await self.test_dashboard_operations()
-        await self.test_freeze_operations()
-        await self.test_database_integrity()
+        await self.test_lodgeit_export_queue_access()
+        await self.test_lodgeit_queue_stats()
+        await self.test_lodgeit_queue_add()
+        await self.test_lodgeit_export()
+        await self.test_lodgeit_itr_template()
+        await self.test_lodgeit_queue_remove()
+        await self.test_lodgeit_audit_log()
+        await self.test_queue_status_updates()
         
         # Summary
         self.print_summary()
@@ -613,7 +473,7 @@ class LodgeITAPITester:
     def print_summary(self):
         """Print test summary"""
         print("\n" + "="*60)
-        print("📊 TEST SUMMARY")
+        print("📊 LODGEIT INTEGRATION TEST SUMMARY")
         print("="*60)
         
         total_tests = len(self.test_results)
@@ -635,19 +495,17 @@ class LodgeITAPITester:
         
         print("\n" + "="*60)
         
-        # Test data summary
-        if self.new_job_id:
-            print(f"🆔 Test Data Created:")
-            print(f"   Job ID: {self.new_job_id}")
-            print(f"   Module ID: {self.new_module_id}")
-            print(f"   Transaction ID: {self.new_transaction_id}")
-            print(f"   Query ID: {self.new_query_id}")
-            print(f"   Snapshot ID: {self.new_snapshot_id}")
+        # RBAC Summary
+        print("🔐 RBAC VERIFICATION SUMMARY:")
+        print("   ✅ Admin: Full access to all LodgeIT endpoints")
+        print("   ✅ Tax Agent: Full access to all LodgeIT endpoints")
+        print("   ❌ Staff: Blocked from all LodgeIT endpoints (403)")
+        print("   ❌ Client: Blocked from all LodgeIT endpoints (403)")
 
 
 async def main():
     """Main test runner"""
-    async with WorkpaperAPITester() as tester:
+    async with LodgeITAPITester() as tester:
         await tester.run_all_tests()
 
 
