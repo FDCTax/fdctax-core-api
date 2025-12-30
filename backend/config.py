@@ -174,7 +174,7 @@ class Settings(BaseSettings):
             "https://myfdc.com",
             "https://www.myfdc.com",
             # Emergent deployment domains
-            "https://txengine.preview.emergentagent.com",
+            "https://lodgeit-sync.preview.emergentagent.com",
             "https://txengine.emergent.host",
         ]
         
