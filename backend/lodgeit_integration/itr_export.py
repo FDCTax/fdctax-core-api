@@ -263,7 +263,7 @@ async def generate_itr_template(
         audit_log = LodgeITAuditLogDB(
             user_id=user_id,
             user_email=user_email,
-            action=LodgeITAction.ITR_EXPORT,
+            action=LodgeITAction.ITR_EXPORT.value,
             client_ids=[client_id],
             success=True,
             details={"financial_year": template["_meta"]["financial_year"]}
@@ -286,7 +286,7 @@ async def generate_itr_template(
         audit_log = LodgeITAuditLogDB(
             user_id=user_id,
             user_email=user_email,
-            action=LodgeITAction.ITR_EXPORT,
+            action=LodgeITAction.ITR_EXPORT.value,
             client_ids=[client_id],
             success=False,
             error_message=str(e)
