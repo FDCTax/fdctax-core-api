@@ -949,15 +949,27 @@ test_plan:
         agent: "testing"
         comment: "✅ VERIFIED: RBAC matrix fully functional. Admin ✔️ (full access to all endpoints), Staff ✔️ (full access to all endpoints), Tax Agent ✔️ (read-only: can GET batches/details/audit-log but blocked from POST upload/parse/import/rollback with 403), Client ❌ (403 blocked from all endpoints). All permission boundaries correctly enforced."
 
-  - task: "Duplicate Detection Logic"
+  - task: "Ingestion Batch Detail - GET /api/ingestion/batches/{id}"
     implemented: true
     working: true
-    file: "/app/backend/ingestion/service.py"
+    file: "/app/backend/routers/ingestion.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
-        agent: "main"
-        comment: "SQL-based duplicate detection. Rule: same client_id + date + amount + normalized description. Tested with re-import - all 5 duplicates correctly skipped."
+        agent: "testing"
+        comment: "✅ VERIFIED: Batch detail retrieval working correctly. Staff ✔️ (retrieved batch details with all required fields: id, client_id, file_name, status=completed, uploaded_by), Tax Agent ✔️ (read-only access granted). Batch status tracking functional."
+
+  - task: "Ingestion Batch Audit Log - GET /api/ingestion/batches/{id}/audit-log"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/ingestion.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Batch audit log working correctly. Staff ✔️ (retrieved 4 audit entries), Tax Agent ✔️ (read-only access granted). Audit trail tracking all batch operations properly."
 
