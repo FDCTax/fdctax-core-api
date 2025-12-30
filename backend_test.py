@@ -109,16 +109,8 @@ class LodgeITAPITester:
             return 500, str(e)
     
     async def test_authentication(self):
-        """Test 1: Authentication"""
+        """Test 1: Authentication for all user roles"""
         print("\n=== Testing Authentication ===")
-        
-        # Test staff login
-        self.staff_token = await self.authenticate(STAFF_CREDENTIALS)
-        self.log_test(
-            "Staff Authentication",
-            self.staff_token is not None,
-            f"Token: {'✓' if self.staff_token else '✗'}"
-        )
         
         # Test admin login
         self.admin_token = await self.authenticate(ADMIN_CREDENTIALS)
@@ -128,7 +120,31 @@ class LodgeITAPITester:
             f"Token: {'✓' if self.admin_token else '✗'}"
         )
         
-        return self.staff_token and self.admin_token
+        # Test tax agent login
+        self.tax_agent_token = await self.authenticate(TAX_AGENT_CREDENTIALS)
+        self.log_test(
+            "Tax Agent Authentication",
+            self.tax_agent_token is not None,
+            f"Token: {'✓' if self.tax_agent_token else '✗'}"
+        )
+        
+        # Test staff login
+        self.staff_token = await self.authenticate(STAFF_CREDENTIALS)
+        self.log_test(
+            "Staff Authentication",
+            self.staff_token is not None,
+            f"Token: {'✓' if self.staff_token else '✗'}"
+        )
+        
+        # Test client login
+        self.client_token = await self.authenticate(CLIENT_CREDENTIALS)
+        self.log_test(
+            "Client Authentication",
+            self.client_token is not None,
+            f"Token: {'✓' if self.client_token else '✗'}"
+        )
+        
+        return all([self.admin_token, self.tax_agent_token, self.staff_token, self.client_token])
     
     async def test_reference_data(self):
         """Test 2-4: Reference Data (No auth required)"""
