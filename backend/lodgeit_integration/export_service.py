@@ -211,18 +211,30 @@ class LodgeITExportService:
         """
         Update the export queue status for the given clients.
         """
+        now = datetime.now(timezone.utc)
         for client_id in client_ids:
-            query = text("""
-                UPDATE lodgeit_export_queue
-                SET status = :status,
-                    updated_at = :now,
-                    last_exported_at = CASE WHEN :status = 'exported' THEN :now ELSE last_exported_at END,
-                    error_message = :error_message
-                WHERE client_id = :client_id AND status = 'pending'
-            """)
+            # Determine last_exported_at based on status
+            if status == ExportQueueStatus.EXPORTED:
+                query = text("""
+                    UPDATE lodgeit_export_queue
+                    SET status = :status,
+                        updated_at = :now,
+                        last_exported_at = :now,
+                        error_message = :error_message
+                    WHERE client_id = :client_id AND status = 'pending'
+                """)
+            else:
+                query = text("""
+                    UPDATE lodgeit_export_queue
+                    SET status = :status,
+                        updated_at = :now,
+                        error_message = :error_message
+                    WHERE client_id = :client_id AND status = 'pending'
+                """)
+            
             await self.db.execute(query, {
                 "status": status.value,
-                "now": datetime.now(timezone.utc),
+                "now": now,
                 "error_message": error_message,
                 "client_id": client_id
             })
