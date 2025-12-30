@@ -940,11 +940,14 @@ test_plan:
     file: "/app/backend/routers/ingestion.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "RBAC verified: admin/staff have full access, tax_agent has read-only, client has no access. Proper 403 responses with role requirements."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: RBAC matrix fully functional. Admin ✔️ (full access to all endpoints), Staff ✔️ (full access to all endpoints), Tax Agent ✔️ (read-only: can GET batches/details/audit-log but blocked from POST upload/parse/import/rollback with 403), Client ❌ (403 blocked from all endpoints). All permission boundaries correctly enforced."
 
   - task: "Duplicate Detection Logic"
     implemented: true
