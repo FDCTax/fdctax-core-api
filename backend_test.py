@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend Test Suite for Workpaper Engine API
-Tests all PostgreSQL-migrated endpoints with authentication
+Comprehensive Backend Test Suite for LodgeIT Integration Module
+Tests all LodgeIT endpoints with RBAC authentication
 """
 
 import asyncio
@@ -17,9 +17,11 @@ import asyncpg
 # Test configuration
 BASE_URL = "https://lodgeit-sync.preview.emergentagent.com/api"
 
-# Test credentials
-STAFF_CREDENTIALS = {"email": "staff@fdctax.com", "password": "staff123"}
+# Test credentials for RBAC testing
 ADMIN_CREDENTIALS = {"email": "admin@fdctax.com", "password": "admin123"}
+TAX_AGENT_CREDENTIALS = {"email": "taxagent@fdctax.com", "password": "taxagent123"}
+STAFF_CREDENTIALS = {"email": "staff@fdctax.com", "password": "staff123"}
+CLIENT_CREDENTIALS = {"email": "client@fdctax.com", "password": "client123"}
 
 # Test data
 TEST_JOB_ID = "4fc51694-ebaf-40a0-a358-62da0d4fb9d7"
