@@ -856,3 +856,90 @@ test_plan:
   - agent: "testing"
     message: "LODGEIT INTEGRATION MODULE COMPREHENSIVE TESTING COMPLETED - ALL 28 TESTS PASSED (100% SUCCESS RATE). Verified complete functionality: 1) Authentication (4 roles), 2) Export Queue Access (RBAC verified), 3) Queue Statistics (pending=1, exported=1, failed=0, total=2), 4) Queue Management (add/remove with duplicate handling), 5) CSV Export (39 columns with required headers), 6) ITR Template Generation (comprehensive JSON with _meta, taxpayer, contact sections), 7) Audit Log (9 entries with proper structure), 8) Queue Status Updates (pending→exported after export). RBAC MATRIX VERIFIED: Admin ✔️ (full access), Tax Agent ✔️ (full access), Staff ❌ (403 on all endpoints), Client ❌ (403 on all endpoints). All endpoints properly protected with RoleChecker. Test clients: 143003, 143004, 143005. LodgeIT integration fully functional and production-ready."
 
+
+## Bookkeeping Ingestion Module
+
+  - task: "Ingestion Upload - POST /api/ingestion/upload"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/ingestion.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "File upload endpoint working. Accepts CSV/XLSX files. Creates import_batch record. Returns batch_id and file_url. Tested with staff role."
+
+  - task: "Ingestion Parse - POST /api/ingestion/parse"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/ingestion.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Parse endpoint working. Returns columns, preview (20 rows), row_count, auto-detected mapping_suggestions. Detects bank formats (ANZ, CBA, Westpac)."
+
+  - task: "Ingestion Import - POST /api/ingestion/import"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/ingestion.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Import endpoint working. Imports transactions with column mapping. Duplicate detection working - same client_id + date + amount + description = duplicate. Returns imported_count, skipped_duplicates, errors."
+
+  - task: "Ingestion Rollback - POST /api/ingestion/rollback"
+    implemented: true
+    working: false
+    file: "/app/backend/routers/ingestion.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "main"
+        comment: "Rollback endpoint implemented but requires import_batch_id column in transactions table. Migration needs admin privileges to ALTER TABLE. Returns helpful error message."
+
+  - task: "Ingestion Batches - GET /api/ingestion/batches"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/ingestion.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "List batches endpoint working. Supports client_id, job_id, status filters. Returns batch details with import stats."
+
+  - task: "Ingestion RBAC"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/ingestion.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "RBAC verified: admin/staff have full access, tax_agent has read-only, client has no access. Proper 403 responses with role requirements."
+
+  - task: "Duplicate Detection Logic"
+    implemented: true
+    working: true
+    file: "/app/backend/ingestion/service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "SQL-based duplicate detection. Rule: same client_id + date + amount + normalized description. Tested with re-import - all 5 duplicates correctly skipped."
+
