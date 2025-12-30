@@ -865,11 +865,14 @@ test_plan:
     file: "/app/backend/routers/ingestion.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "File upload endpoint working. Accepts CSV/XLSX files. Creates import_batch record. Returns batch_id and file_url. Tested with staff role."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: File upload working correctly. Staff ✔️ (uploaded test_ingestion.csv, batch_id: 016575aa-9da4-4ebc-b378-cd3a78f48c7f), Admin ✔️ (full access), Tax Agent ❌ (403 blocked), Client ❌ (403 blocked). Multipart/form-data handling working properly. RBAC matrix fully enforced."
 
   - task: "Ingestion Parse - POST /api/ingestion/parse"
     implemented: true
