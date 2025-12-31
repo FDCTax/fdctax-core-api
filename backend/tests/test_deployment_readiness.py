@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional, List
 import aiohttp
 
 # Test configuration
-BASE_URL = "https://lodgeit-sync.preview.emergentagent.com/api"
+BASE_URL = "https://fdctax-core.preview.emergentagent.com/api"
 
 # Test credentials as provided
 TEST_CREDENTIALS = {

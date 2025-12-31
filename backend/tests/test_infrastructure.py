@@ -22,7 +22,7 @@ import aiohttp
 import asyncpg
 
 # Test configuration
-BASE_URL = "https://lodgeit-sync.preview.emergentagent.com/api"
+BASE_URL = "https://fdctax-core.preview.emergentagent.com/api"
 
 # Test credentials as specified in the review request
 TEST_CREDENTIALS = {
