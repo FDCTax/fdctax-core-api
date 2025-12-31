@@ -197,6 +197,19 @@ workpapers_call_links: {id, call_id, workpaper_id}
 - `GET /api/vxt/calls/{call_id}` - Get call details
 - `POST /api/vxt/link-workpaper` - Link call to workpaper
 
+### Identity
+- `GET /api/identity/status` - Module status (public)
+- `POST /api/identity/myfdc-signup` - MyFDC signup (public)
+- `POST /api/identity/crm-client-create` - Create CRM client (staff)
+- `GET /api/identity/person/by-email` - Lookup by email (staff)
+- `GET /api/identity/person/{id}` - Lookup by ID (staff)
+- `PUT /api/identity/engagement/{id}` - Update engagement (staff)
+- `GET /api/identity/stats` - Statistics (admin)
+- `GET /api/identity/orphaned` - Orphaned records (admin)
+- `GET /api/identity/duplicates` - Duplicate emails (admin)
+- `POST /api/identity/link-existing` - Link records (admin)
+- `POST /api/identity/merge` - Merge persons (admin)
+
 ---
 
 ## Test Credentials
