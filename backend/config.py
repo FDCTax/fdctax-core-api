@@ -170,6 +170,22 @@ class Settings(BaseSettings):
         description="Enable/disable email features"
     )
     
+    # ==================== INTERNAL SERVICE AUTH ====================
+    INTERNAL_API_KEY: str = Field(
+        default="",
+        description="Primary API key for internal service-to-service auth"
+    )
+    INTERNAL_API_KEYS: str = Field(
+        default="",
+        description="Comma-separated list of valid internal API keys (for rotation)"
+    )
+    
+    # ==================== ENCRYPTION ====================
+    ENCRYPTION_KEY: str = Field(
+        default="",
+        description="Fernet encryption key for sensitive fields (TFN)"
+    )
+    
     # ==================== OBSERVABILITY ====================
     SENTRY_DSN: str = Field(
         default="",
