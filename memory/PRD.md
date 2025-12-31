@@ -119,7 +119,33 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
 - `bas_change_log` - Audit trail
 - `bas_workflow_steps` - **NEW:** Workflow step tracking
 
-### 8. Existing Modules
+### 9. SMS Integration Phase 1 ✅ (Backend - Dec 2025)
+**Backend:** `/api/sms/...`
+- Real SMS sending via Twilio (when configured)
+- Phone number validation and normalization (E.164, Australian formats)
+- 9 pre-defined templates for common use cases
+- Graceful failure handling when unconfigured
+- Message status tracking
+
+**Endpoints:**
+- `GET /api/sms/status` - Integration status and config check
+- `GET /api/sms/templates` - List available templates
+- `POST /api/sms/send` - Send direct SMS
+- `POST /api/sms/send-template` - Send from template
+- `GET /api/sms/message/{id}` - Get message status
+- `POST /api/sms/test` - Test SMS (admin only)
+
+**Templates Available:**
+- `appointment_reminder`, `document_request`, `payment_reminder`
+- `tax_deadline`, `bas_ready`, `bas_approved`, `bas_lodged`
+- `welcome`, `verification_code`
+
+**Environment Variables Required:**
+- `SMS_ACCOUNT_SID` - Twilio Account SID
+- `SMS_AUTH_TOKEN` - Twilio Auth Token
+- `SMS_FROM_NUMBER` - Twilio Phone Number
+
+### 10. Existing Modules
 - CRM/Clients Management
 - Workpaper Management
 - Transaction Engine
