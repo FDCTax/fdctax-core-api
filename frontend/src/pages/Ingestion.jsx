@@ -417,16 +417,19 @@ export default function Ingestion() {
                           {field.label} {field.required && <span className="text-red-500">*</span>}
                         </Label>
                         <Select
-                          value={columnMapping[field.key] || ''}
+                          value={columnMapping[field.key] || 'none'}
                           onValueChange={(value) => 
-                            setColumnMapping(prev => ({ ...prev, [field.key]: value }))
+                            setColumnMapping(prev => ({ 
+                              ...prev, 
+                              [field.key]: value === 'none' ? undefined : value 
+                            }))
                           }
                         >
                           <SelectTrigger data-testid={`mapping-${field.key}`}>
                             <SelectValue placeholder="Select column" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">-- Not mapped --</SelectItem>
+                            <SelectItem value="none">-- Not mapped --</SelectItem>
                             {parseData.columns.map((col) => (
                               <SelectItem key={col} value={col}>{col}</SelectItem>
                             ))}
