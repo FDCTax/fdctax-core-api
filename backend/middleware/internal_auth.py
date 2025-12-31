@@ -253,14 +253,40 @@ class InternalOrUserAuth:
                 "api_key_hash": f"...{api_key[-8:]}"
             }
         
-        # Fall back to JWT auth
-        from middleware.auth import get_current_user
+        # Fall back to JWT auth - extract token manually
+        auth_header = request.headers.get("Authorization", "")
+        
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required (internal API key or user token)"
+            )
+        
+        token = auth_header[7:]  # Remove "Bearer " prefix
         
         try:
-            user = await get_current_user(request)
+            from middleware.auth import decode_token, AuthRoleStorage
+            
+            token_data = decode_token(token)
+            
+            if not token_data:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid or expired token"
+                )
+            
+            if token_data.token_type != "access":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token type"
+                )
+            
+            # Get role from storage
+            role_storage = AuthRoleStorage()
+            role = role_storage.get_user_role(token_data.user_id, token_data.email)
             
             # Check role if specified
-            if self.allowed_roles and user.role not in self.allowed_roles:
+            if self.allowed_roles and role not in self.allowed_roles:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"Access denied. Required roles: {self.allowed_roles}"
@@ -268,9 +294,9 @@ class InternalOrUserAuth:
             
             return {
                 "auth_type": "user",
-                "user_id": user.id,
-                "email": user.email,
-                "role": user.role
+                "user_id": token_data.user_id,
+                "email": token_data.email,
+                "role": role
             }
         except HTTPException:
             raise
