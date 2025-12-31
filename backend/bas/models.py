@@ -4,6 +4,7 @@ BAS Backend - Database Models
 Models for:
 - BASStatement: BAS snapshots at completion
 - BASChangeLog: Audit trail for BAS actions
+- BASWorkflowStep: Multi-step sign-off workflow tracking
 """
 
 import uuid
@@ -13,7 +14,7 @@ from enum import Enum as PyEnum
 from typing import Optional, Dict, Any
 
 from sqlalchemy import (
-    Column, String, Text, Date, DateTime, Numeric, Integer, JSON, ForeignKey
+    Column, String, Text, Date, DateTime, Numeric, Integer, JSON, ForeignKey, Boolean
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
@@ -33,7 +34,10 @@ def utc_now() -> datetime:
 class BASStatus(str, PyEnum):
     """Status values for BAS statements"""
     DRAFT = "draft"
-    COMPLETED = "completed"
+    PREPARED = "prepared"      # Bookkeeper has prepared
+    REVIEWED = "reviewed"      # Tax agent has reviewed
+    APPROVED = "approved"      # Client has approved
+    COMPLETED = "completed"    # Legacy - keep for backwards compat
     AMENDED = "amended"
     LODGED = "lodged"
 
@@ -46,9 +50,15 @@ class BASActionType(str, PyEnum):
     CATEGORIZE = "categorize"
     ADJUST = "adjust"
     SIGN_OFF = "sign_off"
+    PREPARE = "prepare"        # New: Bookkeeper prepares
+    REVIEW = "review"          # New: Tax agent reviews
+    APPROVE = "approve"        # New: Client approves
+    LODGE = "lodge"            # New: Lodged with ATO
     AMEND = "amend"
     EXPORT = "export"
     GENERATE_PDF = "generate_pdf"
+    REJECT = "reject"          # New: Step rejected
+    REASSIGN = "reassign"      # New: Step reassigned
 
 
 class BASEntityType(str, PyEnum):
@@ -60,6 +70,24 @@ class BASEntityType(str, PyEnum):
     PAYG = "payg"
     NOTE = "note"
     PDF = "pdf"
+    WORKFLOW = "workflow"      # New: Workflow step
+
+
+class WorkflowStepType(str, PyEnum):
+    """Workflow step types"""
+    PREPARE = "prepare"
+    REVIEW = "review"
+    APPROVE = "approve"
+    LODGE = "lodge"
+
+
+class WorkflowStepStatus(str, PyEnum):
+    """Workflow step status"""
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    REJECTED = "rejected"
+    SKIPPED = "skipped"
 
 
 # ==================== BAS STATEMENT TABLE ====================
