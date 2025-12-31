@@ -176,6 +176,14 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
   - Audit logging for preview requests
   - Full test coverage (51/51 tests passed, no regressions)
 
+- ✅ **BAS Module Enhanced** - Workflow & History
+  - Multi-step sign-off workflow (prepare → review → approve → lodge)
+  - Workflow step assignment, completion, rejection
+  - Pending steps per user/role
+  - Grouped history (by quarter/month/year)
+  - Period comparison (previous quarter, same last year)
+  - Full test coverage (41/42 tests passed, 2 bugs fixed)
+
 ---
 
 ## Database Schema (Key Tables)
