@@ -300,7 +300,7 @@ class LunaMigrationService:
                 COUNT(*) FILTER (WHERE source_system = 'myfdc') as myfdc_created,
                 COUNT(*) FILTER (WHERE source_system = 'core') as core_created,
                 MAX(migration_date) as last_migration
-            FROM core.client_profiles
+            FROM public.client_profiles
         """)
         
         try:
@@ -344,7 +344,7 @@ class LunaMigrationService:
         """
         # Get profiles from this batch
         query = text("""
-            SELECT id, client_code FROM core.client_profiles
+            SELECT id, client_code FROM public.client_profiles
             WHERE source_system = 'luna' 
             AND migration_date >= (
                 SELECT started_at FROM core.migration_log WHERE batch_id = :batch_id

@@ -172,7 +172,7 @@ class ClientProfileService:
     Service for managing client profiles.
     
     Handles:
-    - CRUD operations on core.client_profiles
+    - CRUD operations on public.client_profiles
     - TFN encryption/decryption
     - Search and filtering
     - Audit logging
@@ -208,7 +208,7 @@ class ClientProfileService:
             log_tfn_access("encrypt", profile.client_code, created_by, True, "profile_create")
         
         insert_sql = text("""
-            INSERT INTO core.client_profiles (
+            INSERT INTO public.client_profiles (
                 id, person_id, crm_client_id, legacy_client_id,
                 client_code, display_name, legal_name, trading_name,
                 entity_type, client_status, client_category, client_tier, referral_source,
@@ -387,7 +387,7 @@ class ClientProfileService:
             Profile dict or None
         """
         query = text("""
-            SELECT * FROM core.client_profiles WHERE id = :id
+            SELECT * FROM public.client_profiles WHERE id = :id
         """)
         
         result = await self.db.execute(query, {"id": profile_id})
@@ -406,7 +406,7 @@ class ClientProfileService:
     ) -> Optional[Dict[str, Any]]:
         """Get client profile by client code."""
         query = text("""
-            SELECT * FROM core.client_profiles WHERE client_code = :client_code
+            SELECT * FROM public.client_profiles WHERE client_code = :client_code
         """)
         
         result = await self.db.execute(query, {"client_code": client_code})
@@ -472,7 +472,7 @@ class ClientProfileService:
         where_clause = " AND ".join(conditions) if conditions else "TRUE"
         
         query = text(f"""
-            SELECT * FROM core.client_profiles 
+            SELECT * FROM public.client_profiles 
             WHERE {where_clause}
             ORDER BY display_name ASC
             LIMIT :limit OFFSET :offset
@@ -523,7 +523,7 @@ class ClientProfileService:
         set_clause = ", ".join(set_clauses)
         
         query = text(f"""
-            UPDATE core.client_profiles 
+            UPDATE public.client_profiles 
             SET {set_clause}
             WHERE id = :profile_id
         """)
