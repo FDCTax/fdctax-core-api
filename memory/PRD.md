@@ -210,6 +210,16 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
   - Period comparison (previous quarter, same last year)
   - Full test coverage (41/42 tests passed, 2 bugs fixed)
 
+- ✅ **SMS Integration Phase 1** - Twilio SMS
+  - Real SMS sending via Twilio (when credentials configured)
+  - Phone number validation & normalization (Australian formats)
+  - 9 pre-defined templates for BAS, appointments, documents
+  - Graceful failure when unconfigured (returns 503)
+  - Full test coverage (42/42 tests passed)
+
+- ✅ **Client Test User Created**
+  - `client@fdctax.com` / `client123` - for workflow testing
+
 ---
 
 ## Database Schema (Key Tables)
