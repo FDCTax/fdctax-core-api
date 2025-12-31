@@ -86,6 +86,67 @@ class ChangeLogRequest(BaseModel):
 
 # ==================== ENDPOINTS ====================
 
+@router.get("/status")
+async def get_bas_status():
+    """
+    Get BAS module status.
+    
+    Returns module version and feature availability.
+    No authentication required.
+    """
+    return {
+        "status": "ok",
+        "module": "bas",
+        "version": "0.0.1",
+        "features": {
+            "save_snapshot": True,
+            "history": True,
+            "sign_off": True,
+            "pdf_generation": True,
+            "change_log": True,
+            "calculate": False,  # Stub - Phase 1
+            "validate": False,   # Stub - Phase 1
+            "lodgeit_export": False  # Future
+        }
+    }
+
+
+@router.post("/validate")
+async def validate_bas(
+    current_user: AuthUser = Depends(require_bas_write)
+):
+    """
+    Validate transactions for BAS calculation.
+    
+    **Phase 0 Status:** This endpoint is a stub and will return `not_implemented`.
+    Validation logic will be added in Phase 1.
+    
+    **Permissions:** staff, tax_agent, admin
+    """
+    return {
+        "status": "not_implemented",
+        "message": "BAS validation is not implemented yet. This is Phase 0 scaffolding."
+    }
+
+
+@router.post("/calculate")
+async def calculate_bas(
+    current_user: AuthUser = Depends(require_bas_write)
+):
+    """
+    Calculate BAS from transactions.
+    
+    **Phase 0 Status:** This endpoint is a stub and will return `not_implemented`.
+    Calculation logic will be added in Phase 1.
+    
+    **Permissions:** staff, tax_agent, admin
+    """
+    return {
+        "status": "not_implemented",
+        "message": "BAS calculation is not implemented yet. This is Phase 0 scaffolding."
+    }
+
+
 @router.post("/save")
 async def save_bas(
     request: SaveBASRequest,
