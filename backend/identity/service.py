@@ -731,6 +731,282 @@ class IdentityService:
         
         return await self._check_engagement_profile_exists(person_id)
     
+    # ==================== MERGE PREVIEW ====================
+    
+    async def merge_preview(
+        self,
+        person_id_a: uuid.UUID,
+        person_id_b: uuid.UUID,
+        performed_by: str = "system"
+    ) -> Dict[str, Any]:
+        """
+        Generate a read-only preview of what would happen if two persons were merged.
+        
+        This endpoint:
+        - Does NOT perform any merge operations
+        - Detects conflicts between the two identities
+        - Recommends merge direction
+        - Logs the preview request for audit
+        
+        Args:
+            person_id_a: First person ID
+            person_id_b: Second person ID
+            performed_by: Who requested the preview
+            
+        Returns:
+            Dict with preview data, conflicts, and recommendation
+        """
+        # Fetch both persons
+        person_a = await self.get_person_by_id(person_id_a)
+        person_b = await self.get_person_by_id(person_id_b)
+        
+        if not person_a:
+            return {
+                "success": False,
+                "error": f"Person A not found: {person_id_a}"
+            }
+        
+        if not person_b:
+            return {
+                "success": False,
+                "error": f"Person B not found: {person_id_b}"
+            }
+        
+        if person_id_a == person_id_b:
+            return {
+                "success": False,
+                "error": "Cannot preview merge of person with itself"
+            }
+        
+        # Fetch linked accounts for both
+        myfdc_a = await self._check_myfdc_account_exists(person_id_a)
+        myfdc_b = await self._check_myfdc_account_exists(person_id_b)
+        crm_a = await self._check_crm_client_exists(person_id_a)
+        crm_b = await self._check_crm_client_exists(person_id_b)
+        engagement_a = await self._check_engagement_profile_exists(person_id_a)
+        engagement_b = await self._check_engagement_profile_exists(person_id_b)
+        
+        # Detect conflicts
+        conflicts = []
+        
+        # 1. Conflicting emails (different emails)
+        if person_a["email"].lower() != person_b["email"].lower():
+            conflicts.append({
+                "type": "conflicting_emails",
+                "severity": "warning",
+                "description": "Persons have different email addresses",
+                "details": {
+                    "email_a": person_a["email"],
+                    "email_b": person_b["email"]
+                }
+            })
+        
+        # 2. Multiple MyFDC accounts
+        if myfdc_a and myfdc_b:
+            conflicts.append({
+                "type": "multiple_myfdc_accounts",
+                "severity": "high",
+                "description": "Both persons have MyFDC accounts - one will be deleted",
+                "details": {
+                    "account_a_id": myfdc_a["id"],
+                    "account_a_provider": myfdc_a["auth_provider"],
+                    "account_b_id": myfdc_b["id"],
+                    "account_b_provider": myfdc_b["auth_provider"]
+                }
+            })
+        
+        # 3. Multiple CRM clients
+        if crm_a and crm_b:
+            conflicts.append({
+                "type": "multiple_crm_clients",
+                "severity": "high",
+                "description": "Both persons have CRM client records - one will be deleted",
+                "details": {
+                    "client_a_code": crm_a["client_code"],
+                    "client_a_business": crm_a["business_name"],
+                    "client_b_code": crm_b["client_code"],
+                    "client_b_business": crm_b["business_name"]
+                }
+            })
+        
+        # 4. Mismatched service flags
+        if engagement_a and engagement_b:
+            mismatched_flags = []
+            service_flags = [
+                ("is_myfdc_user", "MyFDC User"),
+                ("is_crm_client", "CRM Client"),
+                ("has_ocr", "Has OCR"),
+                ("is_diy_bas_user", "DIY BAS User"),
+                ("is_diy_itr_user", "DIY ITR User"),
+                ("is_full_service_bas_client", "Full Service BAS"),
+                ("is_full_service_itr_client", "Full Service ITR"),
+                ("is_bookkeeping_client", "Bookkeeping Client"),
+                ("is_payroll_client", "Payroll Client")
+            ]
+            
+            for flag_key, flag_name in service_flags:
+                val_a = engagement_a.get(flag_key, False)
+                val_b = engagement_b.get(flag_key, False)
+                if val_a != val_b:
+                    mismatched_flags.append({
+                        "flag": flag_key,
+                        "name": flag_name,
+                        "value_a": val_a,
+                        "value_b": val_b,
+                        "merged_value": val_a or val_b  # OR logic in merge
+                    })
+            
+            if mismatched_flags:
+                conflicts.append({
+                    "type": "mismatched_service_flags",
+                    "severity": "low",
+                    "description": "Service flags differ between persons (will be merged with OR logic)",
+                    "details": {
+                        "mismatched_flags": mismatched_flags
+                    }
+                })
+        
+        # 5. Mismatched identity sources (auth providers)
+        if myfdc_a and myfdc_b:
+            if myfdc_a["auth_provider"] != myfdc_b["auth_provider"]:
+                conflicts.append({
+                    "type": "mismatched_auth_providers",
+                    "severity": "medium",
+                    "description": "MyFDC accounts use different authentication providers",
+                    "details": {
+                        "provider_a": myfdc_a["auth_provider"],
+                        "provider_b": myfdc_b["auth_provider"]
+                    }
+                })
+        
+        # 6. Check for different contact info
+        contact_diffs = []
+        if person_a["mobile"] and person_b["mobile"] and person_a["mobile"] != person_b["mobile"]:
+            contact_diffs.append({"field": "mobile", "value_a": person_a["mobile"], "value_b": person_b["mobile"]})
+        if person_a["phone"] and person_b["phone"] and person_a["phone"] != person_b["phone"]:
+            contact_diffs.append({"field": "phone", "value_a": person_a["phone"], "value_b": person_b["phone"]})
+        if person_a["first_name"] and person_b["first_name"] and person_a["first_name"] != person_b["first_name"]:
+            contact_diffs.append({"field": "first_name", "value_a": person_a["first_name"], "value_b": person_b["first_name"]})
+        if person_a["last_name"] and person_b["last_name"] and person_a["last_name"] != person_b["last_name"]:
+            contact_diffs.append({"field": "last_name", "value_a": person_a["last_name"], "value_b": person_b["last_name"]})
+        
+        if contact_diffs:
+            conflicts.append({
+                "type": "different_contact_info",
+                "severity": "low",
+                "description": "Contact information differs (primary's values will be kept)",
+                "details": {
+                    "differences": contact_diffs
+                }
+            })
+        
+        # Calculate combined engagement profile (what it would look like after merge)
+        combined_engagement = None
+        if engagement_a or engagement_b:
+            ea = engagement_a or {}
+            eb = engagement_b or {}
+            combined_engagement = {
+                "is_myfdc_user": ea.get("is_myfdc_user", False) or eb.get("is_myfdc_user", False),
+                "is_crm_client": ea.get("is_crm_client", False) or eb.get("is_crm_client", False),
+                "has_ocr": ea.get("has_ocr", False) or eb.get("has_ocr", False),
+                "is_diy_bas_user": ea.get("is_diy_bas_user", False) or eb.get("is_diy_bas_user", False),
+                "is_diy_itr_user": ea.get("is_diy_itr_user", False) or eb.get("is_diy_itr_user", False),
+                "is_full_service_bas_client": ea.get("is_full_service_bas_client", False) or eb.get("is_full_service_bas_client", False),
+                "is_full_service_itr_client": ea.get("is_full_service_itr_client", False) or eb.get("is_full_service_itr_client", False),
+                "is_bookkeeping_client": ea.get("is_bookkeeping_client", False) or eb.get("is_bookkeeping_client", False),
+                "is_payroll_client": ea.get("is_payroll_client", False) or eb.get("is_payroll_client", False),
+                "subscription_tier": ea.get("subscription_tier") or eb.get("subscription_tier"),
+                "total_interactions": (ea.get("total_interactions", 0) or 0) + (eb.get("total_interactions", 0) or 0)
+            }
+        
+        # Determine recommended merge direction
+        primary, secondary = await self._determine_merge_primary(person_a, person_b)
+        merge_direction = f"{secondary['id']} → {primary['id']}"
+        merge_direction_reason = self._get_merge_direction_reason(
+            primary, secondary, 
+            myfdc_a if primary["id"] == person_a["id"] else myfdc_b,
+            myfdc_b if primary["id"] == person_a["id"] else myfdc_a,
+            crm_a if primary["id"] == person_a["id"] else crm_b,
+            crm_b if primary["id"] == person_a["id"] else crm_a
+        )
+        
+        # Count conflicts by severity
+        conflict_summary = {
+            "total": len(conflicts),
+            "high": len([c for c in conflicts if c["severity"] == "high"]),
+            "medium": len([c for c in conflicts if c["severity"] == "medium"]),
+            "low": len([c for c in conflicts if c["severity"] == "low"]),
+            "warning": len([c for c in conflicts if c["severity"] == "warning"])
+        }
+        
+        # Log the preview request (this is the only write operation)
+        await self._log_action(
+            person_id=person_id_a,
+            action="merge_preview",
+            source_type="person",
+            source_id=str(person_id_a),
+            target_type="person",
+            target_id=str(person_id_b),
+            performed_by=performed_by,
+            details={
+                "conflict_count": conflict_summary["total"],
+                "high_severity_conflicts": conflict_summary["high"],
+                "recommended_direction": merge_direction
+            }
+        )
+        await self.db.commit()
+        
+        return {
+            "success": True,
+            "preview": {
+                "person_a": person_a,
+                "person_b": person_b,
+                "myfdc_account_a": myfdc_a,
+                "myfdc_account_b": myfdc_b,
+                "crm_client_a": crm_a,
+                "crm_client_b": crm_b,
+                "engagement_a": engagement_a,
+                "engagement_b": engagement_b
+            },
+            "combined_engagement_profile": combined_engagement,
+            "conflicts": conflicts,
+            "conflict_summary": conflict_summary,
+            "recommendation": {
+                "merge_direction": merge_direction,
+                "primary_person_id": primary["id"],
+                "secondary_person_id": secondary["id"],
+                "reason": merge_direction_reason,
+                "safe_to_merge": conflict_summary["high"] == 0
+            }
+        }
+    
+    def _get_merge_direction_reason(
+        self,
+        primary: Dict[str, Any],
+        secondary: Dict[str, Any],
+        primary_myfdc: Optional[Dict],
+        secondary_myfdc: Optional[Dict],
+        primary_crm: Optional[Dict],
+        secondary_crm: Optional[Dict]
+    ) -> str:
+        """Generate human-readable reason for merge direction."""
+        reasons = []
+        
+        if primary_crm and not secondary_crm:
+            reasons.append("has CRM client record")
+        elif primary_crm and secondary_crm:
+            reasons.append("CRM client will be kept (secondary's deleted)")
+        
+        if primary_myfdc and not secondary_myfdc:
+            reasons.append("has MyFDC account")
+        elif primary_myfdc and secondary_myfdc:
+            reasons.append("MyFDC account will be kept (secondary's deleted)")
+        
+        if not reasons:
+            reasons.append("is older record")
+        
+        return f"Person {primary['id'][:8]}... selected as primary because it {', '.join(reasons)}"
+    
     # ==================== HELPER METHODS ====================
     
     async def _generate_client_code(self) -> str:
