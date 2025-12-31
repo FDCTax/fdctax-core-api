@@ -1010,11 +1010,14 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Save BAS endpoint working. Creates new BAS with version=1. Re-save for same period increments version. Logs create/update action to change log."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: BAS save functionality working correctly. Staff ✔️ (created BAS with version=1), Version increment ✔️ (re-save incremented to version=2), Admin ✔️ (can save BAS), Tax Agent ✔️ (can save BAS), Client ❌ (403 blocked). Version increment logic working properly for same client/period."
 
   - task: "BAS History - GET /api/bas/history"
     implemented: true
@@ -1022,11 +1025,14 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "History endpoint working. Returns all BAS versions for client sorted by period/version. Supports job_id filter."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: BAS history retrieval working correctly. Staff ✔️ (found 4 BAS entries), Admin ✔️ (full access), Tax Agent ✔️ (full access), Client ✔️ (read-only access granted). History sorted by period/version correctly."
 
   - task: "BAS Get Single - GET /api/bas/{id}"
     implemented: true
@@ -1034,11 +1040,14 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Get single BAS with full details and change log entries."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Single BAS retrieval working correctly. Staff ✔️ (retrieved BAS with change log: 1 entry), Admin ✔️ (can access BAS details), Tax Agent ✔️ (can access BAS details), Client ✔️ (read-only access). All required fields present including change_log array."
 
   - task: "BAS Sign-off - POST /api/bas/{id}/sign-off"
     implemented: true
@@ -1046,11 +1055,14 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Sign-off endpoint working. Sets completed_by, completed_at, status=completed. Records review_notes. Logs sign_off action."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: BAS sign-off functionality working correctly. Staff ✔️ (status changed to completed, completed_by set), Admin ✔️ (can sign off BAS), Tax Agent ✔️ (can sign off BAS), Client ❌ (403 blocked). Sign-off process updates status and records user info properly."
 
   - task: "BAS PDF Data - POST /api/bas/{id}/pdf"
     implemented: true
@@ -1058,11 +1070,14 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "PDF data endpoint returns structured JSON for frontend PDF generation. Includes GST section, PAYG, summary, sign-off details, metadata."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: PDF data generation working correctly. Staff ✔️ (generated structured JSON with 12 sections), GST Section ✔️ (8 fields including g1_total_sales, 1a_gst_on_sales, net_gst), PAYG Section ✔️ (instalment field), Sign-off Details ✔️ (completed_by, completed_at, review_notes), Admin/Tax Agent/Client ✔️ (all can generate PDF data). Comprehensive PDF structure for frontend generation."
 
   - task: "BAS Change Log - POST /api/bas/change-log"
     implemented: true
@@ -1070,11 +1085,14 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Change log persistence working. Logs action_type, entity_type, old_value, new_value, reason. User info captured from auth."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Change log persistence working correctly. Staff ✔️ (saved change log entry), Admin ✔️ (can save change log), Tax Agent ✔️ (can save change log), Client ❌ (403 blocked). Change log captures action_type, entity_type, old_value, new_value, reason with user info."
 
   - task: "BAS Change Log Entries - GET /api/bas/change-log/entries"
     implemented: true
@@ -1082,11 +1100,14 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Get change log with filters: client_id, job_id, bas_statement_id, action_type, entity_type."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Change log entries retrieval working correctly. Staff ✔️ (found 10 change log entries), Entry Structure ✔️ (14 fields including id, client_id, user_id, action_type, timestamp), Action Types ✔️ (found create, update, sign_off, categorize), Admin/Tax Agent/Client ✔️ (all can access change log), Filters ✔️ (bas_statement_id filter returned 1 entry). Complete audit trail functionality."
 
   - task: "BAS RBAC"
     implemented: true
@@ -1094,9 +1115,12 @@ agent_communication:
     file: "/app/backend/routers/bas.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "RBAC verified: admin/staff/tax_agent have full access. Client has read-only (can view history, cannot save/sign-off)."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: RBAC matrix fully functional. Admin ✔️ (full access to all BAS endpoints), Staff ✔️ (full access to all BAS endpoints), Tax Agent ✔️ (full access to all BAS endpoints), Client ✔️ (read-only access: can view history/BAS/PDF but cannot save/sign-off with 403). All permission boundaries correctly enforced across 8 BAS endpoints."
 
