@@ -10,6 +10,7 @@ Business logic for identity management including:
 Uses raw SQL queries for async compatibility.
 """
 
+import json
 import uuid
 import logging
 from datetime import datetime, timezone
