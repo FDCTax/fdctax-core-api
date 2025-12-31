@@ -6,6 +6,8 @@ Business logic for identity management including:
 - CRM client creation (creates/links person)
 - Identity linking
 - Duplicate detection and merging
+
+Uses raw SQL queries for async compatibility.
 """
 
 import uuid
@@ -14,17 +16,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, text, func
-from sqlalchemy.orm import selectinload
-
-from .models import (
-    PersonDB,
-    MyFDCAccountDB,
-    CRMClientIdentityDB,
-    EngagementProfileDB,
-    IdentityLinkLogDB,
-    PersonStatus
-)
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +25,7 @@ class IdentityService:
     """
     Identity Service - Core business logic for identity management.
     
-    Ensures:
-    - Single source of truth for identity (email-based)
-    - No duplicate persons
-    - Proper linking between MyFDC and CRM
-    - Audit trail for all operations
+    Uses raw SQL for async compatibility with the existing database setup.
     """
     
     def __init__(self, db: AsyncSession):
@@ -45,31 +33,104 @@ class IdentityService:
     
     # ==================== PERSON MANAGEMENT ====================
     
-    async def get_person_by_email(self, email: str) -> Optional[PersonDB]:
+    async def get_person_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Find person by email (case-insensitive)."""
-        result = await self.db.execute(
-            select(PersonDB)
-            .options(
-                selectinload(PersonDB.myfdc_account),
-                selectinload(PersonDB.crm_client),
-                selectinload(PersonDB.engagement_profile)
-            )
-            .where(func.lower(PersonDB.email) == email.lower().strip())
-        )
-        return result.scalar_one_or_none()
+        query = text("""
+            SELECT id, email, first_name, last_name, mobile, phone, 
+                   date_of_birth, status, email_verified, mobile_verified,
+                   metadata, created_at, updated_at
+            FROM person
+            WHERE LOWER(email) = LOWER(:email)
+        """)
+        result = await self.db.execute(query, {"email": email.strip()})
+        row = result.fetchone()
+        if not row:
+            return None
+        return self._row_to_person_dict(row)
     
-    async def get_person_by_id(self, person_id: uuid.UUID) -> Optional[PersonDB]:
+    async def get_person_by_id(self, person_id: uuid.UUID) -> Optional[Dict[str, Any]]:
         """Find person by ID."""
-        result = await self.db.execute(
-            select(PersonDB)
-            .options(
-                selectinload(PersonDB.myfdc_account),
-                selectinload(PersonDB.crm_client),
-                selectinload(PersonDB.engagement_profile)
-            )
-            .where(PersonDB.id == person_id)
-        )
-        return result.scalar_one_or_none()
+        query = text("""
+            SELECT id, email, first_name, last_name, mobile, phone, 
+                   date_of_birth, status, email_verified, mobile_verified,
+                   metadata, created_at, updated_at
+            FROM person
+            WHERE id = :person_id
+        """)
+        result = await self.db.execute(query, {"person_id": str(person_id)})
+        row = result.fetchone()
+        if not row:
+            return None
+        return self._row_to_person_dict(row)
+    
+    async def _check_myfdc_account_exists(self, person_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+        """Check if MyFDC account exists for person."""
+        query = text("""
+            SELECT id, person_id, username, auth_provider, last_login_at,
+                   login_count, settings, preferences, onboarding_completed,
+                   onboarding_step, status, created_at, updated_at
+            FROM myfdc_account
+            WHERE person_id = :person_id
+        """)
+        result = await self.db.execute(query, {"person_id": str(person_id)})
+        row = result.fetchone()
+        if not row:
+            return None
+        return self._row_to_myfdc_dict(row)
+    
+    async def _check_crm_client_exists(self, person_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+        """Check if CRM client exists for person."""
+        query = text("""
+            SELECT id, person_id, client_code, abn, business_name, entity_type,
+                   gst_registered, gst_registration_date, tax_agent_id,
+                   assigned_staff_id, source, notes, tags, custom_fields,
+                   status, created_at, updated_at
+            FROM crm_client_identity
+            WHERE person_id = :person_id
+        """)
+        result = await self.db.execute(query, {"person_id": str(person_id)})
+        row = result.fetchone()
+        if not row:
+            return None
+        return self._row_to_crm_dict(row)
+    
+    async def _check_engagement_profile_exists(self, person_id: uuid.UUID) -> Optional[Dict[str, Any]]:
+        """Check if engagement profile exists for person."""
+        query = text("""
+            SELECT id, person_id, is_myfdc_user, is_crm_client, has_ocr,
+                   is_diy_bas_user, is_diy_itr_user, is_full_service_bas_client,
+                   is_full_service_itr_client, is_bookkeeping_client, is_payroll_client,
+                   subscription_tier, subscription_start_date, subscription_end_date,
+                   first_engagement_at, last_engagement_at, total_interactions,
+                   created_at, updated_at
+            FROM engagement_profile
+            WHERE person_id = :person_id
+        """)
+        result = await self.db.execute(query, {"person_id": str(person_id)})
+        row = result.fetchone()
+        if not row:
+            return None
+        return {
+            "id": str(row[0]),
+            "person_id": str(row[1]),
+            "is_myfdc_user": row[2],
+            "is_crm_client": row[3],
+            "has_ocr": row[4],
+            "is_diy_bas_user": row[5],
+            "is_diy_itr_user": row[6],
+            "is_full_service_bas_client": row[7],
+            "is_full_service_itr_client": row[8],
+            "is_bookkeeping_client": row[9],
+            "is_payroll_client": row[10],
+            "subscription_tier": row[11],
+            "subscription_start_date": row[12].isoformat() if row[12] else None,
+            "subscription_end_date": row[13].isoformat() if row[13] else None,
+            "first_engagement_at": row[14].isoformat() if row[14] else None,
+            "last_engagement_at": row[15].isoformat() if row[15] else None,
+            "total_interactions": row[16],
+            "created_at": row[17].isoformat() if row[17] else None,
+            "updated_at": row[18].isoformat() if row[18] else None
+        }
     
     async def create_person(
         self,
@@ -80,65 +141,71 @@ class IdentityService:
         phone: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         performed_by: str = "system"
-    ) -> PersonDB:
-        """
-        Create a new person record.
-        
-        Args:
-            email: Email address (must be unique)
-            first_name: First name
-            last_name: Last name
-            mobile: Mobile number
-            phone: Phone number
-            metadata: Additional metadata
-            performed_by: Who performed this action
-            
-        Returns:
-            Created PersonDB
-            
-        Raises:
-            ValueError: If email already exists
-        """
+    ) -> Dict[str, Any]:
+        """Create a new person record."""
         # Check if person already exists
         existing = await self.get_person_by_email(email)
         if existing:
             raise ValueError(f"Person with email {email} already exists")
         
+        person_id = uuid.uuid4()
+        now = datetime.now(timezone.utc)
+        
         # Create person
-        person = PersonDB(
-            email=email.lower().strip(),
-            first_name=first_name,
-            last_name=last_name,
-            mobile=mobile,
-            phone=phone,
-            extra_data=metadata or {},
-            status=PersonStatus.ACTIVE.value
-        )
-        self.db.add(person)
-        await self.db.flush()  # Ensure person.id is available
+        insert_person = text("""
+            INSERT INTO person (id, email, first_name, last_name, mobile, phone, 
+                               status, email_verified, mobile_verified, metadata, 
+                               created_at, updated_at)
+            VALUES (:id, :email, :first_name, :last_name, :mobile, :phone,
+                    'active', false, false, :metadata, :created_at, :updated_at)
+            RETURNING id
+        """)
+        await self.db.execute(insert_person, {
+            "id": str(person_id),
+            "email": email.lower().strip(),
+            "first_name": first_name,
+            "last_name": last_name,
+            "mobile": mobile,
+            "phone": phone,
+            "metadata": metadata or {},
+            "created_at": now,
+            "updated_at": now
+        })
         
         # Create engagement profile
-        engagement = EngagementProfileDB(
-            person_id=person.id,
-            first_engagement_at=datetime.now(timezone.utc)
-        )
-        self.db.add(engagement)
+        engagement_id = uuid.uuid4()
+        insert_engagement = text("""
+            INSERT INTO engagement_profile (id, person_id, is_myfdc_user, is_crm_client,
+                                           has_ocr, is_diy_bas_user, is_diy_itr_user,
+                                           is_full_service_bas_client, is_full_service_itr_client,
+                                           is_bookkeeping_client, is_payroll_client,
+                                           first_engagement_at, total_interactions,
+                                           created_at, updated_at)
+            VALUES (:id, :person_id, false, false, false, false, false, false, false, 
+                    false, false, :first_engagement_at, 0, :created_at, :updated_at)
+        """)
+        await self.db.execute(insert_engagement, {
+            "id": str(engagement_id),
+            "person_id": str(person_id),
+            "first_engagement_at": now,
+            "created_at": now,
+            "updated_at": now
+        })
         
         # Log the action
         await self._log_action(
-            person_id=person.id,
+            person_id=person_id,
             action="create",
             source_type="person",
-            source_id=str(person.id),
+            source_id=str(person_id),
             performed_by=performed_by,
             details={"email": email}
         )
         
         await self.db.commit()
-        await self.db.refresh(person)
         
-        logger.info(f"Created person: {person.id} ({email})")
-        return person
+        logger.info(f"Created person: {person_id} ({email})")
+        return await self.get_person_by_id(person_id)
     
     async def get_or_create_person(
         self,
@@ -147,30 +214,41 @@ class IdentityService:
         last_name: Optional[str] = None,
         mobile: Optional[str] = None,
         performed_by: str = "system"
-    ) -> Tuple[PersonDB, bool]:
-        """
-        Get existing person or create new one.
-        
-        Returns:
-            Tuple of (PersonDB, created: bool)
-        """
+    ) -> Tuple[Dict[str, Any], bool]:
+        """Get existing person or create new one."""
         person = await self.get_person_by_email(email)
         if person:
             # Update fields if provided and person exists
             updated = False
-            if first_name and not person.first_name:
-                person.first_name = first_name
+            updates = {}
+            if first_name and not person.get("first_name"):
+                updates["first_name"] = first_name
                 updated = True
-            if last_name and not person.last_name:
-                person.last_name = last_name
+            if last_name and not person.get("last_name"):
+                updates["last_name"] = last_name
                 updated = True
-            if mobile and not person.mobile:
-                person.mobile = mobile
+            if mobile and not person.get("mobile"):
+                updates["mobile"] = mobile
                 updated = True
             
             if updated:
+                update_query = text("""
+                    UPDATE person SET 
+                        first_name = COALESCE(:first_name, first_name),
+                        last_name = COALESCE(:last_name, last_name),
+                        mobile = COALESCE(:mobile, mobile),
+                        updated_at = :updated_at
+                    WHERE id = :person_id
+                """)
+                await self.db.execute(update_query, {
+                    "first_name": updates.get("first_name"),
+                    "last_name": updates.get("last_name"),
+                    "mobile": updates.get("mobile"),
+                    "updated_at": datetime.now(timezone.utc),
+                    "person_id": person["id"]
+                })
                 await self.db.commit()
-                await self.db.refresh(person)
+                person = await self.get_person_by_id(uuid.UUID(person["id"]))
             
             return person, False
         
@@ -197,28 +275,7 @@ class IdentityService:
         settings: Optional[Dict[str, Any]] = None,
         performed_by: str = "myfdc_signup"
     ) -> Dict[str, Any]:
-        """
-        Handle MyFDC signup.
-        
-        Rules:
-        - If email exists, link to existing person
-        - If person has no MyFDC account, create one
-        - Never create duplicate persons
-        
-        Args:
-            email: User email
-            password_hash: Hashed password (for local auth)
-            first_name: First name
-            last_name: Last name
-            mobile: Mobile number
-            auth_provider: Auth provider (local, google, etc.)
-            auth_provider_id: Provider-specific ID
-            settings: Account settings
-            performed_by: Who performed this action
-            
-        Returns:
-            Dict with person, myfdc_account, created flags
-        """
+        """Handle MyFDC signup."""
         # Get or create person
         person, person_created = await self.get_or_create_person(
             email=email,
@@ -228,41 +285,62 @@ class IdentityService:
             performed_by=performed_by
         )
         
+        person_id = uuid.UUID(person["id"])
+        
         # Check if MyFDC account already exists
-        if person.myfdc_account:
+        existing_account = await self._check_myfdc_account_exists(person_id)
+        if existing_account:
             return {
                 "success": False,
                 "error": "MyFDC account already exists for this email",
-                "person": person.to_dict(),
-                "myfdc_account": person.myfdc_account.to_dict(),
+                "person": person,
+                "myfdc_account": existing_account,
                 "person_created": False,
                 "account_created": False
             }
         
         # Create MyFDC account
-        myfdc_account = MyFDCAccountDB(
-            person_id=person.id,
-            password_hash=password_hash,
-            auth_provider=auth_provider,
-            auth_provider_id=auth_provider_id,
-            settings=settings or {},
-            status="active"
-        )
-        self.db.add(myfdc_account)
+        account_id = uuid.uuid4()
+        now = datetime.now(timezone.utc)
+        
+        insert_account = text("""
+            INSERT INTO myfdc_account (id, person_id, password_hash, auth_provider,
+                                      auth_provider_id, settings, preferences,
+                                      onboarding_completed, onboarding_step, status,
+                                      login_count, created_at, updated_at)
+            VALUES (:id, :person_id, :password_hash, :auth_provider, :auth_provider_id,
+                    :settings, '{}', false, 0, 'active', 0, :created_at, :updated_at)
+        """)
+        await self.db.execute(insert_account, {
+            "id": str(account_id),
+            "person_id": str(person_id),
+            "password_hash": password_hash,
+            "auth_provider": auth_provider,
+            "auth_provider_id": auth_provider_id,
+            "settings": settings or {},
+            "created_at": now,
+            "updated_at": now
+        })
         
         # Update engagement profile
-        if person.engagement_profile:
-            person.engagement_profile.is_myfdc_user = True
-            person.engagement_profile.last_engagement_at = datetime.now(timezone.utc)
+        update_engagement = text("""
+            UPDATE engagement_profile 
+            SET is_myfdc_user = true, last_engagement_at = :last_engagement_at
+            WHERE person_id = :person_id
+        """)
+        await self.db.execute(update_engagement, {
+            "person_id": str(person_id),
+            "last_engagement_at": now
+        })
         
         # Log the action
         await self._log_action(
-            person_id=person.id,
+            person_id=person_id,
             action="create" if person_created else "link",
             source_type="myfdc",
-            source_id=str(myfdc_account.id),
+            source_id=str(account_id),
             target_type="person",
-            target_id=str(person.id),
+            target_id=str(person_id),
             performed_by=performed_by,
             details={
                 "auth_provider": auth_provider,
@@ -271,19 +349,22 @@ class IdentityService:
         )
         
         await self.db.commit()
-        await self.db.refresh(person)
-        await self.db.refresh(myfdc_account)
         
-        logger.info(f"MyFDC signup: person={person.id}, account={myfdc_account.id}, new_person={person_created}")
+        # Fetch created account
+        myfdc_account = await self._check_myfdc_account_exists(person_id)
+        engagement_profile = await self._check_engagement_profile_exists(person_id)
+        crm_client = await self._check_crm_client_exists(person_id)
+        
+        logger.info(f"MyFDC signup: person={person_id}, account={account_id}, new_person={person_created}")
         
         return {
             "success": True,
-            "person": person.to_dict(),
-            "myfdc_account": myfdc_account.to_dict(),
-            "engagement_profile": person.engagement_profile.to_dict() if person.engagement_profile else None,
+            "person": person,
+            "myfdc_account": myfdc_account,
+            "engagement_profile": engagement_profile,
             "person_created": person_created,
             "account_created": True,
-            "linked_to_crm": person.crm_client is not None
+            "linked_to_crm": crm_client is not None
         }
     
     # ==================== CRM CLIENT CREATE ====================
@@ -305,33 +386,7 @@ class IdentityService:
         custom_fields: Optional[Dict[str, Any]] = None,
         performed_by: str = "crm_create"
     ) -> Dict[str, Any]:
-        """
-        Handle CRM client creation.
-        
-        Rules:
-        - If email exists, link to existing person
-        - If person has no CRM client, create one
-        - Never create duplicate persons
-        
-        Args:
-            email: Client email
-            first_name: First name
-            last_name: Last name
-            mobile: Mobile number
-            client_code: External client reference
-            abn: ABN
-            business_name: Business name
-            entity_type: Entity type (individual, company, etc.)
-            gst_registered: GST registration status
-            source: Lead source
-            notes: Notes
-            tags: Tags list
-            custom_fields: Custom fields
-            performed_by: Who performed this action
-            
-        Returns:
-            Dict with person, crm_client, created flags
-        """
+        """Handle CRM client creation."""
         # Get or create person
         person, person_created = await self.get_or_create_person(
             email=email,
@@ -341,13 +396,16 @@ class IdentityService:
             performed_by=performed_by
         )
         
+        person_id = uuid.UUID(person["id"])
+        
         # Check if CRM client already exists
-        if person.crm_client:
+        existing_client = await self._check_crm_client_exists(person_id)
+        if existing_client:
             return {
                 "success": False,
                 "error": "CRM client already exists for this email",
-                "person": person.to_dict(),
-                "crm_client": person.crm_client.to_dict(),
+                "person": person,
+                "crm_client": existing_client,
                 "person_created": False,
                 "client_created": False
             }
@@ -357,34 +415,52 @@ class IdentityService:
             client_code = await self._generate_client_code()
         
         # Create CRM client
-        crm_client = CRMClientIdentityDB(
-            person_id=person.id,
-            client_code=client_code,
-            abn=abn,
-            business_name=business_name,
-            entity_type=entity_type,
-            gst_registered=gst_registered,
-            source=source,
-            notes=notes,
-            tags=tags or [],
-            custom_fields=custom_fields or {},
-            status="active"
-        )
-        self.db.add(crm_client)
+        client_id = uuid.uuid4()
+        now = datetime.now(timezone.utc)
+        
+        insert_client = text("""
+            INSERT INTO crm_client_identity (id, person_id, client_code, abn, business_name,
+                                            entity_type, gst_registered, source, notes,
+                                            tags, custom_fields, status, created_at, updated_at)
+            VALUES (:id, :person_id, :client_code, :abn, :business_name, :entity_type,
+                    :gst_registered, :source, :notes, :tags, :custom_fields, 'active',
+                    :created_at, :updated_at)
+        """)
+        await self.db.execute(insert_client, {
+            "id": str(client_id),
+            "person_id": str(person_id),
+            "client_code": client_code,
+            "abn": abn,
+            "business_name": business_name,
+            "entity_type": entity_type,
+            "gst_registered": gst_registered,
+            "source": source,
+            "notes": notes,
+            "tags": tags or [],
+            "custom_fields": custom_fields or {},
+            "created_at": now,
+            "updated_at": now
+        })
         
         # Update engagement profile
-        if person.engagement_profile:
-            person.engagement_profile.is_crm_client = True
-            person.engagement_profile.last_engagement_at = datetime.now(timezone.utc)
+        update_engagement = text("""
+            UPDATE engagement_profile 
+            SET is_crm_client = true, last_engagement_at = :last_engagement_at
+            WHERE person_id = :person_id
+        """)
+        await self.db.execute(update_engagement, {
+            "person_id": str(person_id),
+            "last_engagement_at": now
+        })
         
         # Log the action
         await self._log_action(
-            person_id=person.id,
+            person_id=person_id,
             action="create" if person_created else "link",
             source_type="crm",
-            source_id=str(crm_client.id),
+            source_id=str(client_id),
             target_type="person",
-            target_id=str(person.id),
+            target_id=str(person_id),
             performed_by=performed_by,
             details={
                 "client_code": client_code,
@@ -393,19 +469,22 @@ class IdentityService:
         )
         
         await self.db.commit()
-        await self.db.refresh(person)
-        await self.db.refresh(crm_client)
         
-        logger.info(f"CRM client created: person={person.id}, client={crm_client.id}, new_person={person_created}")
+        # Fetch created client
+        crm_client = await self._check_crm_client_exists(person_id)
+        engagement_profile = await self._check_engagement_profile_exists(person_id)
+        myfdc_account = await self._check_myfdc_account_exists(person_id)
+        
+        logger.info(f"CRM client created: person={person_id}, client={client_id}, new_person={person_created}")
         
         return {
             "success": True,
-            "person": person.to_dict(),
-            "crm_client": crm_client.to_dict(),
-            "engagement_profile": person.engagement_profile.to_dict() if person.engagement_profile else None,
+            "person": person,
+            "crm_client": crm_client,
+            "engagement_profile": engagement_profile,
             "person_created": person_created,
             "client_created": True,
-            "linked_to_myfdc": person.myfdc_account is not None
+            "linked_to_myfdc": myfdc_account is not None
         }
     
     # ==================== LINK EXISTING ====================
@@ -418,22 +497,7 @@ class IdentityService:
         target_email: str,
         performed_by: str = "admin"
     ) -> Dict[str, Any]:
-        """
-        Link existing MyFDC and CRM records.
-        
-        If the emails match, this is automatic. If they don't,
-        we merge the persons and link the accounts.
-        
-        Args:
-            source_type: "myfdc" or "crm"
-            source_email: Email of source record
-            target_type: "myfdc" or "crm"
-            target_email: Email of target record
-            performed_by: Who performed this action
-            
-        Returns:
-            Dict with linking result
-        """
+        """Link existing MyFDC and CRM records."""
         # Get source person
         source_person = await self.get_person_by_email(source_email)
         if not source_person:
@@ -451,11 +515,11 @@ class IdentityService:
             }
         
         # If same person, no linking needed
-        if source_person.id == target_person.id:
+        if source_person["id"] == target_person["id"]:
             return {
                 "success": True,
                 "message": "Records already linked (same person)",
-                "person": source_person.to_dict()
+                "person": source_person
             }
         
         # Merge the persons (keep the one that has CRM client or is older)
@@ -464,8 +528,8 @@ class IdentityService:
         )
         
         result = await self.merge_persons(
-            primary_id=primary_person.id,
-            secondary_id=secondary_person.id,
+            primary_id=uuid.UUID(primary_person["id"]),
+            secondary_id=uuid.UUID(secondary_person["id"]),
             performed_by=performed_by
         )
         
@@ -479,20 +543,7 @@ class IdentityService:
         secondary_id: uuid.UUID,
         performed_by: str = "admin"
     ) -> Dict[str, Any]:
-        """
-        Merge two person records into one.
-        
-        The primary person is kept, and secondary's linked records
-        are moved to primary.
-        
-        Args:
-            primary_id: ID of person to keep
-            secondary_id: ID of person to merge into primary
-            performed_by: Who performed this action
-            
-        Returns:
-            Dict with merge result
-        """
+        """Merge two person records into one."""
         primary = await self.get_person_by_id(primary_id)
         secondary = await self.get_person_by_id(secondary_id)
         
@@ -502,7 +553,7 @@ class IdentityService:
                 "error": "One or both persons not found"
             }
         
-        if primary.id == secondary.id:
+        if primary["id"] == secondary["id"]:
             return {
                 "success": False,
                 "error": "Cannot merge person with itself"
@@ -510,98 +561,91 @@ class IdentityService:
         
         merged_records = []
         
+        # Check linked accounts
+        primary_myfdc = await self._check_myfdc_account_exists(primary_id)
+        secondary_myfdc = await self._check_myfdc_account_exists(secondary_id)
+        primary_crm = await self._check_crm_client_exists(primary_id)
+        secondary_crm = await self._check_crm_client_exists(secondary_id)
+        
         # Move MyFDC account if secondary has one and primary doesn't
-        if secondary.myfdc_account and not primary.myfdc_account:
-            secondary.myfdc_account.person_id = primary.id
+        if secondary_myfdc and not primary_myfdc:
+            update_query = text("UPDATE myfdc_account SET person_id = :primary_id WHERE person_id = :secondary_id")
+            await self.db.execute(update_query, {"primary_id": str(primary_id), "secondary_id": str(secondary_id)})
             merged_records.append("myfdc_account")
-        elif secondary.myfdc_account:
-            # Delete secondary's account if primary already has one
-            await self.db.delete(secondary.myfdc_account)
+        elif secondary_myfdc:
+            delete_query = text("DELETE FROM myfdc_account WHERE person_id = :secondary_id")
+            await self.db.execute(delete_query, {"secondary_id": str(secondary_id)})
             merged_records.append("myfdc_account (deleted duplicate)")
         
         # Move CRM client if secondary has one and primary doesn't
-        if secondary.crm_client and not primary.crm_client:
-            secondary.crm_client.person_id = primary.id
+        if secondary_crm and not primary_crm:
+            update_query = text("UPDATE crm_client_identity SET person_id = :primary_id WHERE person_id = :secondary_id")
+            await self.db.execute(update_query, {"primary_id": str(primary_id), "secondary_id": str(secondary_id)})
             merged_records.append("crm_client")
-        elif secondary.crm_client:
-            # Delete secondary's client if primary already has one
-            await self.db.delete(secondary.crm_client)
+        elif secondary_crm:
+            delete_query = text("DELETE FROM crm_client_identity WHERE person_id = :secondary_id")
+            await self.db.execute(delete_query, {"secondary_id": str(secondary_id)})
             merged_records.append("crm_client (deleted duplicate)")
         
-        # Merge engagement profiles
-        if secondary.engagement_profile and primary.engagement_profile:
-            # Merge flags (OR logic)
-            primary.engagement_profile.is_myfdc_user = (
-                primary.engagement_profile.is_myfdc_user or 
-                secondary.engagement_profile.is_myfdc_user
-            )
-            primary.engagement_profile.is_crm_client = (
-                primary.engagement_profile.is_crm_client or 
-                secondary.engagement_profile.is_crm_client
-            )
-            primary.engagement_profile.has_ocr = (
-                primary.engagement_profile.has_ocr or 
-                secondary.engagement_profile.has_ocr
-            )
-            # ... merge other flags
-            await self.db.delete(secondary.engagement_profile)
-            merged_records.append("engagement_profile")
-        elif secondary.engagement_profile:
-            secondary.engagement_profile.person_id = primary.id
-            merged_records.append("engagement_profile")
+        # Delete secondary engagement profile
+        delete_engagement = text("DELETE FROM engagement_profile WHERE person_id = :secondary_id")
+        await self.db.execute(delete_engagement, {"secondary_id": str(secondary_id)})
         
         # Fill in missing fields on primary from secondary
-        if not primary.first_name and secondary.first_name:
-            primary.first_name = secondary.first_name
-        if not primary.last_name and secondary.last_name:
-            primary.last_name = secondary.last_name
-        if not primary.mobile and secondary.mobile:
-            primary.mobile = secondary.mobile
-        if not primary.phone and secondary.phone:
-            primary.phone = secondary.phone
+        update_primary = text("""
+            UPDATE person SET
+                first_name = COALESCE(first_name, :first_name),
+                last_name = COALESCE(last_name, :last_name),
+                mobile = COALESCE(mobile, :mobile),
+                phone = COALESCE(phone, :phone),
+                updated_at = :updated_at
+            WHERE id = :primary_id
+        """)
+        await self.db.execute(update_primary, {
+            "first_name": secondary.get("first_name"),
+            "last_name": secondary.get("last_name"),
+            "mobile": secondary.get("mobile"),
+            "phone": secondary.get("phone"),
+            "updated_at": datetime.now(timezone.utc),
+            "primary_id": str(primary_id)
+        })
         
         # Log the merge
         await self._log_action(
-            person_id=primary.id,
+            person_id=primary_id,
             action="merge",
             source_type="person",
-            source_id=str(secondary.id),
+            source_id=str(secondary_id),
             target_type="person",
-            target_id=str(primary.id),
+            target_id=str(primary_id),
             performed_by=performed_by,
             details={
-                "merged_email": secondary.email,
+                "merged_email": secondary["email"],
                 "merged_records": merged_records
             }
         )
         
         # Delete secondary person
-        await self.db.delete(secondary)
+        delete_person = text("DELETE FROM person WHERE id = :secondary_id")
+        await self.db.execute(delete_person, {"secondary_id": str(secondary_id)})
         
         await self.db.commit()
-        await self.db.refresh(primary)
         
-        logger.info(f"Merged persons: {secondary.id} -> {primary.id}")
+        logger.info(f"Merged persons: {secondary_id} -> {primary_id}")
+        
+        updated_primary = await self.get_person_by_id(primary_id)
         
         return {
             "success": True,
-            "primary_person": primary.to_dict(),
-            "merged_email": secondary.email,
+            "primary_person": updated_primary,
+            "merged_email": secondary["email"],
             "merged_records": merged_records
         }
     
     # ==================== ORPHAN DETECTION ====================
     
     async def list_orphaned_records(self) -> Dict[str, Any]:
-        """
-        Find orphaned MyFDC accounts and CRM clients.
-        
-        Orphaned = linked to a person that has been deleted or
-        has no valid email.
-        
-        Returns:
-            Dict with orphaned myfdc_accounts and crm_clients
-        """
+        """Find orphaned MyFDC accounts and CRM clients."""
         # Find MyFDC accounts without valid person
         orphaned_myfdc_query = text("""
             SELECT m.id, m.person_id, m.created_at
@@ -628,7 +672,7 @@ class IdentityService:
             for r in result.fetchall()
         ]
         
-        # Find persons without any linked accounts (potential cleanup)
+        # Find persons without any linked accounts
         unlinked_persons_query = text("""
             SELECT p.id, p.email, p.created_at
             FROM person p
@@ -654,13 +698,7 @@ class IdentityService:
         }
     
     async def find_duplicate_emails(self) -> List[Dict[str, Any]]:
-        """
-        Find potential duplicate persons based on similar emails.
-        
-        Returns:
-            List of potential duplicates
-        """
-        # This shouldn't happen with unique constraint, but check anyway
+        """Find potential duplicate persons based on similar emails."""
         query = text("""
             SELECT email, COUNT(*) as count
             FROM person
@@ -669,8 +707,28 @@ class IdentityService:
         """)
         result = await self.db.execute(query)
         duplicates = [{"email": r[0], "count": r[1]} for r in result.fetchall()]
-        
         return duplicates
+    
+    async def update_engagement_profile(
+        self,
+        person_id: uuid.UUID,
+        **flags
+    ) -> Optional[Dict[str, Any]]:
+        """Update engagement profile flags."""
+        # Build dynamic update
+        set_clauses = ["last_engagement_at = :last_engagement_at", "total_interactions = total_interactions + 1"]
+        params = {"person_id": str(person_id), "last_engagement_at": datetime.now(timezone.utc)}
+        
+        for key, value in flags.items():
+            if value is not None:
+                set_clauses.append(f"{key} = :{key}")
+                params[key] = value
+        
+        query = text(f"UPDATE engagement_profile SET {', '.join(set_clauses)} WHERE person_id = :person_id")
+        await self.db.execute(query, params)
+        await self.db.commit()
+        
+        return await self._check_engagement_profile_exists(person_id)
     
     # ==================== HELPER METHODS ====================
     
@@ -687,31 +745,35 @@ class IdentityService:
     
     async def _determine_merge_primary(
         self,
-        person1: PersonDB,
-        person2: PersonDB
-    ) -> Tuple[PersonDB, PersonDB]:
-        """
-        Determine which person should be primary in a merge.
+        person1: Dict[str, Any],
+        person2: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Determine which person should be primary in a merge."""
+        p1_id = uuid.UUID(person1["id"])
+        p2_id = uuid.UUID(person2["id"])
         
-        Priority:
-        1. Person with CRM client
-        2. Person with MyFDC account
-        3. Older person (by created_at)
-        """
         # Prefer person with CRM client
-        if person1.crm_client and not person2.crm_client:
+        p1_crm = await self._check_crm_client_exists(p1_id)
+        p2_crm = await self._check_crm_client_exists(p2_id)
+        
+        if p1_crm and not p2_crm:
             return person1, person2
-        if person2.crm_client and not person1.crm_client:
+        if p2_crm and not p1_crm:
             return person2, person1
         
         # Prefer person with MyFDC account
-        if person1.myfdc_account and not person2.myfdc_account:
+        p1_myfdc = await self._check_myfdc_account_exists(p1_id)
+        p2_myfdc = await self._check_myfdc_account_exists(p2_id)
+        
+        if p1_myfdc and not p2_myfdc:
             return person1, person2
-        if person2.myfdc_account and not person1.myfdc_account:
+        if p2_myfdc and not p1_myfdc:
             return person2, person1
         
         # Prefer older person
-        if person1.created_at <= person2.created_at:
+        p1_created = person1.get("created_at", "")
+        p2_created = person2.get("created_at", "")
+        if p1_created <= p2_created:
             return person1, person2
         return person2, person1
     
@@ -727,40 +789,81 @@ class IdentityService:
         details: Optional[Dict[str, Any]] = None
     ) -> None:
         """Log an identity action."""
-        log = IdentityLinkLogDB(
-            person_id=person_id,
-            action=action,
-            source_type=source_type,
-            source_id=source_id,
-            target_type=target_type,
-            target_id=target_id,
-            performed_by=performed_by,
-            details=details or {}
-        )
-        self.db.add(log)
+        log_id = uuid.uuid4()
+        insert_log = text("""
+            INSERT INTO identity_link_log (id, person_id, action, source_type, source_id,
+                                          target_type, target_id, performed_by, details, created_at)
+            VALUES (:id, :person_id, :action, :source_type, :source_id, :target_type,
+                    :target_id, :performed_by, :details, :created_at)
+        """)
+        await self.db.execute(insert_log, {
+            "id": str(log_id),
+            "person_id": str(person_id),
+            "action": action,
+            "source_type": source_type,
+            "source_id": source_id,
+            "target_type": target_type,
+            "target_id": target_id,
+            "performed_by": performed_by,
+            "details": details or {},
+            "created_at": datetime.now(timezone.utc)
+        })
     
-    async def update_engagement_profile(
-        self,
-        person_id: uuid.UUID,
-        **flags
-    ) -> Optional[EngagementProfileDB]:
-        """Update engagement profile flags."""
-        result = await self.db.execute(
-            select(EngagementProfileDB).where(EngagementProfileDB.person_id == person_id)
-        )
-        profile = result.scalar_one_or_none()
-        
-        if not profile:
-            return None
-        
-        for key, value in flags.items():
-            if hasattr(profile, key):
-                setattr(profile, key, value)
-        
-        profile.last_engagement_at = datetime.now(timezone.utc)
-        profile.total_interactions += 1
-        
-        await self.db.commit()
-        await self.db.refresh(profile)
-        
-        return profile
+    def _row_to_person_dict(self, row) -> Dict[str, Any]:
+        """Convert database row to person dict."""
+        return {
+            "id": str(row[0]),
+            "email": row[1],
+            "first_name": row[2],
+            "last_name": row[3],
+            "full_name": " ".join(p for p in [row[2], row[3]] if p) or row[1],
+            "mobile": row[4],
+            "phone": row[5],
+            "date_of_birth": row[6].isoformat() if row[6] else None,
+            "status": row[7],
+            "email_verified": row[8],
+            "mobile_verified": row[9],
+            "metadata": row[10],
+            "created_at": row[11].isoformat() if row[11] else None,
+            "updated_at": row[12].isoformat() if row[12] else None
+        }
+    
+    def _row_to_myfdc_dict(self, row) -> Dict[str, Any]:
+        """Convert database row to MyFDC account dict."""
+        return {
+            "id": str(row[0]),
+            "person_id": str(row[1]),
+            "username": row[2],
+            "auth_provider": row[3],
+            "last_login_at": row[4].isoformat() if row[4] else None,
+            "login_count": row[5],
+            "settings": row[6],
+            "preferences": row[7],
+            "onboarding_completed": row[8],
+            "onboarding_step": row[9],
+            "status": row[10],
+            "created_at": row[11].isoformat() if row[11] else None,
+            "updated_at": row[12].isoformat() if row[12] else None
+        }
+    
+    def _row_to_crm_dict(self, row) -> Dict[str, Any]:
+        """Convert database row to CRM client dict."""
+        return {
+            "id": str(row[0]),
+            "person_id": str(row[1]),
+            "client_code": row[2],
+            "abn": row[3],
+            "business_name": row[4],
+            "entity_type": row[5],
+            "gst_registered": row[6],
+            "gst_registration_date": row[7].isoformat() if row[7] else None,
+            "tax_agent_id": row[8],
+            "assigned_staff_id": str(row[9]) if row[9] else None,
+            "source": row[10],
+            "notes": row[11],
+            "tags": row[12],
+            "custom_fields": row[13],
+            "status": row[14],
+            "created_at": row[15].isoformat() if row[15] else None,
+            "updated_at": row[16].isoformat() if row[16] else None
+        }
