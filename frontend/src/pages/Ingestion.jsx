@@ -653,7 +653,7 @@ export default function Ingestion() {
             <DialogHeader>
               <DialogTitle>Confirm Rollback</DialogTitle>
               <DialogDescription>
-                This will delete all {selectedBatch?.imported_count} transactions imported from "{selectedBatch?.file_name}". This action cannot be undone.
+                This will delete all {selectedBatch?.imported_count} transactions imported from &quot;{selectedBatch?.file_name}&quot;. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
