@@ -2259,6 +2259,11 @@ async def main():
     print("🔧 COMPREHENSIVE BACKEND API TESTING SUITE")
     print("=" * 60)
     
+    # Test VXT Phone System Integration Module
+    print("\n📞 TESTING VXT PHONE SYSTEM INTEGRATION MODULE")
+    async with VXTAPITester() as tester:
+        await tester.run_all_tests()
+    
     # Test BAS Backend Foundations Module
     print("\n📊 TESTING BAS BACKEND FOUNDATIONS MODULE")
     async with BASAPITester() as tester:
