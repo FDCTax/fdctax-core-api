@@ -424,7 +424,7 @@ class IdentityService:
                                             entity_type, gst_registered, source, notes,
                                             tags, custom_fields, status, created_at, updated_at)
             VALUES (:id, :person_id, :client_code, :abn, :business_name, :entity_type,
-                    :gst_registered, :source, :notes, :tags::jsonb, :custom_fields::jsonb, 'active',
+                    :gst_registered, :source, :notes, CAST(:tags AS jsonb), CAST(:custom_fields AS jsonb), 'active',
                     :created_at, :updated_at)
         """)
         await self.db.execute(insert_client, {
