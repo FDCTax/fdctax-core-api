@@ -86,7 +86,7 @@ class PersonDB(Base):
             "status": self.status,
             "email_verified": self.email_verified,
             "mobile_verified": self.mobile_verified,
-            "metadata": self.metadata,
+            "extra_data": self.extra_data,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "has_myfdc_account": self.myfdc_account is not None,
