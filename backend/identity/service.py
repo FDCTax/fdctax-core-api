@@ -795,7 +795,7 @@ class IdentityService:
             INSERT INTO identity_link_log (id, person_id, action, source_type, source_id,
                                           target_type, target_id, performed_by, details, created_at)
             VALUES (:id, :person_id, :action, :source_type, :source_id, :target_type,
-                    :target_id, :performed_by, :details::jsonb, :created_at)
+                    :target_id, :performed_by, CAST(:details AS jsonb), :created_at)
         """)
         await self.db.execute(insert_log, {
             "id": str(log_id),
