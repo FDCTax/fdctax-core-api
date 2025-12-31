@@ -138,6 +138,20 @@ class Settings(BaseSettings):
         description="SMS webhook signing secret"
     )
     
+    # ==================== BAS MODULE ====================
+    BAS_PROVIDER: str = Field(
+        default="",
+        description="BAS/ATO integration provider"
+    )
+    BAS_API_KEY: str = Field(
+        default="",
+        description="BAS provider API key"
+    )
+    BAS_FEATURE_FLAG: bool = Field(
+        default=True,
+        description="Enable/disable BAS module features"
+    )
+    
     # ==================== OBSERVABILITY ====================
     SENTRY_DSN: str = Field(
         default="",
