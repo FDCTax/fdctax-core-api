@@ -350,6 +350,10 @@ api_router.include_router(sms_router)  # SMS sending (stub in Phase 0)
 from email_integration.email_router import router as email_router
 api_router.include_router(email_router)  # Email sending (stub in Phase 0)
 
+# Identity Spine Module
+from identity.router import router as identity_router
+api_router.include_router(identity_router)  # Unified identity management
+
 # Include the main router in the app
 app.include_router(api_router)
 
