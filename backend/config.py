@@ -152,6 +152,24 @@ class Settings(BaseSettings):
         description="Enable/disable BAS module features"
     )
     
+    # ==================== EMAIL INTEGRATION ====================
+    EMAIL_PROVIDER: str = Field(
+        default="resend",
+        description="Email provider: resend, sendgrid, ses, smtp"
+    )
+    EMAIL_API_KEY: str = Field(
+        default="",
+        description="Email provider API key"
+    )
+    EMAIL_FROM_ADDRESS: str = Field(
+        default="",
+        description="Default sender email address"
+    )
+    EMAIL_FEATURE_FLAG: bool = Field(
+        default=True,
+        description="Enable/disable email features"
+    )
+    
     # ==================== OBSERVABILITY ====================
     SENTRY_DSN: str = Field(
         default="",
