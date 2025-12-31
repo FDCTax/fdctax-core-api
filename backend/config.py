@@ -102,6 +102,20 @@ class Settings(BaseSettings):
         description="Calendly webhook signing secret"
     )
     
+    # ==================== VXT INTEGRATION ====================
+    VXT_API_KEY: str = Field(
+        default="",
+        description="VXT API key for phone system integration"
+    )
+    VXT_WEBHOOK_SECRET: str = Field(
+        default="",
+        description="VXT webhook signing secret"
+    )
+    VXT_BASE_URL: str = Field(
+        default="https://api.vxt.co",
+        description="VXT API base URL"
+    )
+    
     # ==================== OBSERVABILITY ====================
     SENTRY_DSN: str = Field(
         default="",
