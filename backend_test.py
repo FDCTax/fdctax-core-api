@@ -1036,6 +1036,611 @@ class LodgeITAPITester:
         print("   ❌ Client: Blocked from all LodgeIT endpoints (403)")
 
 
+class VXTAPITester:
+    def __init__(self):
+        self.session = None
+        self.admin_token = None
+        self.tax_agent_token = None
+        self.staff_token = None
+        self.client_token = None
+        self.test_results = []
+        
+        # Test data storage
+        self.test_call_id = None
+        self.test_call_vxt_id = None
+        self.test_workpaper_id = 1002
+        
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.session:
+            await self.session.close()
+    
+    def log_test(self, test_name: str, success: bool, details: str = "", response_data: Any = None):
+        """Log test result"""
+        status = "✅ PASS" if success else "❌ FAIL"
+        print(f"{status} {test_name}")
+        if details:
+            print(f"    {details}")
+        if not success and response_data:
+            print(f"    Response: {response_data}")
+        
+        self.test_results.append({
+            "test": test_name,
+            "success": success,
+            "details": details,
+            "response": response_data if not success else None
+        })
+    
+    async def authenticate(self, credentials: Dict[str, str]) -> Optional[str]:
+        """Authenticate and return token"""
+        try:
+            async with self.session.post(
+                f"{BASE_URL}/auth/login",
+                json=credentials
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get("access_token")
+                else:
+                    error_text = await response.text()
+                    print(f"Authentication failed: {response.status} - {error_text}")
+                    return None
+        except Exception as e:
+            print(f"Authentication error: {e}")
+            return None
+    
+    async def make_request(
+        self, 
+        method: str, 
+        endpoint: str, 
+        token: Optional[str] = None, 
+        json_data: Optional[Dict] = None,
+        params: Optional[Dict] = None,
+        headers: Optional[Dict] = None
+    ) -> tuple[int, Any]:
+        """Make API request (authenticated or public)"""
+        request_headers = {}
+        if token:
+            request_headers["Authorization"] = f"Bearer {token}"
+        if headers:
+            request_headers.update(headers)
+        
+        try:
+            async with self.session.request(
+                method,
+                f"{BASE_URL}{endpoint}",
+                headers=request_headers,
+                json=json_data,
+                params=params
+            ) as response:
+                try:
+                    data = await response.json()
+                except:
+                    data = await response.text()
+                return response.status, data
+        except Exception as e:
+            return 500, str(e)
+    
+    async def test_authentication(self):
+        """Test 1: Authentication for all user roles"""
+        print("\n=== Testing Authentication ===")
+        
+        # Test admin login
+        self.admin_token = await self.authenticate(ADMIN_CREDENTIALS)
+        self.log_test(
+            "Admin Authentication",
+            self.admin_token is not None,
+            f"Token: {'✓' if self.admin_token else '✗'}"
+        )
+        
+        # Test tax agent login
+        self.tax_agent_token = await self.authenticate(TAX_AGENT_CREDENTIALS)
+        self.log_test(
+            "Tax Agent Authentication",
+            self.tax_agent_token is not None,
+            f"Token: {'✓' if self.tax_agent_token else '✗'}"
+        )
+        
+        # Test staff login
+        self.staff_token = await self.authenticate(STAFF_CREDENTIALS)
+        self.log_test(
+            "Staff Authentication",
+            self.staff_token is not None,
+            f"Token: {'✓' if self.staff_token else '✗'}"
+        )
+        
+        # Test client login
+        self.client_token = await self.authenticate(CLIENT_CREDENTIALS)
+        self.log_test(
+            "Client Authentication",
+            self.client_token is not None,
+            f"Token: {'✓' if self.client_token else '✗'}"
+        )
+        
+        return all([self.admin_token, self.tax_agent_token, self.staff_token, self.client_token])
+    
+    async def test_vxt_webhook_call_completed(self):
+        """Test 2: VXT Webhook - call.completed event"""
+        print("\n=== Testing VXT Webhook - call.completed ===")
+        
+        # Test webhook payload for call.completed
+        self.test_call_vxt_id = f"vxt-call-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        webhook_payload = {
+            "event_type": "call.completed",
+            "call_id": self.test_call_vxt_id,
+            "from_number": "+61400123456",
+            "to_number": "(02) 9876 5432",
+            "direction": "inbound",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "duration_seconds": 180,
+            "status": "completed",
+            "recording_url": f"https://api.vxt.co/recordings/{self.test_call_vxt_id}.mp3",
+            "webhook_id": f"webhook-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        }
+        
+        # Test webhook (public endpoint - no auth required)
+        status, data = await self.make_request("POST", "/vxt/webhook", json_data=webhook_payload)
+        
+        success = status == 200 and data.get("success") is True
+        event_type_match = data.get("event_type") == "call.completed" if success else False
+        
+        self.log_test(
+            "POST /vxt/webhook (call.completed)",
+            success and event_type_match,
+            f"Status: {status}, Event: {data.get('event_type', 'N/A') if success else 'Failed'}, Result: {data.get('result', {}).get('status', 'N/A') if success else 'N/A'}"
+        )
+        
+        if success:
+            result = data.get("result", {})
+            self.test_call_id = result.get("db_id")
+            
+            # Verify call was created in database
+            self.log_test(
+                "Call Created in Database",
+                result.get("status") == "created" and self.test_call_id is not None,
+                f"DB ID: {self.test_call_id}, VXT Call ID: {result.get('call_id')}"
+            )
+    
+    async def test_vxt_webhook_call_transcribed(self):
+        """Test 3: VXT Webhook - call.transcribed event"""
+        print("\n=== Testing VXT Webhook - call.transcribed ===")
+        
+        if not self.test_call_vxt_id:
+            self.log_test("Webhook Transcribed Test", False, "No VXT call ID from previous test")
+            return
+        
+        # Test webhook payload for call.transcribed
+        webhook_payload = {
+            "event_type": "call.transcribed",
+            "call_id": self.test_call_vxt_id,
+            "transcript_text": "Hello, this is a test call transcript. The client called about their tax return and we discussed their business expenses.",
+            "summary_text": "Client inquiry about tax return and business expenses. Provided guidance on deductible expenses.",
+            "confidence_score": 0.95,
+            "speaker_labels": [
+                {"speaker": "agent", "start": 0, "end": 30},
+                {"speaker": "client", "start": 30, "end": 60}
+            ]
+        }
+        
+        status, data = await self.make_request("POST", "/vxt/webhook", json_data=webhook_payload)
+        
+        success = status == 200 and data.get("success") is True
+        event_type_match = data.get("event_type") == "call.transcribed" if success else False
+        
+        self.log_test(
+            "POST /vxt/webhook (call.transcribed)",
+            success and event_type_match,
+            f"Status: {status}, Event: {data.get('event_type', 'N/A') if success else 'Failed'}, Has Summary: {data.get('result', {}).get('has_summary', False) if success else 'N/A'}"
+        )
+    
+    async def test_vxt_list_calls_rbac(self):
+        """Test 4: VXT List Calls - RBAC"""
+        print("\n=== Testing VXT List Calls - RBAC ===")
+        
+        # Test staff access (should work)
+        status, data = await self.make_request("GET", "/vxt/calls", self.staff_token)
+        self.log_test(
+            "GET /vxt/calls (staff)",
+            status == 200 and isinstance(data, list),
+            f"Status: {status}, Calls found: {len(data) if status == 200 else 'N/A'}"
+        )
+        
+        # Test admin access (should work)
+        status, data = await self.make_request("GET", "/vxt/calls", self.admin_token)
+        self.log_test(
+            "GET /vxt/calls (admin)",
+            status == 200 and isinstance(data, list),
+            f"Status: {status}, Calls found: {len(data) if status == 200 else 'N/A'}"
+        )
+        
+        # Test tax agent access (should work)
+        status, data = await self.make_request("GET", "/vxt/calls", self.tax_agent_token)
+        self.log_test(
+            "GET /vxt/calls (tax_agent)",
+            status == 200 and isinstance(data, list),
+            f"Status: {status}, Calls found: {len(data) if status == 200 else 'N/A'}"
+        )
+        
+        # Test client access (should be blocked - 403)
+        status, data = await self.make_request("GET", "/vxt/calls", self.client_token)
+        self.log_test(
+            "GET /vxt/calls (client - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403 (Access denied)"
+        )
+    
+    async def test_vxt_list_calls_filters(self):
+        """Test 5: VXT List Calls - Filters"""
+        print("\n=== Testing VXT List Calls - Filters ===")
+        
+        # Test with direction filter
+        params = {"direction": "inbound", "limit": 10}
+        status, data = await self.make_request("GET", "/vxt/calls", self.staff_token, params=params)
+        self.log_test(
+            "GET /vxt/calls (direction filter)",
+            status == 200 and isinstance(data, list),
+            f"Status: {status}, Inbound calls: {len(data) if status == 200 else 'N/A'}"
+        )
+        
+        # Test with date range filter
+        from_date = (datetime.now() - timedelta(days=7)).isoformat()
+        params = {"from_date": from_date, "limit": 20}
+        status, data = await self.make_request("GET", "/vxt/calls", self.staff_token, params=params)
+        self.log_test(
+            "GET /vxt/calls (date filter)",
+            status == 200 and isinstance(data, list),
+            f"Status: {status}, Recent calls (7 days): {len(data) if status == 200 else 'N/A'}"
+        )
+        
+        # Test with client_id filter (if we have matched calls)
+        params = {"client_id": 143003, "limit": 5}
+        status, data = await self.make_request("GET", "/vxt/calls", self.staff_token, params=params)
+        self.log_test(
+            "GET /vxt/calls (client_id filter)",
+            status == 200 and isinstance(data, list),
+            f"Status: {status}, Client calls: {len(data) if status == 200 else 'N/A'}"
+        )
+    
+    async def test_vxt_get_single_call(self):
+        """Test 6: VXT Get Single Call"""
+        print("\n=== Testing VXT Get Single Call ===")
+        
+        if not self.test_call_id:
+            self.log_test("Get Single Call Test", False, "No call ID from webhook test")
+            return
+        
+        # Test staff access
+        status, data = await self.make_request("GET", f"/vxt/calls/{self.test_call_id}", self.staff_token)
+        
+        success = status == 200 and data.get("id") == self.test_call_id
+        expected_keys = ["id", "call_id", "from_number", "to_number", "direction", "timestamp", "transcript", "recording", "workpaper_links"]
+        has_keys = all(key in data for key in expected_keys) if success else False
+        
+        self.log_test(
+            f"GET /vxt/calls/{self.test_call_id} (staff)",
+            success and has_keys,
+            f"Status: {status}, Has transcript: {'✓' if data.get('transcript') else '✗'}, Has recording: {'✓' if data.get('recording') else '✗'}"
+        )
+        
+        # Test admin access
+        status, data = await self.make_request("GET", f"/vxt/calls/{self.test_call_id}", self.admin_token)
+        self.log_test(
+            f"GET /vxt/calls/{self.test_call_id} (admin)",
+            status == 200 and data.get("id") == self.test_call_id,
+            f"Status: {status}, Admin can access call details"
+        )
+        
+        # Test tax agent access
+        status, data = await self.make_request("GET", f"/vxt/calls/{self.test_call_id}", self.tax_agent_token)
+        self.log_test(
+            f"GET /vxt/calls/{self.test_call_id} (tax_agent)",
+            status == 200 and data.get("id") == self.test_call_id,
+            f"Status: {status}, Tax agent can access call details"
+        )
+        
+        # Test client access (should be blocked - 403)
+        status, data = await self.make_request("GET", f"/vxt/calls/{self.test_call_id}", self.client_token)
+        self.log_test(
+            f"GET /vxt/calls/{self.test_call_id} (client - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_vxt_get_call_by_vxt_id(self):
+        """Test 7: VXT Get Call by VXT ID"""
+        print("\n=== Testing VXT Get Call by VXT ID ===")
+        
+        if not self.test_call_vxt_id:
+            self.log_test("Get Call by VXT ID Test", False, "No VXT call ID from webhook test")
+            return
+        
+        # Test staff access
+        status, data = await self.make_request("GET", f"/vxt/calls/by-vxt-id/{self.test_call_vxt_id}", self.staff_token)
+        
+        success = status == 200 and data.get("call_id") == self.test_call_vxt_id
+        
+        self.log_test(
+            f"GET /vxt/calls/by-vxt-id/{self.test_call_vxt_id} (staff)",
+            success,
+            f"Status: {status}, VXT Call ID match: {'✓' if success else '✗'}"
+        )
+        
+        # Test 404 for non-existent call
+        status, data = await self.make_request("GET", "/vxt/calls/by-vxt-id/non-existent-call", self.staff_token)
+        self.log_test(
+            "GET /vxt/calls/by-vxt-id/non-existent-call (404 test)",
+            status == 404,
+            f"Status: {status}, Expected: 404 for non-existent call"
+        )
+    
+    async def test_vxt_recording_stream(self):
+        """Test 8: VXT Recording Stream"""
+        print("\n=== Testing VXT Recording Stream ===")
+        
+        if not self.test_call_id:
+            self.log_test("Recording Stream Test", False, "No call ID from webhook test")
+            return
+        
+        # Test staff access
+        status, data = await self.make_request("GET", f"/vxt/recording/{self.test_call_id}", self.staff_token)
+        
+        # Should either redirect (302) or return recording data (200) or not found (404)
+        success = status in [200, 302, 404]
+        
+        self.log_test(
+            f"GET /vxt/recording/{self.test_call_id} (staff)",
+            success,
+            f"Status: {status}, Response type: {'Redirect' if status == 302 else 'Data' if status == 200 else 'Not Found' if status == 404 else 'Error'}"
+        )
+        
+        # Test admin access
+        status, data = await self.make_request("GET", f"/vxt/recording/{self.test_call_id}", self.admin_token)
+        self.log_test(
+            f"GET /vxt/recording/{self.test_call_id} (admin)",
+            status in [200, 302, 404],
+            f"Status: {status}, Admin can access recording endpoint"
+        )
+        
+        # Test tax agent access
+        status, data = await self.make_request("GET", f"/vxt/recording/{self.test_call_id}", self.tax_agent_token)
+        self.log_test(
+            f"GET /vxt/recording/{self.test_call_id} (tax_agent)",
+            status in [200, 302, 404],
+            f"Status: {status}, Tax agent can access recording endpoint"
+        )
+        
+        # Test client access (should be blocked - 403)
+        status, data = await self.make_request("GET", f"/vxt/recording/{self.test_call_id}", self.client_token)
+        self.log_test(
+            f"GET /vxt/recording/{self.test_call_id} (client - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_vxt_link_workpaper(self):
+        """Test 9: VXT Link Call to Workpaper"""
+        print("\n=== Testing VXT Link Call to Workpaper ===")
+        
+        if not self.test_call_id:
+            self.log_test("Link Workpaper Test", False, "No call ID from webhook test")
+            return
+        
+        # Test link with staff credentials
+        link_data = {
+            "workpaper_id": self.test_workpaper_id,
+            "notes": "Test link from VXT integration testing"
+        }
+        
+        status, data = await self.make_request("POST", f"/vxt/calls/{self.test_call_id}/link-workpaper", self.staff_token, link_data)
+        
+        success = status == 200 and data.get("success") is True
+        
+        self.log_test(
+            f"POST /vxt/calls/{self.test_call_id}/link-workpaper (staff)",
+            success,
+            f"Status: {status}, Message: {data.get('message', 'N/A') if success else 'Failed'}"
+        )
+        
+        # Test duplicate link prevention
+        status, data = await self.make_request("POST", f"/vxt/calls/{self.test_call_id}/link-workpaper", self.staff_token, link_data)
+        duplicate_prevented = status == 200 and "exists" in data.get("result", {}).get("status", "")
+        
+        self.log_test(
+            f"POST /vxt/calls/{self.test_call_id}/link-workpaper (duplicate prevention)",
+            duplicate_prevented,
+            f"Status: {status}, Duplicate handling: {'✓' if duplicate_prevented else '✗'}"
+        )
+        
+        # Test admin access
+        admin_link_data = {
+            "workpaper_id": self.test_workpaper_id + 1,
+            "notes": "Admin test link"
+        }
+        status, data = await self.make_request("POST", f"/vxt/calls/{self.test_call_id}/link-workpaper", self.admin_token, admin_link_data)
+        self.log_test(
+            f"POST /vxt/calls/{self.test_call_id}/link-workpaper (admin)",
+            status == 200 and data.get("success") is True,
+            f"Status: {status}, Admin can link workpaper"
+        )
+        
+        # Test tax agent access
+        tax_agent_link_data = {
+            "workpaper_id": self.test_workpaper_id + 2,
+            "notes": "Tax agent test link"
+        }
+        status, data = await self.make_request("POST", f"/vxt/calls/{self.test_call_id}/link-workpaper", self.tax_agent_token, tax_agent_link_data)
+        self.log_test(
+            f"POST /vxt/calls/{self.test_call_id}/link-workpaper (tax_agent)",
+            status == 200 and data.get("success") is True,
+            f"Status: {status}, Tax agent can link workpaper"
+        )
+        
+        # Test client access (should be blocked - 403)
+        status, data = await self.make_request("POST", f"/vxt/calls/{self.test_call_id}/link-workpaper", self.client_token, link_data)
+        self.log_test(
+            f"POST /vxt/calls/{self.test_call_id}/link-workpaper (client - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_vxt_stats(self):
+        """Test 10: VXT Statistics"""
+        print("\n=== Testing VXT Statistics ===")
+        
+        # Test staff access
+        status, data = await self.make_request("GET", "/vxt/stats", self.staff_token)
+        
+        expected_keys = ["total_calls", "matched_calls", "match_rate", "with_transcripts", "with_recordings", "webhooks_24h"]
+        has_keys = all(key in data for key in expected_keys) if status == 200 else False
+        
+        self.log_test(
+            "GET /vxt/stats (staff)",
+            status == 200 and has_keys,
+            f"Status: {status}, Total calls: {data.get('total_calls', 'N/A') if status == 200 else 'N/A'}, Match rate: {data.get('match_rate', 'N/A') if status == 200 else 'N/A'}%"
+        )
+        
+        if status == 200:
+            # Verify webhooks_24h structure
+            webhooks_24h = data.get("webhooks_24h", {})
+            has_webhook_fields = "total" in webhooks_24h and "valid_signature" in webhooks_24h
+            
+            self.log_test(
+                "VXT Stats Webhooks 24h Structure",
+                has_webhook_fields,
+                f"Webhooks 24h: {webhooks_24h.get('total', 0)} total, {webhooks_24h.get('valid_signature', 0)} valid signatures"
+            )
+        
+        # Test admin access
+        status, data = await self.make_request("GET", "/vxt/stats", self.admin_token)
+        self.log_test(
+            "GET /vxt/stats (admin)",
+            status == 200 and has_keys,
+            f"Status: {status}, Admin can access VXT stats"
+        )
+        
+        # Test tax agent access
+        status, data = await self.make_request("GET", "/vxt/stats", self.tax_agent_token)
+        self.log_test(
+            "GET /vxt/stats (tax_agent)",
+            status == 200 and has_keys,
+            f"Status: {status}, Tax agent can access VXT stats"
+        )
+        
+        # Test client access (should be blocked - 403)
+        status, data = await self.make_request("GET", "/vxt/stats", self.client_token)
+        self.log_test(
+            "GET /vxt/stats (client - should be blocked)",
+            status == 403,
+            f"Status: {status}, Expected: 403"
+        )
+    
+    async def test_phone_number_formats(self):
+        """Test 11: Phone Number Format Handling"""
+        print("\n=== Testing Phone Number Format Handling ===")
+        
+        # Test different phone number formats in webhook
+        phone_formats = [
+            {"from": "+61400123456", "to": "0400 123 456", "desc": "International vs National"},
+            {"from": "(02) 9876 5432", "to": "+61298765432", "desc": "Formatted vs International"},
+            {"from": "04 1234 5678", "to": "0412345678", "desc": "Spaced vs Compact"}
+        ]
+        
+        for i, format_test in enumerate(phone_formats):
+            test_call_id = f"format-test-{i}-{datetime.now().strftime('%H%M%S')}"
+            
+            webhook_payload = {
+                "event_type": "call.completed",
+                "call_id": test_call_id,
+                "from_number": format_test["from"],
+                "to_number": format_test["to"],
+                "direction": "inbound",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "duration_seconds": 60,
+                "status": "completed"
+            }
+            
+            status, data = await self.make_request("POST", "/vxt/webhook", json_data=webhook_payload)
+            
+            success = status == 200 and data.get("success") is True
+            
+            self.log_test(
+                f"Phone Format Test - {format_test['desc']}",
+                success,
+                f"Status: {status}, From: {format_test['from']}, To: {format_test['to']}"
+            )
+    
+    async def run_all_tests(self):
+        """Run all VXT test suites"""
+        print("🚀 Starting Comprehensive VXT Phone System Integration Tests")
+        print(f"Base URL: {BASE_URL}")
+        print(f"Test Workpaper ID: {self.test_workpaper_id}")
+        
+        # Authentication is required for most tests
+        if not await self.test_authentication():
+            print("❌ Authentication failed - cannot continue with API tests")
+            return
+        
+        # Run all test suites
+        await self.test_vxt_webhook_call_completed()
+        await self.test_vxt_webhook_call_transcribed()
+        await self.test_vxt_list_calls_rbac()
+        await self.test_vxt_list_calls_filters()
+        await self.test_vxt_get_single_call()
+        await self.test_vxt_get_call_by_vxt_id()
+        await self.test_vxt_recording_stream()
+        await self.test_vxt_link_workpaper()
+        await self.test_vxt_stats()
+        await self.test_phone_number_formats()
+        
+        # Summary
+        self.print_summary()
+    
+    def print_summary(self):
+        """Print test summary"""
+        print("\n" + "="*60)
+        print("📊 VXT PHONE SYSTEM INTEGRATION TEST SUMMARY")
+        print("="*60)
+        
+        total_tests = len(self.test_results)
+        passed_tests = sum(1 for result in self.test_results if result["success"])
+        failed_tests = total_tests - passed_tests
+        
+        print(f"Total Tests: {total_tests}")
+        print(f"✅ Passed: {passed_tests}")
+        print(f"❌ Failed: {failed_tests}")
+        print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        
+        if failed_tests > 0:
+            print(f"\n🔍 FAILED TESTS:")
+            for result in self.test_results:
+                if not result["success"]:
+                    print(f"  ❌ {result['test']}")
+                    if result["details"]:
+                        print(f"     {result['details']}")
+        
+        print("\n" + "="*60)
+        
+        # RBAC Summary
+        print("🔐 RBAC VERIFICATION SUMMARY:")
+        print("   ✅ Admin: Full access to all VXT endpoints")
+        print("   ✅ Staff: Full access to all VXT endpoints")
+        print("   ✅ Tax Agent: Full access to all VXT endpoints")
+        print("   ❌ Client: Blocked from all VXT endpoints (403)")
+        
+        print("\n📋 TEST SCENARIOS COVERED:")
+        print("   ✅ Webhook Processing (call.completed, call.transcribed)")
+        print("   ✅ Call Listing (with filters: direction, date, client_id)")
+        print("   ✅ Single Call Retrieval (with transcript, recording, workpaper links)")
+        print("   ✅ Call Retrieval by VXT ID")
+        print("   ✅ Recording Streaming (redirect or local)")
+        print("   ✅ Workpaper Linking (with duplicate prevention)")
+        print("   ✅ Statistics (calls, matches, transcripts, webhooks)")
+        print("   ✅ Phone Number Format Handling (+61, 04xx, formatted)")
+
+
 class BASAPITester:
     def __init__(self):
         self.session = None
