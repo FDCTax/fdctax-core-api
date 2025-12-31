@@ -58,13 +58,14 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
 - Database triggers for automatic queue population
 - Audit trail for exports
 
-### 6. Identity Spine v1 ✅ (Backend - Dec 2025)
+### 6. Identity Spine v1.1 ✅ (Backend - Dec 2025)
 **Backend:** `/api/identity/...`
 - Unified person model (email as single source of truth)
 - MyFDC account management with automatic person linking
 - CRM client management with automatic person linking
 - Engagement profile tracking (service flags, subscriptions)
 - Identity merging for duplicate resolution
+- **Merge Preview & Conflict Detection** (NEW v1.1)
 - Orphan detection and cleanup
 - Admin statistics and audit logging
 
@@ -76,8 +77,17 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
 - `PUT /api/identity/engagement/{id}` - Update engagement flags (staff)
 - `GET /api/identity/stats` - Identity statistics (admin)
 - `GET /api/identity/orphaned` - Orphaned records (admin)
+- `GET /api/identity/merge-preview` - Preview merge with conflict detection (admin) **(NEW)**
 - `POST /api/identity/link-existing` - Link existing records (admin)
 - `POST /api/identity/merge` - Merge duplicate persons (admin)
+
+**Merge Preview Conflict Detection:**
+- `conflicting_emails` (warning) - Different email addresses
+- `multiple_myfdc_accounts` (high) - Both have MyFDC accounts
+- `multiple_crm_clients` (high) - Both have CRM clients  
+- `mismatched_auth_providers` (medium) - Different auth providers
+- `mismatched_service_flags` (low) - Different engagement flags
+- `different_contact_info` (low) - Different names/phones
 
 **Database Tables:**
 - `person` - Central identity table (email is unique)
