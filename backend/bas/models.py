@@ -245,3 +245,86 @@ class BASChangeLogDB(Base):
             "reason": self.reason,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
         }
+
+
+# ==================== BAS WORKFLOW STEP TABLE ====================
+
+class BASWorkflowStepDB(Base):
+    """
+    BAS Workflow Step Table - Tracks multi-step sign-off workflow.
+    
+    Workflow: PREPARE → REVIEW → APPROVE → LODGE
+    
+    Each step can be:
+    - pending: Not started
+    - in_progress: Being worked on
+    - completed: Successfully completed
+    - rejected: Rejected, needs revision
+    - skipped: Skipped (e.g., client approval not required)
+    """
+    __tablename__ = 'bas_workflow_steps'
+    
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # References
+    bas_statement_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)
+    client_id = Column(String(36), nullable=False, index=True)
+    
+    # Step info
+    step_type = Column(String(20), nullable=False)  # prepare, review, approve, lodge
+    step_order = Column(Integer, nullable=False)    # 1, 2, 3, 4
+    status = Column(String(20), nullable=False, default='pending')
+    
+    # Assigned user
+    assigned_to = Column(String(36), nullable=True)
+    assigned_to_email = Column(String(255), nullable=True)
+    assigned_to_role = Column(String(50), nullable=True)
+    assigned_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Completion info
+    completed_by = Column(String(36), nullable=True)
+    completed_by_email = Column(String(255), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Rejection info
+    rejected_by = Column(String(36), nullable=True)
+    rejected_by_email = Column(String(255), nullable=True)
+    rejected_at = Column(DateTime(timezone=True), nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    
+    # Notes
+    notes = Column(Text, nullable=True)
+    
+    # Due date
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    
+    __table_args__ = {'extend_existing': True}
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "bas_statement_id": str(self.bas_statement_id),
+            "client_id": self.client_id,
+            "step_type": self.step_type,
+            "step_order": self.step_order,
+            "status": self.status,
+            "assigned_to": self.assigned_to,
+            "assigned_to_email": self.assigned_to_email,
+            "assigned_to_role": self.assigned_to_role,
+            "assigned_at": self.assigned_at.isoformat() if self.assigned_at else None,
+            "completed_by": self.completed_by,
+            "completed_by_email": self.completed_by_email,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "rejected_by": self.rejected_by,
+            "rejected_by_email": self.rejected_by_email,
+            "rejected_at": self.rejected_at.isoformat() if self.rejected_at else None,
+            "rejection_reason": self.rejection_reason,
+            "notes": self.notes,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
