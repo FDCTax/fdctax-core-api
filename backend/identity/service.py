@@ -701,7 +701,7 @@ class IdentityService:
     async def find_duplicate_emails(self) -> List[Dict[str, Any]]:
         """Find potential duplicate persons based on similar emails."""
         query = text("""
-            SELECT email, COUNT(*) as count
+            SELECT LOWER(email) as email, COUNT(*) as count
             FROM person
             GROUP BY LOWER(email)
             HAVING COUNT(*) > 1
