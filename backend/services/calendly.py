@@ -39,10 +39,7 @@ APPOINTMENTS_FILE = DATA_DIR / "appointments.json"
 
 # Calendly API configuration
 CALENDLY_API_BASE = "https://api.calendly.com"
-CALENDLY_PAT = os.environ.get(
-    "CALENDLY_PAT",
-    "eyJraWQiOiIxY2UxZTEzNjE3ZGNmNzY2YjNjZWJjY2Y4ZGM1YmFmYThhNjVlNjg0MDIzZjdjMzJiZTgzNDliMjM4MDEzNWI0IiwidHlwIjoiUEFUIiwiYWxnIjoiRVMyNTYifQ.eyJpc3MiOiJodHRwczovL2F1dGguY2FsZW5kbHkuY29tIiwiaWF0IjoxNzY2ODAwNzQzLCJqdGkiOiIwMzZjMzM5Zi0xZWIwLTQyNmItYTMzNS0yMjFlZmEzOWFjYzciLCJ1c2VyX3V1aWQiOiJFQkdGRUFHNjczT0NHS1ZRIn0.QYayp_N2ATgLSEPAkum-ZNahCB0ym6-ke5Kfd8p2C8Lo51nH4dBQ8y4Mp9yQF6ekg8GGISvkDhzWvv8r92oCCA"
-)
+CALENDLY_PAT = os.environ.get("CALENDLY_PAT", "")
 CALENDLY_WEBHOOK_SECRET = os.environ.get("CALENDLY_WEBHOOK_SECRET", "")
 
 # Default assignee for appointment tasks
