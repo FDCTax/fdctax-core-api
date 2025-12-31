@@ -312,10 +312,68 @@ class VXTWebhookService:
         return None
     
     async def _auto_create_workpaper(self, call: VXTCallDB):
-        """Auto-create workpaper for matched call"""
-        # This is a placeholder - actual implementation depends on workpaper system
-        # For now, just log that we would create a workpaper
-        logger.info(f"Would create workpaper for call {call.call_id} (client {call.matched_client_id})")
+        """
+        Auto-link call to client workpaper.
+        
+        Strategy:
+        1. Find the current year's workpaper for the matched client
+        2. If found, create a workpapers_call_links entry
+        3. Log the action for audit trail
+        """
+        if not call.matched_client_id:
+            return
+        
+        try:
+            # Get current year
+            current_year = datetime.now().year
+            
+            # Find workpaper job for this client and year
+            job_query = text("""
+                SELECT id, client_id, year, status
+                FROM workpaper_jobs
+                WHERE client_id = :client_id
+                  AND year = :year
+                LIMIT 1
+            """)
+            
+            result = await self.db.execute(job_query, {
+                "client_id": str(call.matched_client_id),
+                "year": current_year
+            })
+            job = result.fetchone()
+            
+            if not job:
+                logger.info(f"No workpaper job found for client {call.matched_client_id} year {current_year}")
+                return
+            
+            # Check if link already exists
+            existing_link = await self.db.execute(
+                select(WorkpaperCallLinkDB).where(and_(
+                    WorkpaperCallLinkDB.call_id == call.id,
+                    WorkpaperCallLinkDB.workpaper_id == job[0]
+                ))
+            )
+            
+            if existing_link.scalar_one_or_none():
+                logger.info(f"Call {call.call_id} already linked to workpaper {job[0]}")
+                return
+            
+            # Create the link
+            link = WorkpaperCallLinkDB(
+                call_id=call.id,
+                workpaper_id=job[0],
+                link_type="auto",
+                notes=f"Auto-linked from VXT call {call.call_id}",
+                created_by="system"
+            )
+            self.db.add(link)
+            await self.db.commit()
+            
+            logger.info(f"Auto-linked call {call.call_id} to workpaper job {job[0]} (client {call.matched_client_id})")
+            
+        except Exception as e:
+            logger.error(f"Error auto-linking call to workpaper: {e}")
+            # Don't raise - this is a best-effort operation
 
 
 # ==================== CALL SERVICE ====================
