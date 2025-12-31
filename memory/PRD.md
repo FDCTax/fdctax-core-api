@@ -251,9 +251,16 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 /app/
 ├── backend/
 │   ├── bas/                    # BAS module
+│   ├── identity/               # Identity Spine module (NEW)
+│   │   ├── __init__.py
+│   │   ├── models.py           # SQLAlchemy ORM models
+│   │   ├── router.py           # API endpoints
+│   │   └── service.py          # Business logic
 │   ├── ingestion/              # Ingestion module
 │   ├── vxt/                    # VXT module
 │   ├── lodgeit_integration/    # LodgeIT module
+│   ├── email_integration/      # Email module (blocked by API key)
+│   ├── sms_integration/        # SMS module (scaffolded)
 │   ├── routers/                # API routers
 │   ├── migrations/             # SQL migration scripts
 │   └── server.py               # Main FastAPI app
@@ -264,6 +271,8 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 │   │   ├── lib/                # Utilities & API client
 │   │   └── pages/              # Page components
 │   └── package.json
+├── tests/                      # Test files
+│   └── test_identity_spine.py  # Identity Spine tests (30 tests)
 └── test_reports/               # Test results
 ```
 
