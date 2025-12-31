@@ -158,7 +158,7 @@ class IdentityService:
                                status, email_verified, mobile_verified, metadata, 
                                created_at, updated_at)
             VALUES (:id, :email, :first_name, :last_name, :mobile, :phone,
-                    'active', false, false, :metadata::jsonb, :created_at, :updated_at)
+                    'active', false, false, CAST(:metadata AS jsonb), :created_at, :updated_at)
             RETURNING id
         """)
         await self.db.execute(insert_person, {
