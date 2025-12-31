@@ -354,6 +354,10 @@ api_router.include_router(email_router)  # Email sending (stub in Phase 0)
 from identity.router import router as identity_router
 api_router.include_router(identity_router)  # Unified identity management
 
+# Core Module (Client Profiles & Luna Migration)
+from core.router import router as core_router
+api_router.include_router(core_router)  # Client profiles, migration endpoints
+
 # Include the main router in the app
 app.include_router(api_router)
 
