@@ -34,13 +34,21 @@ FDC Tax Core is a comprehensive tax management and bookkeeping platform designed
 
 **Frontend:** Planned for next phase
 
-### 4. VXT Phone Integration ✅ (Backend Only - Dec 2025)
+### 4. VXT Phone Integration ✅ (Production Ready - Dec 2025)
 **Backend:** `/api/vxt/...`
-- Webhook handler for VXT phone system
+- Webhook handler for VXT phone system (signature validated)
 - Call data storage (from/to numbers, duration, etc.)
 - Transcript and recording storage
-- Automatic client matching via phone number
-- Workpaper call linking
+- Automatic client matching via phone number (exact match)
+- Workpaper auto-linking when client matched
+- Call recording streaming
+
+**Production Webhook URL:**
+```
+https://fdctax-core.preview.emergentagent.com/api/vxt/webhook
+```
+
+**Supported Events:** call.completed, call.transcribed, call.recording_ready
 
 **Frontend:** Planned for next phase
 
