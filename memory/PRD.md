@@ -96,7 +96,30 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
 - `engagement_profile` - Service engagement flags
 - `identity_link_log` - Audit trail for identity operations
 
-### 7. Existing Modules
+### 7. BAS Module (Enhanced - Dec 2025)
+**Backend:** `/api/bas/...`
+- Existing: Save snapshots, history, sign-off, PDF data, change log
+- **NEW: Multi-step workflow** (prepare → review → approve → lodge)
+- **NEW: Enhanced history** with grouped periods and comparisons
+
+**Workflow Endpoints:**
+- `POST /api/bas/workflow/initialize` - Initialize 4-step workflow
+- `GET /api/bas/workflow/{bas_id}` - Get workflow status with progress
+- `POST /api/bas/workflow/{bas_id}/step/{step}/complete` - Complete step
+- `POST /api/bas/workflow/{bas_id}/step/{step}/reject` - Reject step
+- `POST /api/bas/workflow/{bas_id}/step/{step}/assign` - Assign step
+- `GET /api/bas/workflow/pending/me` - Get user's pending steps
+
+**History Endpoints:**
+- `GET /api/bas/history/grouped` - Grouped by quarter/month/year
+- `GET /api/bas/history/compare` - Compare with previous/same_last_year
+
+**Database Tables:**
+- `bas_statements` - BAS snapshots with versioning
+- `bas_change_log` - Audit trail
+- `bas_workflow_steps` - **NEW:** Workflow step tracking
+
+### 8. Existing Modules
 - CRM/Clients Management
 - Workpaper Management
 - Transaction Engine
