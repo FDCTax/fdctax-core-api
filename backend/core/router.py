@@ -21,8 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from middleware.auth import RoleChecker, AuthUser
 from middleware.internal_auth import (
-    require_internal_service, InternalService,
-    InternalOrUserAuth, require_internal_or_admin,
+    get_internal_service, InternalService,
+    InternalOrUserAuth,
     is_internal_auth_configured
 )
 from core.client_profiles import ClientProfileService, ClientProfile
