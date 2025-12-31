@@ -346,6 +346,10 @@ api_router.include_router(vxt_router)  # VXT webhooks, calls, recordings
 from routers.sms import router as sms_router
 api_router.include_router(sms_router)  # SMS sending (stub in Phase 0)
 
+# Email Integration (Phase 0 - Stub)
+from email_integration.email_router import router as email_router
+api_router.include_router(email_router)  # Email sending (stub in Phase 0)
+
 # Include the main router in the app
 app.include_router(api_router)
 
