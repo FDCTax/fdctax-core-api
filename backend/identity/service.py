@@ -310,7 +310,7 @@ class IdentityService:
                                       onboarding_completed, onboarding_step, status,
                                       login_count, created_at, updated_at)
             VALUES (:id, :person_id, :password_hash, :auth_provider, :auth_provider_id,
-                    :settings::jsonb, '{}'::jsonb, false, 0, 'active', 0, :created_at, :updated_at)
+                    CAST(:settings AS jsonb), '{}'::jsonb, false, 0, 'active', 0, :created_at, :updated_at)
         """)
         await self.db.execute(insert_account, {
             "id": str(account_id),
