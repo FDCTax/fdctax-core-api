@@ -111,7 +111,7 @@ class IdentityService:
             last_name=last_name,
             mobile=mobile,
             phone=phone,
-            metadata=metadata or {},
+            extra_data=metadata or {},
             status=PersonStatus.ACTIVE.value
         )
         self.db.add(person)
