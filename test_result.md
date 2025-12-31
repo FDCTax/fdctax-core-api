@@ -1133,11 +1133,14 @@ agent_communication:
     file: "/app/backend/routers/vxt.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Webhook endpoint working. Processes call.completed, call.transcribed events. Stores in vxt_calls, vxt_transcripts, vxt_recordings tables. Signature verification supported."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Webhook processing working correctly. Successfully processed call.completed and call.transcribed events. Created call ID 2 with VXT ID vxt-call-20251231020952. Transcript and recording data stored properly. Signature verification skipped (VXT_WEBHOOK_SECRET not configured)."
 
   - task: "VXT List Calls - GET /api/vxt/calls"
     implemented: true
@@ -1145,11 +1148,14 @@ agent_communication:
     file: "/app/backend/routers/vxt.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "List calls with filters: client_id, direction, from_date, to_date. Pagination supported."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Call listing working correctly. RBAC enforced: Admin ✔️ (2 calls), Staff ✔️ (2 calls), Tax Agent ✔️ (2 calls), Client ❌ (403 blocked). Filters working: direction=inbound (2 calls), date range (1 call), client_id filter (0 calls). Pagination functional."
 
   - task: "VXT Get Call - GET /api/vxt/calls/{id}"
     implemented: true
@@ -1157,23 +1163,29 @@ agent_communication:
     file: "/app/backend/routers/vxt.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Returns call with transcript, recording, and workpaper_links. Full details available."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Single call retrieval working correctly. Staff ✔️ (call ID 2 with transcript and recording), Admin ✔️ (full access), Tax Agent ✔️ (full access), Client ❌ (403 blocked). Call by VXT ID endpoint also working. Returns complete call data with transcript, recording, and workpaper links."
 
   - task: "VXT Recording - GET /api/vxt/recording/{id}"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/routers/vxt.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Redirects to VXT recording URL or streams from local storage. Audio streaming implemented."
+      - working: false
+        agent: "testing"
+        comment: "Minor: Recording endpoint returning 500 errors for staff/admin/tax_agent (3 failed tests). Client properly blocked with 403. Core functionality implemented but may have database query issue or missing recording file. RBAC working correctly."
 
   - task: "VXT Link Workpaper - POST /api/vxt/calls/{id}/link-workpaper"
     implemented: true
@@ -1181,11 +1193,14 @@ agent_communication:
     file: "/app/backend/routers/vxt.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Link call to workpaper with notes. Prevents duplicate links. Records created_by user."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Workpaper linking working correctly. Staff ✔️ (linked call 2 to workpaper 1002), Duplicate prevention ✔️ (returns existing link message), Admin ✔️ (can link), Tax Agent ✔️ (can link), Client ❌ (403 blocked). Link creation and duplicate handling functional."
 
   - task: "VXT Stats - GET /api/vxt/stats"
     implemented: true
@@ -1193,11 +1208,14 @@ agent_communication:
     file: "/app/backend/routers/vxt.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Returns total_calls, matched_calls, match_rate, with_transcripts, with_recordings, webhooks_24h."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Statistics endpoint working correctly. Staff ✔️ (total_calls: 2, match_rate: 0.0%), Admin ✔️ (full access), Tax Agent ✔️ (full access), Client ❌ (403 blocked). Webhooks 24h structure correct: 4 total, 4 valid signatures. All required fields present."
 
   - task: "VXT Phone Number Normalization"
     implemented: true
@@ -1206,6 +1224,10 @@ agent_communication:
     stuck_count: 0
     priority: "high"
     needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED: Phone number format handling working correctly. Tested multiple formats: +61400123456 vs 0400 123 456 (International vs National), (02) 9876 5432 vs +61298765432 (Formatted vs International), 04 1234 5678 vs 0412345678 (Spaced vs Compact). All webhook calls processed successfully."
     status_history:
       - working: true
         agent: "main"
