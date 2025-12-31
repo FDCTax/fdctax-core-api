@@ -193,8 +193,9 @@ async def get_internal_service(
     )
 
 
-# Convenience dependency alias
-require_internal_service = Depends(get_internal_service)
+# Convenience alias - use directly as dependency
+# Example: service: InternalService = Depends(get_internal_service)
+require_internal_service = get_internal_service
 
 
 async def optional_internal_service(
