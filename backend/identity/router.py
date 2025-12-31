@@ -327,6 +327,41 @@ async def find_duplicate_emails(
     return {"duplicates": duplicates, "count": len(duplicates)}
 
 
+@router.get("/person/by-email")
+async def get_person_by_email(
+    email: str = Query(..., description="Email address to search"),
+    current_user: AuthUser = Depends(require_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get person by email with linked accounts.
+    
+    **Permissions:** admin, staff
+    """
+    service = IdentityService(db)
+    
+    person = await service.get_person_by_email(email)
+    if not person:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Person not found"
+        )
+    
+    pid = uuid.UUID(person["id"])
+    
+    # Add linked accounts
+    myfdc_account = await service._check_myfdc_account_exists(pid)
+    crm_client = await service._check_crm_client_exists(pid)
+    engagement_profile = await service._check_engagement_profile_exists(pid)
+    
+    result = person.copy()
+    result["myfdc_account"] = myfdc_account
+    result["crm_client"] = crm_client
+    result["engagement_profile"] = engagement_profile
+    
+    return result
+
+
 @router.get("/person/{person_id}")
 async def get_person_by_id(
     person_id: str,
@@ -354,41 +389,6 @@ async def get_person_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Person not found"
         )
-    
-    # Add linked accounts
-    myfdc_account = await service._check_myfdc_account_exists(pid)
-    crm_client = await service._check_crm_client_exists(pid)
-    engagement_profile = await service._check_engagement_profile_exists(pid)
-    
-    result = person.copy()
-    result["myfdc_account"] = myfdc_account
-    result["crm_client"] = crm_client
-    result["engagement_profile"] = engagement_profile
-    
-    return result
-
-
-@router.get("/person/by-email")
-async def get_person_by_email(
-    email: str = Query(..., description="Email address to search"),
-    current_user: AuthUser = Depends(require_staff),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Get person by email with linked accounts.
-    
-    **Permissions:** admin, staff
-    """
-    service = IdentityService(db)
-    
-    person = await service.get_person_by_email(email)
-    if not person:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Person not found"
-        )
-    
-    pid = uuid.UUID(person["id"])
     
     # Add linked accounts
     myfdc_account = await service._check_myfdc_account_exists(pid)
