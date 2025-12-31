@@ -166,7 +166,18 @@ class TestMergePreviewValidation:
     
     def test_merge_preview_same_person_id(self, api_client, admin_token):
         """Test merge-preview with same person ID for both params"""
-        same_uuid = str(uuid.uuid4())
+        # First create a real person to test with
+        unique_email = f"TEST_same_id_{uuid.uuid4().hex[:8]}@example.com"
+        create_response = api_client.post(f"{BASE_URL}/api/identity/myfdc-signup", json={
+            "email": unique_email,
+            "first_name": "SameID",
+            "last_name": "Test"
+        })
+        
+        if create_response.status_code != 200:
+            pytest.skip(f"Failed to create test person: {create_response.text}")
+        
+        same_uuid = create_response.json()["person"]["id"]
         
         response = api_client.get(
             f"{BASE_URL}/api/identity/merge-preview",
