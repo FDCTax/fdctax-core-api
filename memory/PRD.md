@@ -58,7 +58,35 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
 - Database triggers for automatic queue population
 - Audit trail for exports
 
-### 6. Existing Modules
+### 6. Identity Spine v1 ✅ (Backend - Dec 2025)
+**Backend:** `/api/identity/...`
+- Unified person model (email as single source of truth)
+- MyFDC account management with automatic person linking
+- CRM client management with automatic person linking
+- Engagement profile tracking (service flags, subscriptions)
+- Identity merging for duplicate resolution
+- Orphan detection and cleanup
+- Admin statistics and audit logging
+
+**Key Endpoints:**
+- `POST /api/identity/myfdc-signup` - Public MyFDC signup
+- `POST /api/identity/crm-client-create` - Create CRM client (staff)
+- `GET /api/identity/person/by-email` - Lookup by email (staff)
+- `GET /api/identity/person/{id}` - Lookup by ID (staff)
+- `PUT /api/identity/engagement/{id}` - Update engagement flags (staff)
+- `GET /api/identity/stats` - Identity statistics (admin)
+- `GET /api/identity/orphaned` - Orphaned records (admin)
+- `POST /api/identity/link-existing` - Link existing records (admin)
+- `POST /api/identity/merge` - Merge duplicate persons (admin)
+
+**Database Tables:**
+- `person` - Central identity table (email is unique)
+- `myfdc_account` - MyFDC account data
+- `crm_client_identity` - CRM client data
+- `engagement_profile` - Service engagement flags
+- `identity_link_log` - Audit trail for identity operations
+
+### 7. Existing Modules
 - CRM/Clients Management
 - Workpaper Management
 - Transaction Engine
