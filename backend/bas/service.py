@@ -3,9 +3,10 @@ BAS Backend - Service Layer
 
 Provides business logic for:
 - Saving BAS snapshots
-- Retrieving BAS history
+- Retrieving BAS history (with grouping)
 - Change log persistence
 - PDF generation (data endpoint)
+- Multi-step sign-off workflow (prepare → review → approve → lodge)
 """
 
 import uuid
@@ -16,14 +17,24 @@ import logging
 import json
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text, and_, or_, desc
+from sqlalchemy import select, text, and_, or_, desc, func
 
 from .models import (
-    BASStatementDB, BASChangeLogDB,
-    BASStatus, BASActionType, BASEntityType
+    BASStatementDB, BASChangeLogDB, BASWorkflowStepDB,
+    BASStatus, BASActionType, BASEntityType,
+    WorkflowStepType, WorkflowStepStatus
 )
 
 logger = logging.getLogger(__name__)
+
+
+# Workflow step configuration
+WORKFLOW_STEPS = [
+    {"type": WorkflowStepType.PREPARE.value, "order": 1, "role": "staff", "name": "Preparation"},
+    {"type": WorkflowStepType.REVIEW.value, "order": 2, "role": "tax_agent", "name": "Review"},
+    {"type": WorkflowStepType.APPROVE.value, "order": 3, "role": "client", "name": "Approval"},
+    {"type": WorkflowStepType.LODGE.value, "order": 4, "role": "tax_agent", "name": "Lodgement"},
+]
 
 
 # ==================== BAS STATEMENT SERVICE ====================
