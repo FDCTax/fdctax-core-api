@@ -150,33 +150,14 @@ class Settings(BaseSettings):
         """
         Parse CORS_ORIGINS into a list with environment-aware defaults.
         
-        Production/Staging: Only specified origins
+        Production/Staging: Only specified origins from CORS_ORIGINS env var
         Development: Include localhost origins
         """
+        origins = []
+        
+        # Read origins from environment variable
         if self.CORS_ORIGINS and self.CORS_ORIGINS != "*":
             origins = [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
-        else:
-            origins = []
-        
-        # Production origins (always allowed)
-        production_origins = [
-            # Australian domains (production)
-            "https://fdctax.com.au",
-            "https://www.fdctax.com.au",
-            "https://myfdc.com.au",
-            "https://www.myfdc.com.au",
-            # API domain
-            "https://api.fdccore.com",
-            "https://backend.fdctax.com.au",
-            # Legacy .com domains (if needed)
-            "https://fdctax.com",
-            "https://www.fdctax.com",
-            "https://myfdc.com",
-            "https://www.myfdc.com",
-            # Emergent deployment domains
-            "https://lodgeit-sync.preview.emergentagent.com",
-            "https://txengine.emergent.host",
-        ]
         
         # Development origins (only in dev/staging)
         dev_origins = [
@@ -188,7 +169,7 @@ class Settings(BaseSettings):
         ]
         
         # Combine based on environment
-        all_origins = set(origins + production_origins)
+        all_origins = set(origins)
         
         if not self.is_production:
             all_origins.update(dev_origins)
