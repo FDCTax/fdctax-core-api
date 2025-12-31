@@ -445,7 +445,7 @@ async def update_engagement_profile(
             detail="Engagement profile not found"
         )
     
-    return profile.to_dict()
+    return profile
 
 
 @router.get("/stats")
