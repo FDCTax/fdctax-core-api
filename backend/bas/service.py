@@ -831,6 +831,8 @@ class BASHistoryService:
         """
         Compare BAS for a period with another period.
         """
+        from dateutil.relativedelta import relativedelta
+        
         # Get current period BAS
         current_result = await self.db.execute(
             select(BASStatementDB)
@@ -847,18 +849,14 @@ class BASHistoryService:
         if not current:
             return {"error": "No BAS found for the specified period"}
         
-        # Determine comparison period
+        # Determine comparison period using relativedelta for proper date arithmetic
         if compare_with == "previous":
-            # Get previous quarter
-            if period_from.month > 3:
-                comp_from = date(period_from.year, period_from.month - 3, period_from.day)
-                comp_to = date(period_to.year, period_to.month - 3, period_to.day)
-            else:
-                comp_from = date(period_from.year - 1, period_from.month + 9, period_from.day)
-                comp_to = date(period_to.year - 1, period_to.month + 9, period_to.day)
+            # Get previous quarter (3 months back)
+            comp_from = period_from - relativedelta(months=3)
+            comp_to = period_to - relativedelta(months=3)
         else:  # same_last_year
-            comp_from = date(period_from.year - 1, period_from.month, period_from.day)
-            comp_to = date(period_to.year - 1, period_to.month, period_to.day)
+            comp_from = period_from - relativedelta(years=1)
+            comp_to = period_to - relativedelta(years=1)
         
         # Get comparison period BAS
         comp_result = await self.db.execute(
