@@ -355,13 +355,15 @@ async def get_person_by_id(
             detail="Person not found"
         )
     
-    result = person.to_dict()
-    if person.myfdc_account:
-        result["myfdc_account"] = person.myfdc_account.to_dict()
-    if person.crm_client:
-        result["crm_client"] = person.crm_client.to_dict()
-    if person.engagement_profile:
-        result["engagement_profile"] = person.engagement_profile.to_dict()
+    # Add linked accounts
+    myfdc_account = await service._check_myfdc_account_exists(pid)
+    crm_client = await service._check_crm_client_exists(pid)
+    engagement_profile = await service._check_engagement_profile_exists(pid)
+    
+    result = person.copy()
+    result["myfdc_account"] = myfdc_account
+    result["crm_client"] = crm_client
+    result["engagement_profile"] = engagement_profile
     
     return result
 
@@ -386,13 +388,17 @@ async def get_person_by_email(
             detail="Person not found"
         )
     
-    result = person.to_dict()
-    if person.myfdc_account:
-        result["myfdc_account"] = person.myfdc_account.to_dict()
-    if person.crm_client:
-        result["crm_client"] = person.crm_client.to_dict()
-    if person.engagement_profile:
-        result["engagement_profile"] = person.engagement_profile.to_dict()
+    pid = uuid.UUID(person["id"])
+    
+    # Add linked accounts
+    myfdc_account = await service._check_myfdc_account_exists(pid)
+    crm_client = await service._check_crm_client_exists(pid)
+    engagement_profile = await service._check_engagement_profile_exists(pid)
+    
+    result = person.copy()
+    result["myfdc_account"] = myfdc_account
+    result["crm_client"] = crm_client
+    result["engagement_profile"] = engagement_profile
     
     return result
 
