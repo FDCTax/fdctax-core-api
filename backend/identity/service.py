@@ -115,6 +115,7 @@ class IdentityService:
             status=PersonStatus.ACTIVE.value
         )
         self.db.add(person)
+        await self.db.flush()  # Ensure person.id is available
         
         # Create engagement profile
         engagement = EngagementProfileDB(
