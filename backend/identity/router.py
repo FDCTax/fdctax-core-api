@@ -296,6 +296,57 @@ async def merge_persons(
     return result
 
 
+@router.get("/merge-preview")
+async def merge_preview(
+    person_id_a: str = Query(..., description="First person ID (UUID)"),
+    person_id_b: str = Query(..., description="Second person ID (UUID)"),
+    current_user: AuthUser = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Preview what would happen if two persons were merged.
+    
+    This is a **read-only** endpoint that:
+    - Shows combined engagement profile
+    - Lists all linked MyFDC accounts and CRM clients
+    - Detects conflicts:
+      - Duplicate emails
+      - Multiple MyFDC accounts
+      - Multiple CRM clients
+      - Mismatched service flags
+      - Mismatched auth providers
+    - Recommends merge direction
+    
+    **No database writes are performed** (except for audit logging).
+    
+    **Permissions:** admin
+    """
+    service = IdentityService(db)
+    
+    try:
+        pid_a = uuid.UUID(person_id_a)
+        pid_b = uuid.UUID(person_id_b)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid UUID format. Both person_id_a and person_id_b must be valid UUIDs."
+        )
+    
+    result = await service.merge_preview(
+        person_id_a=pid_a,
+        person_id_b=pid_b,
+        performed_by=current_user.email
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.get("error", "Merge preview failed")
+        )
+    
+    return result
+
+
 @router.get("/orphaned")
 async def list_orphaned_records(
     current_user: AuthUser = Depends(require_admin),
