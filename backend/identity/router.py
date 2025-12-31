@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field, EmailStr, field_validator
 
 from database import get_db
-from middleware.auth import RoleChecker, AuthUser, get_current_user_optional
+from middleware.auth import RoleChecker, AuthUser
 
 from .service import IdentityService
 
