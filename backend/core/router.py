@@ -412,7 +412,7 @@ async def delete_client_profile(
 @router.post("/migration/client")
 async def migrate_single_client(
     request: MigrateSingleRequest,
-    service: InternalService = Depends(require_internal_service),
+    service: InternalService = Depends(get_internal_service),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -437,7 +437,7 @@ async def migrate_single_client(
 @router.post("/migration/batch")
 async def migrate_batch_clients(
     request: MigrateBatchRequest,
-    service: InternalService = Depends(require_internal_service),
+    service: InternalService = Depends(get_internal_service),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -463,7 +463,7 @@ async def migrate_batch_clients(
 async def sync_client(
     client_code: str = Query(..., description="Client code to sync"),
     request: MigrateSingleRequest = None,
-    service: InternalService = Depends(require_internal_service),
+    service: InternalService = Depends(get_internal_service),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -487,7 +487,7 @@ async def sync_client(
 @router.get("/migration/status")
 async def get_migration_status(
     batch_id: Optional[str] = Query(None, description="Specific batch ID"),
-    auth: dict = Depends(require_internal_or_admin),
+    auth: dict = Depends(InternalOrUserAuth(allowed_roles=["admin"])),
     db: AsyncSession = Depends(get_db)
 ):
     """
