@@ -116,6 +116,28 @@ class Settings(BaseSettings):
         description="VXT API base URL"
     )
     
+    # ==================== SMS INTEGRATION ====================
+    SMS_PROVIDER: str = Field(
+        default="twilio",
+        description="SMS provider: twilio, messagebird, vonage"
+    )
+    SMS_ACCOUNT_SID: str = Field(
+        default="",
+        description="SMS provider account SID"
+    )
+    SMS_AUTH_TOKEN: str = Field(
+        default="",
+        description="SMS provider auth token"
+    )
+    SMS_FROM_NUMBER: str = Field(
+        default="",
+        description="Default SMS sender phone number"
+    )
+    SMS_WEBHOOK_SECRET: str = Field(
+        default="",
+        description="SMS webhook signing secret"
+    )
+    
     # ==================== OBSERVABILITY ====================
     SENTRY_DSN: str = Field(
         default="",
