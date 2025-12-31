@@ -138,6 +138,15 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
 
 ## Database Schema (Key Tables)
 
+### Identity Module (NEW - Dec 2025)
+```sql
+person: {id UUID PK, email UNIQUE, first_name, last_name, mobile, phone, date_of_birth, status, email_verified, mobile_verified, metadata JSONB, created_at, updated_at}
+myfdc_account: {id UUID PK, person_id FK, username, password_hash, auth_provider, auth_provider_id, settings JSONB, preferences JSONB, onboarding_completed, status, created_at, updated_at}
+crm_client_identity: {id UUID PK, person_id FK, client_code UNIQUE, abn, business_name, entity_type, gst_registered, tags JSONB, custom_fields JSONB, status, created_at, updated_at}
+engagement_profile: {id UUID PK, person_id FK, is_myfdc_user, is_crm_client, has_ocr, is_diy_bas_user, subscription_tier, created_at, updated_at}
+identity_link_log: {id UUID PK, person_id FK, action, source_type, source_id, target_type, target_id, performed_by, details JSONB, created_at}
+```
+
 ### Ingestion Module
 ```sql
 import_batches: {id, client_id, job_id, file_name, file_type, status, row_count, imported_count, skipped_count, error_count, column_mapping, errors, uploaded_by, uploaded_at}
