@@ -342,6 +342,10 @@ api_router.include_router(bas_router)  # BAS history, PDF, sign-off
 from routers.vxt import router as vxt_router
 api_router.include_router(vxt_router)  # VXT webhooks, calls, recordings
 
+# SMS Integration (Phase 0 - Stub)
+from routers.sms import router as sms_router
+api_router.include_router(sms_router)  # SMS sending (stub in Phase 0)
+
 # Include the main router in the app
 app.include_router(api_router)
 
