@@ -9,6 +9,8 @@ Provides REST API endpoints for BAS lifecycle:
 - POST /api/bas/{id}/pdf - Generate PDF data
 - POST /api/bas/change-log - Save change log entry
 - GET /api/bas/change-log - Get change log entries
+- Workflow endpoints (initialize, complete, reject, assign)
+- History endpoints (grouped, compare)
 
 Permissions:
 - admin: full access
@@ -17,6 +19,7 @@ Permissions:
 - client: read-only (view own BAS)
 """
 
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Dict, Any
