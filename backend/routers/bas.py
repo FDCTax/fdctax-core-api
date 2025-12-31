@@ -27,7 +27,7 @@ import logging
 from database import get_db
 from middleware.auth import RoleChecker, AuthUser
 
-from bas.service import BASStatementService, BASChangeLogService
+from bas.service import BASStatementService, BASChangeLogService, BASWorkflowService, BASHistoryService
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ router = APIRouter(prefix="/bas", tags=["BAS - Business Activity Statement"])
 # Permission checkers
 require_bas_write = RoleChecker(["admin", "staff", "tax_agent"])
 require_bas_read = RoleChecker(["admin", "staff", "tax_agent", "client"])
+require_admin = RoleChecker(["admin"])
 
 
 # ==================== REQUEST/RESPONSE MODELS ====================
