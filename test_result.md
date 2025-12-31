@@ -1001,3 +1001,102 @@ agent_communication:
   - agent: "testing"
     message: "BOOKKEEPING INGESTION MODULE COMPREHENSIVE TESTING COMPLETED - ALL 25 TESTS PASSED (100% SUCCESS RATE). Verified complete functionality: 1) Authentication (4 roles), 2) File Upload (CSV multipart/form-data with RBAC), 3) File Parsing (column detection and auto-mapping), 4) Transaction Import (with column mapping validation), 5) Duplicate Detection (3 transactions skipped on re-import), 6) Batch Listing (with filters), 7) Batch Detail Retrieval, 8) Audit Log Access, 9) Rollback (expected failure due to missing migration). RBAC MATRIX VERIFIED: Admin ✔️ (full access), Staff ✔️ (full access), Tax Agent ✔️ (read-only: can list batches but NOT upload/import), Client ❌ (403 on all endpoints). Test data: uploaded test_ingestion.csv with 3 transactions (office supplies, team lunch, freelance work), batch_id: 016575aa-9da4-4ebc-b378-cd3a78f48c7f. All core ingestion workflows functional and production-ready."
 
+
+## BAS Backend Foundations
+
+  - task: "BAS Save - POST /api/bas/save"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Save BAS endpoint working. Creates new BAS with version=1. Re-save for same period increments version. Logs create/update action to change log."
+
+  - task: "BAS History - GET /api/bas/history"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "History endpoint working. Returns all BAS versions for client sorted by period/version. Supports job_id filter."
+
+  - task: "BAS Get Single - GET /api/bas/{id}"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Get single BAS with full details and change log entries."
+
+  - task: "BAS Sign-off - POST /api/bas/{id}/sign-off"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Sign-off endpoint working. Sets completed_by, completed_at, status=completed. Records review_notes. Logs sign_off action."
+
+  - task: "BAS PDF Data - POST /api/bas/{id}/pdf"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "PDF data endpoint returns structured JSON for frontend PDF generation. Includes GST section, PAYG, summary, sign-off details, metadata."
+
+  - task: "BAS Change Log - POST /api/bas/change-log"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Change log persistence working. Logs action_type, entity_type, old_value, new_value, reason. User info captured from auth."
+
+  - task: "BAS Change Log Entries - GET /api/bas/change-log/entries"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Get change log with filters: client_id, job_id, bas_statement_id, action_type, entity_type."
+
+  - task: "BAS RBAC"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/bas.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "RBAC verified: admin/staff/tax_agent have full access. Client has read-only (can view history, cannot save/sign-off)."
+
