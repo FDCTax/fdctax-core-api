@@ -334,6 +334,10 @@ api_router.include_router(lodgeit_router)  # LodgeIT export/import
 from routers.ingestion import router as ingestion_router
 api_router.include_router(ingestion_router)  # File upload/import pipeline
 
+# BAS Backend
+from routers.bas import router as bas_router
+api_router.include_router(bas_router)  # BAS history, PDF, sign-off
+
 # Include the main router in the app
 app.include_router(api_router)
 
