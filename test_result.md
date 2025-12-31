@@ -1124,3 +1124,90 @@ agent_communication:
         agent: "testing"
         comment: "✅ VERIFIED: RBAC matrix fully functional. Admin ✔️ (full access to all BAS endpoints), Staff ✔️ (full access to all BAS endpoints), Tax Agent ✔️ (full access to all BAS endpoints), Client ✔️ (read-only access: can view history/BAS/PDF but cannot save/sign-off with 403). All permission boundaries correctly enforced across 8 BAS endpoints."
 
+
+## VXT Phone System Integration
+
+  - task: "VXT Webhook - POST /api/vxt/webhook"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/vxt.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Webhook endpoint working. Processes call.completed, call.transcribed events. Stores in vxt_calls, vxt_transcripts, vxt_recordings tables. Signature verification supported."
+
+  - task: "VXT List Calls - GET /api/vxt/calls"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/vxt.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "List calls with filters: client_id, direction, from_date, to_date. Pagination supported."
+
+  - task: "VXT Get Call - GET /api/vxt/calls/{id}"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/vxt.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Returns call with transcript, recording, and workpaper_links. Full details available."
+
+  - task: "VXT Recording - GET /api/vxt/recording/{id}"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/vxt.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Redirects to VXT recording URL or streams from local storage. Audio streaming implemented."
+
+  - task: "VXT Link Workpaper - POST /api/vxt/calls/{id}/link-workpaper"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/vxt.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Link call to workpaper with notes. Prevents duplicate links. Records created_by user."
+
+  - task: "VXT Stats - GET /api/vxt/stats"
+    implemented: true
+    working: true
+    file: "/app/backend/routers/vxt.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Returns total_calls, matched_calls, match_rate, with_transcripts, with_recordings, webhooks_24h."
+
+  - task: "VXT Phone Number Normalization"
+    implemented: true
+    working: true
+    file: "/app/backend/vxt/service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Normalizes +61, 04, 0X formats. Handles spaces, hyphens, parentheses. Australian format support."
+
