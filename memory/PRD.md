@@ -144,6 +144,15 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
   - Admin tools: stats, orphan detection, merge
   - Full test coverage (30/30 tests passed)
 
+- ✅ **Identity Spine v1.1** - Merge Preview & Conflict Detection
+  - Read-only merge preview endpoint
+  - Conflict detection (emails, accounts, auth providers, flags)
+  - Conflict severity levels (high/medium/low/warning)
+  - Merge direction recommendation
+  - safe_to_merge flag based on high severity conflicts
+  - Audit logging for preview requests
+  - Full test coverage (51/51 tests passed, no regressions)
+
 ---
 
 ## Database Schema (Key Tables)
