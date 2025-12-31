@@ -338,6 +338,10 @@ api_router.include_router(ingestion_router)  # File upload/import pipeline
 from routers.bas import router as bas_router
 api_router.include_router(bas_router)  # BAS history, PDF, sign-off
 
+# VXT Phone System Integration
+from routers.vxt import router as vxt_router
+api_router.include_router(vxt_router)  # VXT webhooks, calls, recordings
+
 # Include the main router in the app
 app.include_router(api_router)
 
