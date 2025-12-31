@@ -453,7 +453,12 @@ async def get_workflow_status(
     """
     service = BASWorkflowService(db)
     
-    status = await service.get_workflow_status(uuid.UUID(bas_id))
+    try:
+        bas_uuid = uuid.UUID(bas_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid UUID format")
+    
+    status = await service.get_workflow_status(bas_uuid)
     return status
 
 
