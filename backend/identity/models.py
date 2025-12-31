@@ -57,7 +57,7 @@ class PersonDB(Base):
     status = Column(String(30), default=PersonStatus.ACTIVE.value)
     email_verified = Column(Boolean, default=False)
     mobile_verified = Column(Boolean, default=False)
-    extra_data = Column(JSONB, default=dict)  # Renamed from 'metadata' (reserved in SQLAlchemy)
+    extra_data = Column("metadata", JSONB, default=dict)  # Maps to 'metadata' column (SQLAlchemy reserved word)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
