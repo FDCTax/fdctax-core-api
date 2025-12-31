@@ -293,9 +293,9 @@ class VXTWebhookService:
         
         # Search in crm_clients table
         query = text("""
-            SELECT id, name, phone, mobile
+            SELECT id, name, phone
             FROM crm_clients
-            WHERE phone IS NOT NULL OR mobile IS NOT NULL
+            WHERE phone IS NOT NULL AND phone != ''
             LIMIT 1000
         """)
         
@@ -304,12 +304,9 @@ class VXTWebhookService:
         
         for client in clients:
             client_phone = normalize_phone_number(client[2] or '')
-            client_mobile = normalize_phone_number(client[3] or '')
             
             # Check for exact match
             if client_phone and (client_phone == normalized_from or client_phone == normalized_to):
-                return {"id": client[0], "confidence": "exact", "name": client[1]}
-            if client_mobile and (client_mobile == normalized_from or client_mobile == normalized_to):
                 return {"id": client[0], "confidence": "exact", "name": client[1]}
         
         return None
