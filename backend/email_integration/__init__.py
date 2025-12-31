@@ -1,31 +1,37 @@
 """
 Email Integration Module
 
-This module provides email functionality for the FDC Tax Core application.
+This module provides email functionality for the FDC Tax Core application
+using Resend as the email provider.
 
-Phase 0: Scaffolding (Current)
-- Module structure created
-- Stub classes and endpoints
-- Environment variable placeholders
+Features:
+- Email sending via Resend API
+- Template-based emails with variable substitution
+- Database logging for audit trail
+- Email validation
 
-Phase 1: Provider Integration (Future)
-- Resend SDK integration
-- Outbound email sending
-- Delivery status tracking
+Phase 1: Resend Integration (Current) ✅
+- Real email sending
+- Template support
+- Database logging
+- Validation endpoints
 
-Phase 2: Templates (Future)
-- Email templates
-- Variable substitution
-- HTML/plain text support
-
-Phase 3: Automation (Future)
-- Appointment reminders
-- Document request notifications
-- Tax deadline alerts
-- Bulk email campaigns
+Phase 2: Advanced Features (Future)
+- Bulk email sending
+- Scheduling
+- Open/click tracking
 """
 
-from .email_client import EmailClient
-from .email_sender import EmailSender
+from .email_client import EmailClient, EmailResult, EmailMessage, EmailStatus, EmailAttachment
+from .email_sender import EmailSender, EmailMessageType
 
-__all__ = ['EmailClient', 'EmailSender']
+__all__ = [
+    'EmailClient',
+    'EmailResult',
+    'EmailMessage',
+    'EmailStatus',
+    'EmailAttachment',
+    'EmailSender',
+    'EmailMessageType'
+]
+
