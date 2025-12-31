@@ -124,6 +124,16 @@ https://fdccore-taxcrm.preview.emergentagent.com/api/vxt/webhook
   - History tab with batch list
   - Rollback functionality
 
+### Session 3: Backend Modules (December 31, 2025)
+- ✅ **Identity Spine v1** - Unified identity management
+  - Person model (email as primary identifier)
+  - MyFDC account management
+  - CRM client management  
+  - Automatic linking (same email = same person)
+  - Engagement profile tracking
+  - Admin tools: stats, orphan detection, merge
+  - Full test coverage (30/30 tests passed)
+
 ---
 
 ## Database Schema (Key Tables)
