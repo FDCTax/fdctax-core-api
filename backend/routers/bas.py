@@ -374,3 +374,257 @@ async def get_change_log(
     )
     
     return logs
+
+
+# ==================== WORKFLOW ENDPOINTS ====================
+
+class InitWorkflowRequest(BaseModel):
+    """Request to initialize workflow"""
+    bas_statement_id: str = Field(..., description="BAS statement ID")
+    client_id: str = Field(..., description="Client ID")
+    skip_client_approval: bool = Field(False, description="Skip client approval step")
+
+
+class CompleteStepRequest(BaseModel):
+    """Request to complete a workflow step"""
+    notes: Optional[str] = Field(None, description="Completion notes")
+
+
+class RejectStepRequest(BaseModel):
+    """Request to reject a workflow step"""
+    rejection_reason: Optional[str] = Field(None, description="Reason for rejection")
+
+
+class AssignStepRequest(BaseModel):
+    """Request to assign a workflow step"""
+    assigned_to: str = Field(..., description="User ID to assign")
+    assigned_to_email: Optional[str] = Field(None, description="Assignee email")
+    assigned_to_role: Optional[str] = Field(None, description="Assignee role")
+    due_date: Optional[str] = Field(None, description="Due date (ISO format)")
+
+
+@router.post("/workflow/initialize")
+async def initialize_workflow(
+    request: InitWorkflowRequest,
+    current_user: AuthUser = Depends(require_bas_write),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Initialize workflow for a BAS statement.
+    
+    Creates workflow steps: PREPARE → REVIEW → APPROVE → LODGE
+    
+    **Permissions:** staff, tax_agent, admin
+    """
+    service = BASWorkflowService(db)
+    
+    try:
+        steps = await service.initialize_workflow(
+            bas_statement_id=uuid.UUID(request.bas_statement_id),
+            client_id=request.client_id,
+            skip_client_approval=request.skip_client_approval
+        )
+        
+        return {
+            "success": True,
+            "message": "Workflow initialized",
+            "steps": steps
+        }
+    except Exception as e:
+        logger.error(f"Failed to initialize workflow: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/workflow/{bas_id}")
+async def get_workflow_status(
+    bas_id: str,
+    current_user: AuthUser = Depends(require_bas_read),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get workflow status for a BAS statement.
+    
+    Returns all workflow steps and progress.
+    
+    **Permissions:** staff, tax_agent, admin, client
+    """
+    service = BASWorkflowService(db)
+    
+    status = await service.get_workflow_status(uuid.UUID(bas_id))
+    return status
+
+
+@router.post("/workflow/{bas_id}/step/{step_type}/complete")
+async def complete_workflow_step(
+    bas_id: str,
+    step_type: str,
+    request: CompleteStepRequest,
+    current_user: AuthUser = Depends(require_bas_write),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Complete a workflow step.
+    
+    Marks the step as completed and advances to next step.
+    
+    **Permissions:** staff, tax_agent, admin
+    """
+    service = BASWorkflowService(db)
+    
+    try:
+        result = await service.complete_step(
+            bas_statement_id=uuid.UUID(bas_id),
+            step_type=step_type,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            notes=request.notes
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to complete step: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/workflow/{bas_id}/step/{step_type}/reject")
+async def reject_workflow_step(
+    bas_id: str,
+    step_type: str,
+    request: RejectStepRequest,
+    current_user: AuthUser = Depends(require_bas_write),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Reject a workflow step.
+    
+    Marks the step as rejected and returns to previous step.
+    
+    **Permissions:** staff, tax_agent, admin
+    """
+    service = BASWorkflowService(db)
+    
+    try:
+        result = await service.reject_step(
+            bas_statement_id=uuid.UUID(bas_id),
+            step_type=step_type,
+            user_id=current_user.id,
+            user_email=current_user.email,
+            rejection_reason=request.rejection_reason
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to reject step: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/workflow/{bas_id}/step/{step_type}/assign")
+async def assign_workflow_step(
+    bas_id: str,
+    step_type: str,
+    request: AssignStepRequest,
+    current_user: AuthUser = Depends(require_bas_write),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Assign a workflow step to a user.
+    
+    **Permissions:** staff, tax_agent, admin
+    """
+    service = BASWorkflowService(db)
+    
+    try:
+        due_date = None
+        if request.due_date:
+            from datetime import datetime
+            due_date = datetime.fromisoformat(request.due_date.replace('Z', '+00:00'))
+        
+        result = await service.assign_step(
+            bas_statement_id=uuid.UUID(bas_id),
+            step_type=step_type,
+            assigned_to=request.assigned_to,
+            assigned_to_email=request.assigned_to_email,
+            assigned_to_role=request.assigned_to_role,
+            due_date=due_date
+        )
+        return {"success": True, "step": result}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to assign step: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/workflow/pending/me")
+async def get_my_pending_steps(
+    current_user: AuthUser = Depends(require_bas_read),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get pending workflow steps for current user.
+    
+    Returns steps assigned to user or matching user's role.
+    
+    **Permissions:** staff, tax_agent, admin, client
+    """
+    service = BASWorkflowService(db)
+    
+    steps = await service.get_pending_steps_for_user(
+        user_id=current_user.id,
+        user_role=current_user.role
+    )
+    
+    return {"pending_steps": steps, "count": len(steps)}
+
+
+# ==================== HISTORY ENDPOINTS ====================
+
+@router.get("/history/grouped")
+async def get_grouped_history(
+    client_id: str = Query(..., description="Client ID"),
+    group_by: str = Query("quarter", description="Group by: quarter, month, year"),
+    year: Optional[int] = Query(None, description="Filter by year"),
+    include_drafts: bool = Query(False, description="Include draft statements"),
+    current_user: AuthUser = Depends(require_bas_read),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get BAS history grouped by period with summaries.
+    
+    **Permissions:** staff, tax_agent, admin, client
+    """
+    service = BASHistoryService(db)
+    
+    return await service.get_grouped_history(
+        client_id=client_id,
+        group_by=group_by,
+        year=year,
+        include_drafts=include_drafts
+    )
+
+
+@router.get("/history/compare")
+async def compare_periods(
+    client_id: str = Query(..., description="Client ID"),
+    period_from: date = Query(..., description="Current period start"),
+    period_to: date = Query(..., description="Current period end"),
+    compare_with: str = Query("previous", description="Comparison type: previous, same_last_year"),
+    current_user: AuthUser = Depends(require_bas_read),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Compare BAS for a period with another period.
+    
+    **Permissions:** staff, tax_agent, admin, client
+    """
+    service = BASHistoryService(db)
+    
+    return await service.get_period_comparison(
+        client_id=client_id,
+        period_from=period_from,
+        period_to=period_to,
+        compare_with=compare_with
+    )
+
