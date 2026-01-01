@@ -259,6 +259,29 @@ https://fdctaxsync.preview.emergentagent.com/api/vxt/webhook
   - Full test coverage (42/42 tests passed, minor bug fixed)
   - Internal auth configured via `INTERNAL_API_KEY` env var
 
+### Session 5: Luna Service Migration Phase 4 (January 1, 2025)
+- ✅ **Business Logic Migration - Structural Phase**
+  - Client validation utilities (ABN, ACN, TFN, email, phone)
+  - Australian data normalization (states, phone formats)
+  - Entity type and status mapping
+  - Client matching/deduplication (`ClientMatcher`)
+  - Business rules (`LunaBusinessRules`):
+    - GST threshold determination
+    - BAS frequency calculation
+    - Client tier calculation
+    - Required documents by entity type
+    - Lodgement readiness validation
+  - Migration priority scoring
+  - Migration audit logging (`MigrationAuditLogger`)
+  - New `/api/core/migration/validate` endpoint for pre-flight checks
+  - Enhanced batch migration with priority sorting
+
+**Files Created/Modified:**
+- `/app/backend/core/luna_business_logic.py` (NEW)
+- `/app/backend/core/migration.py` (Enhanced)
+- `/app/backend/core/router.py` (Enhanced)
+- `/app/backend/core/__init__.py` (Updated exports)
+
 ---
 
 ## Database Schema (Key Tables)
