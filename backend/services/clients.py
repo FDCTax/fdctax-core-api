@@ -452,7 +452,7 @@ class CoreClientService:
             await self.db.commit()
             
             log_client_event(
-                ClientAuditEvent.CLIENT_LINKED,
+                ClientAuditEvent.CRM_LINKED,
                 client_id,
                 service_name,
                 {"crm_client_id": crm_client_id, "link_type": "crm"}
