@@ -376,6 +376,9 @@ class MyFDCIntakeService:
                 {"date": str(occupancy_data.get('date')), "children": occupancy_data.get('number_of_children')}
             )
             
+            # Trigger webhook notification
+            await self._trigger_webhook("occupancy", client_id, record_id)
+            
             return {
                 "success": True,
                 "record_id": record_id,
