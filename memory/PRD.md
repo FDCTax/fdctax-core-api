@@ -554,6 +554,13 @@ webhook_audit_log: {id UUID PK, event_type, webhook_id, service_name, details JS
 - `POST /api/webhooks/queue/dead-letter/{id}/retry` - Retry failed delivery (Internal Auth)
 - `POST /api/webhooks/queue/process` - Manual queue processing (Internal Auth)
 
+### SMS Proxy (NEW - Jan 2025)
+- `POST /api/internal/sms/send` - Send single SMS (Internal Auth + X-Internal-Service)
+- `POST /api/internal/sms/bulk` - Send bulk SMS (Internal Auth + X-Internal-Service)
+- `GET /api/internal/sms/health` - Agent 5 health check (Internal Auth)
+- `GET /api/internal/sms/status/{message_id}` - Delivery status (Internal Auth)
+- `GET /api/internal/sms/module-status` - Module status (Internal Auth)
+
 ---
 
 ## Test Credentials
