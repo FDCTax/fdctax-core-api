@@ -241,32 +241,42 @@ class ClientMatcher:
         Find a matching client profile based on multiple criteria.
         Priority: client_code > ABN > email > name match
         """
-        # Priority 1: Exact client code match
-        if client_code:
-            match = await self._find_by_client_code(client_code)
-            if match:
-                return {**match, 'match_type': 'client_code', 'confidence': 1.0}
-        
-        # Priority 2: ABN match (most reliable for businesses)
-        if abn:
-            match = await self._find_by_abn(abn)
-            if match:
-                return {**match, 'match_type': 'abn', 'confidence': 0.95}
-        
-        # Priority 3: Email match
-        if email:
-            match = await self._find_by_email(email)
-            if match:
-                return {**match, 'match_type': 'email', 'confidence': 0.85}
-        
-        # Priority 4: Name similarity (fuzzy match)
-        if display_name:
-            matches = await self._find_by_name_similarity(display_name)
-            if matches:
-                best_match = matches[0]
-                return {**best_match, 'match_type': 'name_similarity', 'confidence': best_match.get('similarity', 0.5)}
-        
-        return None
+        try:
+            # Priority 1: Exact client code match
+            if client_code:
+                match = await self._find_by_client_code(client_code)
+                if match:
+                    return {**match, 'match_type': 'client_code', 'confidence': 1.0}
+            
+            # Priority 2: ABN match (most reliable for businesses)
+            if abn:
+                match = await self._find_by_abn(abn)
+                if match:
+                    return {**match, 'match_type': 'abn', 'confidence': 0.95}
+            
+            # Priority 3: Email match
+            if email:
+                match = await self._find_by_email(email)
+                if match:
+                    return {**match, 'match_type': 'email', 'confidence': 0.85}
+            
+            # Priority 4: Name similarity (fuzzy match)
+            if display_name:
+                matches = await self._find_by_name_similarity(display_name)
+                if matches:
+                    best_match = matches[0]
+                    return {**best_match, 'match_type': 'name_similarity', 'confidence': best_match.get('similarity', 0.5)}
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Client matching failed: {e}")
+            # Try to rollback any failed transaction
+            try:
+                await self.db.rollback()
+            except Exception:
+                pass
+            return None
     
     async def _find_by_client_code(self, client_code: str) -> Optional[Dict[str, Any]]:
         """Find by exact client code."""
