@@ -292,7 +292,7 @@ class BookkeepingService:
                 occupancy_date=str(row.occupancy_date),
                 number_of_children=row.number_of_children,
                 hours_per_day=float(row.hours_per_day),
-                rooms_used=json.loads(row.rooms_used) if row.rooms_used else [],
+                rooms_used=row.rooms_used if isinstance(row.rooms_used, list) else (json.loads(row.rooms_used) if row.rooms_used else []),
                 preschool_program=row.preschool_program or False,
                 notes=row.notes,
                 created_at=row.created_at.isoformat() if row.created_at else None
