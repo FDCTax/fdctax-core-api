@@ -369,6 +369,24 @@ https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
   - Audit logging for all CRM data access
   - 23 unit tests - all passing
 
+- ✅ **Webhook Notification System (Ticket A3-4) - COMPLETED**
+  - `POST /api/webhooks/register` - Register webhook (returns secret key)
+  - `GET /api/webhooks` - List all webhooks
+  - `GET /api/webhooks/{id}` - Get specific webhook
+  - `DELETE /api/webhooks/{id}` - Delete webhook
+  - `PUT /api/webhooks/{id}/status` - Enable/disable webhook
+  - `GET /api/webhooks/events` - List supported event types
+  - `GET /api/webhooks/queue/stats` - Queue statistics
+  - `GET /api/webhooks/queue/dead-letter` - Dead letter items
+  - `POST /api/webhooks/queue/dead-letter/{id}/retry` - Retry failed delivery
+  - `POST /api/webhooks/queue/process` - Manual queue processing
+  - HMAC-SHA256 signature (X-Webhook-Signature header)
+  - Retry queue with exponential backoff (3 attempts: 1min, 5min, 15min)
+  - Dead-letter queue for persistent failures
+  - Audit logging for all webhook operations
+  - MyFDC intake triggers webhooks automatically
+  - 26 unit tests - all passing
+
 **Files Created/Modified:**
 - `/app/backend/core/luna_business_logic.py` (NEW)
 - `/app/backend/core/migration.py` (Enhanced)
@@ -377,11 +395,14 @@ https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
 - `/app/backend/routers/secret_authority.py` (NEW)
 - `/app/backend/routers/myfdc_intake.py` (NEW - Ticket A3-2)
 - `/app/backend/routers/bookkeeping_access.py` (NEW - Ticket A3-3.3)
-- `/app/backend/services/myfdc_intake.py` (NEW - Ticket A3-2)
+- `/app/backend/routers/webhooks.py` (NEW - Ticket A3-4)
+- `/app/backend/services/myfdc_intake.py` (Enhanced - Ticket A3-2, A3-4)
 - `/app/backend/services/bookkeeping_access.py` (NEW - Ticket A3-3.3)
+- `/app/backend/services/webhook_service.py` (NEW - Ticket A3-4)
 - `/app/backend/models/myfdc_data.py` (NEW - Ticket A3-2)
 - `/app/backend/tests/test_myfdc_intake.py` (NEW - 31 tests)
 - `/app/backend/tests/test_bookkeeping_access.py` (NEW - 23 tests)
+- `/app/backend/tests/test_webhooks.py` (NEW - 26 tests)
 - `/app/backend/create_myfdc_tables.py` (NEW - Migration script)
 - `/app/backend/utils/encryption.py` (Enhanced)
 - `/app/backend/tests/test_encryption.py` (NEW - 25 tests)
