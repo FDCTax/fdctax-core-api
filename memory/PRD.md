@@ -145,7 +145,24 @@ https://fdctaxsync.preview.emergentagent.com/api/vxt/webhook
 - `SMS_AUTH_TOKEN` - Twilio Auth Token
 - `SMS_FROM_NUMBER` - Twilio Phone Number
 
-### 10. Core Module - Phase 3 Scaffolding ✅ (Backend - Jan 2025)
+### 10. Secret Authority Verification Endpoints ✅ (Backend - Jan 2025)
+**Backend:** `/api/sa/...`
+- Dedicated endpoints for Secret Authority to verify system configuration
+- Used to confirm encryption, email, and internal auth are properly configured
+
+**Endpoints:**
+- `GET /api/sa/status` - Overall system status (encryption, email, internal auth)
+- `GET /api/sa/email/status` - Email module readiness (`{"ready": true/false}`)
+- `POST /api/sa/tfn/encrypt` - Encrypt TFN (`{"tfn": "..."} → {"encrypted": "..."}`)
+- `POST /api/sa/tfn/decrypt` - Decrypt TFN (`{"encrypted": "..."} → {"tfn": "..."}`)
+- `GET /api/sa/internal/status` - Internal auth status (`{"internal_auth_configured": true/false}`)
+
+**Environment Variables Checked:**
+- `ENCRYPTION_KEY` - For TFN encryption
+- `EMAIL_API_KEY` or `RESEND_API_KEY` - For email
+- `INTERNAL_API_KEY` - For internal service auth
+
+### 11. Core Module - Phase 3 Scaffolding ✅ (Backend - Jan 2025)
 **Backend:** `/api/core/...`
 - 86-field client profile schema with full CRUD
 - TFN encryption utilities (ready, awaiting ENCRYPTION_KEY)
