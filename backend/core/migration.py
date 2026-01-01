@@ -9,6 +9,12 @@ Provides endpoints for:
 - Rollback capabilities
 
 This service is called by the CRM mini-backend during the migration phase.
+
+Phase 4 Updates:
+- Integrated business logic validation
+- Client matching and deduplication
+- Enhanced field mapping with normalization
+- Migration audit logging
 """
 
 import uuid
@@ -22,7 +28,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from .client_profiles import ClientProfileService, ClientProfile
-from utils.encryption import encrypt_tfn, get_tfn_last_four
+from .luna_business_logic import (
+    ClientValidator, 
+    ClientMatcher, 
+    LunaBusinessRules,
+    MigrationHelpers,
+    MigrationAuditLogger
+)
+from utils.encryption import encrypt_tfn, get_tfn_last_four, is_encryption_configured
 
 logger = logging.getLogger(__name__)
 
