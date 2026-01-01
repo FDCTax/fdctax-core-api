@@ -532,6 +532,92 @@ async def get_migration_status(
     return status
 
 
+@router.post("/migration/validate")
+async def validate_client_data(
+    request: MigrateSingleRequest,
+    service: InternalService = Depends(get_internal_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Validate client data before migration (dry-run).
+    
+    **Auth:** Internal API Key (X-Internal-Api-Key header)
+    
+    Returns validation results without creating any records.
+    Use this for pre-flight checks before batch migration.
+    """
+    from core.luna_business_logic import ClientValidator, ClientMatcher, LunaBusinessRules
+    
+    data = request.dict(exclude_none=True)
+    result = {
+        "valid": True,
+        "errors": [],
+        "warnings": [],
+        "matches": None,
+        "recommendations": {}
+    }
+    
+    # Validate client code
+    client_code = data.get("client_code") or data.get("code")
+    if not client_code:
+        result["valid"] = False
+        result["errors"].append("Missing required field: client_code")
+    
+    # Validate ABN
+    abn = data.get("abn")
+    if abn:
+        is_valid, msg = ClientValidator.validate_abn(abn)
+        if not is_valid:
+            result["warnings"].append(f"ABN: {msg}")
+    
+    # Validate TFN
+    tfn = data.get("tfn")
+    if tfn:
+        is_valid, msg = ClientValidator.validate_tfn(tfn)
+        if not is_valid:
+            result["warnings"].append(f"TFN: {msg}")
+    
+    # Validate email
+    email = data.get("email")
+    if email:
+        is_valid, msg = ClientValidator.validate_email(email)
+        if not is_valid:
+            result["warnings"].append(f"Email: {msg}")
+    
+    # Check for duplicates
+    matcher = ClientMatcher(db)
+    display_name = data.get("display_name") or data.get("name")
+    match = await matcher.find_match(
+        client_code=client_code,
+        abn=abn,
+        email=email,
+        display_name=display_name
+    )
+    
+    if match:
+        result["matches"] = {
+            "existing_profile_id": match.get("id"),
+            "existing_client_code": match.get("client_code"),
+            "match_type": match.get("match_type"),
+            "confidence": match.get("confidence")
+        }
+        if match.get("confidence", 0) >= 0.9:
+            result["warnings"].append(f"High confidence duplicate detected: {match.get('client_code')}")
+    
+    # Business rule recommendations
+    entity_type = ClientValidator.validate_entity_type(data.get("entity_type"))
+    result["recommendations"]["entity_type"] = entity_type
+    result["recommendations"]["required_documents"] = LunaBusinessRules.get_required_documents(entity_type)
+    
+    if data.get("gst_registered"):
+        result["recommendations"]["bas_frequency"] = LunaBusinessRules.determine_bas_frequency(
+            data.get("annual_turnover"),
+            True
+        )
+    
+    return result
+
+
 @router.post("/migration/rollback/{batch_id}")
 async def rollback_migration(
     batch_id: str,
