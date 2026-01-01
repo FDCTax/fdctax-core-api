@@ -6,13 +6,14 @@ Critical for MyFDC beta - establishes Core as the canonical client authority.
 
 Endpoints:
 - POST /api/clients/link-or-create - Link or create a Core client
+- POST /api/v1/clients/link-or-create - [V1] Versioned alias (Ticket A3-8)
 - GET /api/clients/{client_id} - Get client by ID
 - GET /api/clients - List all clients
 - POST /api/clients/{client_id}/link-crm - Link CRM client ID
 
 Security:
 - All endpoints require internal service token authentication
-- All operations logged for audit trail
+- All operations logged for audit trail (client.linked, client.created events)
 - No sensitive data (TFN, ABN) logged in plaintext
 """
 
@@ -31,6 +32,9 @@ from services.clients import CoreClientService, CoreClient
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/clients", tags=["Core Clients"])
+
+# V1 versioned router - alias for compatibility
+v1_router = APIRouter(prefix="/v1/clients", tags=["Core Clients V1"])
 
 
 # ==================== REQUEST/RESPONSE MODELS ====================
@@ -111,27 +115,14 @@ class LinkCRMRequest(BaseModel):
 
 # ==================== ENDPOINTS ====================
 
-@router.post("/link-or-create", response_model=LinkOrCreateResponse)
-async def link_or_create_client(
+async def _execute_link_or_create(
     request: LinkOrCreateRequest,
-    service: InternalService = Depends(get_internal_service),
-    db: AsyncSession = Depends(get_db)
-):
+    service: InternalService,
+    db: AsyncSession
+) -> LinkOrCreateResponse:
     """
-    Link a MyFDC user to an existing Core client, or create a new one.
-    
-    **Auth:** Internal Service Token (X-Internal-Api-Key header)
-    
-    **Deduplication Logic:**
-    1. If email matches existing client → link
-    2. If ABN matches existing client → link
-    3. Otherwise → create new client
-    
-    **Returns:**
-    - `client_id`: The Core client UUID
-    - `linked`: True if linked to existing client
-    - `created`: True if new client was created
-    - `match_type`: 'email' or 'abn' if linked, null if created
+    Internal implementation of link-or-create logic.
+    Shared between base and v1 endpoints.
     """
     logger.info(f"Link-or-create request from {service.name} for MyFDC user {request.myfdc_user_id}")
     
@@ -160,6 +151,62 @@ async def link_or_create_client(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to link or create client"
         )
+
+
+@router.post("/link-or-create", response_model=LinkOrCreateResponse)
+async def link_or_create_client(
+    request: LinkOrCreateRequest,
+    service: InternalService = Depends(get_internal_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Link a MyFDC user to an existing Core client, or create a new one.
+    
+    **Auth:** Internal Service Token (X-Internal-Api-Key header)
+    
+    **Deduplication Logic:**
+    1. If email matches existing client → link
+    2. If ABN matches existing client → link
+    3. Otherwise → create new client
+    
+    **Returns:**
+    - `client_id`: The Core client UUID
+    - `linked`: True if linked to existing client
+    - `created`: True if new client was created
+    - `match_type`: 'email' or 'abn' if linked, null if created
+    """
+    return await _execute_link_or_create(request, service, db)
+
+
+@v1_router.post("/link-or-create", response_model=LinkOrCreateResponse)
+async def link_or_create_client_v1(
+    request: LinkOrCreateRequest,
+    service: InternalService = Depends(get_internal_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    [V1] Link a MyFDC user to an existing Core client, or create a new one.
+    
+    **Ticket A3-8:** Versioned endpoint for MyFDC → Core client linking.
+    
+    **Auth:** Internal Service Token (X-Internal-Api-Key header)
+    
+    **Deduplication Logic:**
+    1. If email matches existing client → link
+    2. If ABN matches existing client → link  
+    3. Otherwise → create new client
+    
+    **Audit Events:**
+    - `client.linked` - When existing client is linked (no PII logged)
+    - `client.created` - When new client is created (no PII logged)
+    
+    **Returns:**
+    - `client_id`: The Core client UUID
+    - `linked`: True if linked to existing client
+    - `created`: True if new client was created
+    - `match_type`: 'email' or 'abn' if linked, null if created
+    """
+    return await _execute_link_or_create(request, service, db)
 
 
 @router.get("/{client_id}", response_model=ClientResponse)
