@@ -135,25 +135,26 @@ async def encrypt_tfn_endpoint(request: TFNEncryptRequest):
     
     Requires ENCRYPTION_KEY to be configured.
     """
-    if not is_encryption_configured():
+    service = get_encryption_service()
+    
+    if not service.is_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Encryption not configured. ENCRYPTION_KEY environment variable is required."
         )
     
     try:
-        encrypted = encrypt_tfn(request.tfn)
+        encrypted = service.encrypt_tfn(request.tfn)
         
-        if not encrypted:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Encryption failed - no result returned"
-            )
-        
-        logger.info("TFN encrypted successfully")
+        logger.info("TFN encrypted successfully via Secret Authority endpoint")
         
         return TFNEncryptResponse(encrypted=encrypted)
         
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except EncryptionError as e:
         logger.error(f"TFN encryption failed: {e}")
         raise HTTPException(
@@ -172,25 +173,26 @@ async def decrypt_tfn_endpoint(request: TFNDecryptRequest):
     
     Requires ENCRYPTION_KEY to be configured.
     """
-    if not is_encryption_configured():
+    service = get_encryption_service()
+    
+    if not service.is_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Encryption not configured. ENCRYPTION_KEY environment variable is required."
         )
     
     try:
-        decrypted = decrypt_tfn(request.encrypted)
+        decrypted = service.decrypt_tfn(request.encrypted)
         
-        if not decrypted:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Decryption failed - no result returned"
-            )
-        
-        logger.info("TFN decrypted successfully")
+        logger.info("TFN decrypted successfully via Secret Authority endpoint")
         
         return TFNDecryptResponse(tfn=decrypted)
         
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except KeyNotConfiguredError as e:
         logger.error(f"TFN decryption failed - key not configured: {e}")
         raise HTTPException(
