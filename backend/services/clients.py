@@ -32,12 +32,17 @@ logger = logging.getLogger(__name__)
 # ==================== AUDIT EVENTS ====================
 
 class ClientAuditEvent:
-    """Audit event types for client operations."""
-    CLIENT_LINKED = "client_linked"
-    CLIENT_CREATED = "client_created"
-    CLIENT_LOOKUP = "client_lookup"
-    CLIENT_LIST = "client_list"
-    CLIENT_UPDATED = "client_updated"
+    """
+    Audit event types for client operations.
+    
+    Ticket A3-8: Uses dot notation format for event types.
+    """
+    CLIENT_LINKED = "client.linked"
+    CLIENT_CREATED = "client.created"
+    CLIENT_LOOKUP = "client.lookup"
+    CLIENT_LIST = "client.list"
+    CLIENT_UPDATED = "client.updated"
+    CRM_LINKED = "client.crm_linked"
 
 
 def log_client_event(
@@ -50,11 +55,17 @@ def log_client_event(
     """
     Log client operation for audit trail.
     
-    SECURITY: Never logs plaintext TFN, ABN, or bank details.
+    SECURITY (Ticket A3-8): Never logs plaintext TFN, ABN, email, phone, or bank details.
+    Only logs:
+    - client_id (UUID)
+    - myfdc_user_id (external ID)
+    - match_type (email/abn, not actual values)
+    - operation metadata
     """
-    # Sanitize details - remove sensitive fields
-    safe_details = {k: v for k, v in details.items() 
-                    if k not in ('tfn', 'bank_account', 'bank_bsb')}
+    # Sanitize details - remove ALL sensitive PII fields
+    pii_fields = ('tfn', 'bank_account', 'bank_bsb', 'email', 'phone', 
+                  'name', 'address', 'date_of_birth', 'full_email')
+    safe_details = {k: v for k, v in details.items() if k not in pii_fields}
     
     # Mask ABN if present (show last 4 only)
     if 'abn' in safe_details and safe_details['abn']:
