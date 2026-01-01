@@ -93,14 +93,23 @@ class LunaMigrationService:
     Migration workflow:
     1. Luna CRM calls /api/core/migration/client with client data
     2. Core validates and transforms the data
-    3. Core creates client_profile record
-    4. Core returns profile_id to Luna
-    5. Luna updates its record with the Core profile_id link
+    3. Core checks for existing matches (deduplication)
+    4. Core creates client_profile record
+    5. Core returns profile_id to Luna
+    6. Luna updates its record with the Core profile_id link
+    
+    Phase 4 Enhancements:
+    - Business logic validation using ClientValidator
+    - Client matching using ClientMatcher
+    - Business rules from LunaBusinessRules
+    - Audit logging via MigrationAuditLogger
     """
     
     def __init__(self, db: AsyncSession):
         self.db = db
         self.profile_service = ClientProfileService(db)
+        self.client_matcher = ClientMatcher(db)
+        self.audit_logger = MigrationAuditLogger(db)
     
     async def migrate_client(
         self,
