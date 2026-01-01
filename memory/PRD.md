@@ -276,11 +276,26 @@ https://fdctaxsync.preview.emergentagent.com/api/vxt/webhook
   - New `/api/core/migration/validate` endpoint for pre-flight checks
   - Enhanced batch migration with priority sorting
 
+- ✅ **Frontend Converted to API-Only Mode**
+  - Removed login UI from frontend
+  - All routes show "API-only mode" message
+  - No session/cookie-based auth
+  - Authentication via Internal API Keys only
+
+- ✅ **Deployment Preparation Complete**
+  - Fixed .gitignore blocking .env files
+  - Removed MongoDB from supervisor config
+  - Secret Authority integration ready
+  - All secrets injected at runtime (not in .env)
+
 **Files Created/Modified:**
 - `/app/backend/core/luna_business_logic.py` (NEW)
 - `/app/backend/core/migration.py` (Enhanced)
 - `/app/backend/core/router.py` (Enhanced)
 - `/app/backend/core/__init__.py` (Updated exports)
+- `/app/frontend/src/App.js` (API-only mode)
+- `/app/.gitignore` (Deployment fix)
+- `/etc/supervisor/conf.d/supervisord.conf` (Removed MongoDB)
 
 ---
 
