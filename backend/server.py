@@ -378,6 +378,10 @@ api_router.include_router(bookkeeping_access_router)  # CRM Bookkeeping read end
 from routers.webhooks import router as webhooks_router
 api_router.include_router(webhooks_router)  # Webhook management endpoints
 
+# SMS Proxy (Ticket A3-7) - Core → Agent 5 forwarding
+from routers.sms_proxy import router as sms_proxy_router
+api_router.include_router(sms_proxy_router)  # SMS proxy endpoints
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
