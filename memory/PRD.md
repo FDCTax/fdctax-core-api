@@ -485,6 +485,15 @@ myfdc_attendance: {id UUID PK, client_id FK, child_name, attendance_date, hours,
 - `GET /api/myfdc/summary/expenses` - Get expenses summary (Internal Auth)
 - `GET /api/myfdc/status` - Module status (Internal Auth)
 
+### CRM Bookkeeping Data Access (NEW - Jan 2025)
+- `GET /api/bookkeeping/{client_id}/hours` - Hours worked records (Internal Auth)
+- `GET /api/bookkeeping/{client_id}/occupancy` - Occupancy records (Internal Auth)
+- `GET /api/bookkeeping/{client_id}/diary` - Diary entries (Internal Auth)
+- `GET /api/bookkeeping/{client_id}/expenses` - Expense records (Internal Auth)
+- `GET /api/bookkeeping/{client_id}/attendance` - Attendance records (Internal Auth)
+- `GET /api/bookkeeping/{client_id}/summary` - Combined summary (Internal Auth)
+- `GET /api/bookkeeping/status` - Module status (Internal Auth)
+
 ---
 
 ## Test Credentials
