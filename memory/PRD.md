@@ -356,9 +356,14 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 
 ## Upcoming Tasks
 
-### P1 - Frontend Development
-1. **BAS Module UI** - Display BAS history, change logs, sign-off workflow
-2. **VXT Phone UI** - Display call logs, transcripts, recordings, workpaper linking
+### P0 - Luna Service Migration (Next Priority)
+1. **Migrate Luna business logic** - Move Luna service logic into Core module endpoints
+2. **Client data transformation** - Map remaining Luna fields to Core schema
+3. **Sync mechanism** - Real-time or batch sync from Luna to Core
+
+### P1 - Frontend Development (On Hold)
+1. **VXT Phone UI** - Display call logs, transcripts, recordings, workpaper linking
+2. **BAS Module UI** - Display BAS history, change logs, sign-off workflow
 
 ### P2 - Database Migrations
 1. Deprecate old `workpaper_transactions` table
