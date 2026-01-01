@@ -3,6 +3,7 @@ Unit Tests for Core Client API
 
 Tests the unified client management endpoints:
 - POST /api/clients/link-or-create
+- POST /api/v1/clients/link-or-create (Ticket A3-8 - versioned alias)
 - GET /api/clients/{client_id}
 - GET /api/clients
 - POST /api/clients/{client_id}/link-crm
