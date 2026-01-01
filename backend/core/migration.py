@@ -593,14 +593,43 @@ class LunaMigrationService:
         client_code: str,
         display_name: str
     ) -> ClientProfile:
-        """Map Luna CRM fields to ClientProfile."""
+        """
+        Map Luna CRM fields to ClientProfile.
+        
+        Phase 4: Uses ClientValidator for field normalization.
+        """
+        # Normalize entity type and status using validators
+        entity_type = ClientValidator.validate_entity_type(luna_data.get("entity_type"))
+        client_status = ClientValidator.validate_status(luna_data.get("status"))
+        
+        # Normalize phone numbers
+        phone = ClientValidator.normalize_phone(luna_data.get("phone"))
+        mobile = ClientValidator.normalize_phone(luna_data.get("mobile"))
+        
+        # Normalize state
+        state = ClientValidator.normalize_state(luna_data.get("state"))
+        
+        # Validate and normalize ABN
+        abn = luna_data.get("abn")
+        if abn:
+            is_valid, result = ClientValidator.validate_abn(abn)
+            if is_valid and result:
+                abn = result  # Use normalized ABN
+        
+        # Validate and normalize email
+        email = luna_data.get("email")
+        if email:
+            is_valid, result = ClientValidator.validate_email(email)
+            if is_valid and result:
+                email = result  # Use normalized email
+        
         return ClientProfile(
             client_code=client_code,
             display_name=display_name,
             legal_name=luna_data.get("legal_name"),
             trading_name=luna_data.get("trading_name") or luna_data.get("trading_as"),
-            entity_type=self._map_entity_type(luna_data.get("entity_type")),
-            client_status=self._map_status(luna_data.get("status")),
+            entity_type=entity_type,
+            client_status=client_status,
             client_category=luna_data.get("category"),
             client_tier=luna_data.get("tier"),
             referral_source=luna_data.get("referral_source") or luna_data.get("source"),
@@ -608,21 +637,21 @@ class LunaMigrationService:
             # Contact
             primary_contact_first_name=luna_data.get("contact_first_name") or luna_data.get("first_name"),
             primary_contact_last_name=luna_data.get("contact_last_name") or luna_data.get("last_name"),
-            primary_contact_email=luna_data.get("email"),
-            primary_contact_phone=luna_data.get("phone"),
-            primary_contact_mobile=luna_data.get("mobile"),
+            primary_contact_email=email,
+            primary_contact_phone=phone,
+            primary_contact_mobile=mobile,
             
             # Address
             primary_address_line1=luna_data.get("address_line1") or luna_data.get("street"),
             primary_address_line2=luna_data.get("address_line2"),
             primary_suburb=luna_data.get("suburb") or luna_data.get("city"),
-            primary_state=luna_data.get("state"),
+            primary_state=state,
             primary_postcode=luna_data.get("postcode") or luna_data.get("postal_code"),
             
             # Tax
-            abn=luna_data.get("abn"),
+            abn=abn,
             acn=luna_data.get("acn"),
-            tfn=luna_data.get("tfn"),  # Will be encrypted by service
+            tfn=luna_data.get("tfn"),  # Will be encrypted by service if ENCRYPTION_KEY configured
             gst_registered=bool(luna_data.get("gst_registered")),
             gst_registration_date=self._parse_date(luna_data.get("gst_registration_date")),
             
@@ -644,10 +673,13 @@ class LunaMigrationService:
             xero_tenant_id=luna_data.get("xero_tenant_id") or luna_data.get("xero_id"),
             myob_company_file_id=luna_data.get("myob_id"),
             
-            # Notes
+            # Notes - merge custom fields
             internal_notes=luna_data.get("notes") or luna_data.get("internal_notes"),
             tags=luna_data.get("tags", []),
-            custom_fields=luna_data.get("custom_fields", {})
+            custom_fields=MigrationHelpers.merge_custom_fields(
+                {},
+                luna_data.get("custom_fields", {})
+            )
         )
     
     def _map_luna_to_updates(self, luna_data: Dict[str, Any]) -> Dict[str, Any]:
