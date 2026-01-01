@@ -359,10 +359,10 @@ from core.router import router as core_router
 api_router.include_router(core_router)  # Client profiles, migration endpoints
 
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
-# These routes are mounted at ROOT level (not under /api) for Secret Authority access
-# IMPORTANT: Must be included BEFORE any catch-all routes
+# These routes are mounted under /api for Secret Authority access
+# Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
 from routers.secret_authority import router as secret_authority_router
-app.include_router(secret_authority_router)  # Root level: /status, /email/status, /tfn/*, /internal/status
+api_router.include_router(secret_authority_router, prefix="/sa")  # Secret Authority endpoints
 
 # Include the main API router in the app
 app.include_router(api_router)
