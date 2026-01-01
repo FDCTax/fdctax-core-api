@@ -341,6 +341,17 @@ https://tax-sync-core.preview.emergentagent.com/api/vxt/webhook
   - Internal service token authentication
   - 17 unit tests - all passing
 
+- ✅ **Client Linking Endpoint Enhancement (Ticket A3-8) - COMPLETED Jan 2025**
+  - `POST /api/v1/clients/link-or-create` - NEW versioned endpoint for MyFDC → Core client linking
+  - Shares implementation with original `/api/clients/link-or-create` via helper function
+  - **Audit events now use dot notation:** `client.linked`, `client.created`, `client.crm_linked`
+  - **PII excluded from logs:** email, phone, name, TFN, bank details
+  - ABN masked in logs (shows only last 4 digits)
+  - Email deduplication is case-insensitive
+  - ABN deduplication handles spaces and dashes
+  - Fixed UUID-to-string conversion bug for crm_client_id, bookkeeping_id, workpaper_id
+  - 21 unit tests + 28 E2E API tests - all passing
+
 - ✅ **MyFDC Data Intake API (Ticket A3-2) - COMPLETED**
   - `POST /api/myfdc/profile` - Update educator profile (create/update)
   - `POST /api/myfdc/hours` - Log hours worked
