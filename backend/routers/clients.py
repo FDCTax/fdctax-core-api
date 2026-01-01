@@ -206,6 +206,8 @@ async def link_or_create_client_v1(
     - `created`: True if new client was created
     - `match_type`: 'email' or 'abn' if linked, null if created
     """
+    # A3-03 Debug logging - remove after validation
+    logger.info(f"[A3-03] link-or-create V1 endpoint hit: myfdc_user_id={request.myfdc_user_id}, email_domain={request.email.split('@')[-1]}")
     return await _execute_link_or_create(request, service, db)
 
 
