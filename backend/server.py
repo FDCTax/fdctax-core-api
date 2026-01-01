@@ -370,6 +370,10 @@ api_router.include_router(clients_router)  # Unified client management
 from routers.myfdc_intake import router as myfdc_intake_router
 api_router.include_router(myfdc_intake_router)  # MyFDC data intake endpoints
 
+# CRM Bookkeeping Data Access API (Ticket A3-3.3)
+from routers.bookkeeping_access import router as bookkeeping_access_router
+api_router.include_router(bookkeeping_access_router)  # CRM Bookkeeping read endpoints
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
