@@ -246,6 +246,9 @@ class MyFDCIntakeService:
                 {"educator_name": profile_data.get('educator_name'), "action": "update" if existing else "create"}
             )
             
+            # Trigger webhook notification
+            await self._trigger_webhook("educator_profile", client_id, record_id)
+            
             return {
                 "success": True,
                 "record_id": record_id,
