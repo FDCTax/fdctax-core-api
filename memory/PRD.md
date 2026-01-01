@@ -356,6 +356,19 @@ https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
   - Audit logging (sensitive data excluded)
   - 31 unit tests - all passing
 
+- ✅ **CRM Bookkeeping Data Access API (Ticket A3-3.3) - COMPLETED**
+  - `GET /api/bookkeeping/{client_id}/hours` - Hours worked records with totals
+  - `GET /api/bookkeeping/{client_id}/occupancy` - Occupancy records with room breakdown
+  - `GET /api/bookkeeping/{client_id}/diary` - Diary entries with category filter
+  - `GET /api/bookkeeping/{client_id}/expenses` - Expenses with GST/business % breakdown
+  - `GET /api/bookkeeping/{client_id}/attendance` - Child attendance with CCS hours
+  - `GET /api/bookkeeping/{client_id}/summary` - Combined dashboard summary
+  - `GET /api/bookkeeping/status` - Module status check
+  - Internal service token authentication (X-Internal-Api-Key)
+  - Date range filtering on all endpoints
+  - Audit logging for all CRM data access
+  - 23 unit tests - all passing
+
 **Files Created/Modified:**
 - `/app/backend/core/luna_business_logic.py` (NEW)
 - `/app/backend/core/migration.py` (Enhanced)
@@ -363,9 +376,12 @@ https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
 - `/app/backend/core/__init__.py` (Updated exports)
 - `/app/backend/routers/secret_authority.py` (NEW)
 - `/app/backend/routers/myfdc_intake.py` (NEW - Ticket A3-2)
+- `/app/backend/routers/bookkeeping_access.py` (NEW - Ticket A3-3.3)
 - `/app/backend/services/myfdc_intake.py` (NEW - Ticket A3-2)
+- `/app/backend/services/bookkeeping_access.py` (NEW - Ticket A3-3.3)
 - `/app/backend/models/myfdc_data.py` (NEW - Ticket A3-2)
 - `/app/backend/tests/test_myfdc_intake.py` (NEW - 31 tests)
+- `/app/backend/tests/test_bookkeeping_access.py` (NEW - 23 tests)
 - `/app/backend/create_myfdc_tables.py` (NEW - Migration script)
 - `/app/backend/utils/encryption.py` (Enhanced)
 - `/app/backend/tests/test_encryption.py` (NEW - 25 tests)
