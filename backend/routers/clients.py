@@ -55,6 +55,25 @@ class LinkOrCreateRequest(BaseModel):
         }
 
 
+class SimpleLinkOrCreateRequest(BaseModel):
+    """
+    Simplified request for link-or-create during MyFDC login.
+    
+    Ticket A3-8: Accept email + optional name for linking.
+    """
+    email: EmailStr = Field(..., description="User email address")
+    name: Optional[str] = Field(None, description="User name (optional)")
+    myfdc_user_id: Optional[str] = Field(None, description="MyFDC user ID (auto-generated if not provided)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "educator@example.com",
+                "name": "Jane Smith"
+            }
+        }
+
+
 class LinkOrCreateResponse(BaseModel):
     """Response from link-or-create operation."""
     client_id: str
