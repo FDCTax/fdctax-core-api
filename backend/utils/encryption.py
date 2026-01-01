@@ -1,7 +1,11 @@
 """
 Encryption Utilities for Sensitive Data
 
-Provides field-level encryption for sensitive data like TFN (Tax File Number).
+Provides field-level encryption for sensitive data:
+- TFN (Tax File Number)
+- ABN (Australian Business Number)
+- Bank Account Details (BSB, Account Number)
+
 Uses Fernet symmetric encryption (AES-128-CBC with HMAC) for secure storage.
 
 Environment Variables:
@@ -9,29 +13,38 @@ Environment Variables:
                     Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
 Usage:
-    from utils.encryption import encrypt_tfn, decrypt_tfn, mask_tfn
+    from utils.encryption import EncryptionService
     
-    # Encrypt for storage
-    encrypted = encrypt_tfn("123456789")
+    # Initialize service
+    service = EncryptionService()
     
-    # Decrypt for use
-    plaintext = decrypt_tfn(encrypted)
+    # Encrypt sensitive data
+    encrypted_tfn = service.encrypt_tfn("123456789")
+    encrypted_abn = service.encrypt_abn("51824753556")
+    encrypted_bank = service.encrypt_bank_account("123456", "12345678")
     
-    # Mask for display
-    masked = mask_tfn("123456789")  # Returns "***456789"
+    # Decrypt when needed
+    tfn = service.decrypt_tfn(encrypted_tfn)
+    
+    # Mask for display (no decryption needed)
+    masked = service.mask_tfn("123456789")  # Returns "***456789"
 
 Security Notes:
-    - Never log plaintext TFN values
-    - Encryption key must be stored securely (env var, secrets manager)
+    - NEVER log plaintext sensitive values
+    - Encryption key must be stored securely (Secret Authority)
     - Rotate keys periodically using re-encrypt functionality
-    - TFN access should be audited
+    - All sensitive data access should be audited
 """
 
 import os
+import re
+import json
 import base64
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 from functools import lru_cache
+from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
@@ -44,6 +57,16 @@ ENCRYPTION_KEY_ENV = "ENCRYPTION_KEY"
 
 # Salt for key derivation (static for consistency)
 KEY_DERIVATION_SALT = b"fdc_tax_core_v1_salt"
+
+# Sensitive field types for audit logging
+SENSITIVE_FIELD_TYPES = {
+    "tfn": "Tax File Number",
+    "abn": "Australian Business Number", 
+    "acn": "Australian Company Number",
+    "bsb": "Bank State Branch",
+    "account_number": "Bank Account Number",
+    "bank_details": "Bank Account Details",
+}
 
 
 class EncryptionError(Exception):
@@ -61,6 +84,20 @@ class DecryptionError(EncryptionError):
     pass
 
 
+class ValidationError(EncryptionError):
+    """Raised when data validation fails"""
+    pass
+
+
+@dataclass
+class EncryptedField:
+    """Represents an encrypted field with metadata"""
+    ciphertext: str
+    field_type: str
+    encrypted_at: str
+    last_four: Optional[str] = None  # For display purposes
+
+
 @lru_cache(maxsize=1)
 def _get_fernet() -> Optional[Fernet]:
     """
@@ -73,7 +110,7 @@ def _get_fernet() -> Optional[Fernet]:
     key = os.environ.get(ENCRYPTION_KEY_ENV)
     
     if not key:
-        logger.warning(f"{ENCRYPTION_KEY_ENV} not configured - encryption disabled")
+        # Log once, not every call (due to caching)
         return None
     
     try:
@@ -83,6 +120,11 @@ def _get_fernet() -> Optional[Fernet]:
     except Exception as e:
         logger.error(f"Invalid encryption key format: {e}")
         return None
+
+
+def clear_fernet_cache():
+    """Clear the Fernet cache (useful for testing or key rotation)."""
+    _get_fernet.cache_clear()
 
 
 def is_encryption_configured() -> bool:
