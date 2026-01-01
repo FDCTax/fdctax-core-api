@@ -537,10 +537,11 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 │   │   └── pages/              # Page components
 │   └── package.json
 ├── tests/                      # Test files
-│   └── test_identity_spine.py  # Identity Spine tests (30 tests)
+│   ├── test_identity_spine.py  # Identity Spine tests (30 tests)
+│   └── test_myfdc_intake.py    # MyFDC Intake tests (31 tests)
 └── test_reports/               # Test results
 ```
 
 ---
 
-*Last Updated: December 31, 2025*
+*Last Updated: January 2, 2025*
