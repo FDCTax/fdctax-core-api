@@ -519,6 +519,14 @@ webhook_audit_log: {id UUID PK, event_type, webhook_id, service_name, details JS
 - `GET /api/vxt/calls/{call_id}` - Get call details
 - `POST /api/vxt/link-workpaper` - Link call to workpaper
 
+### Core Client API (Ticket A3-8 Enhanced - Jan 2025)
+- `POST /api/clients/link-or-create` - Link or create Core client (Internal Auth)
+- `POST /api/v1/clients/link-or-create` - **NEW** V1 versioned endpoint (Internal Auth)
+- `GET /api/clients/{client_id}` - Get client by ID (Internal Auth)
+- `GET /api/clients` - List all clients with filters (Internal Auth)
+- `POST /api/clients/{client_id}/link-crm` - Link CRM client ID (Internal Auth)
+- `GET /api/clients/golden/test-client` - Get/create Golden Test Client (Internal Auth)
+
 ### Identity
 - `GET /api/identity/status` - Module status (public)
 - `POST /api/identity/myfdc-signup` - MyFDC signup (public)
