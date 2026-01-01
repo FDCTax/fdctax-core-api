@@ -683,7 +683,10 @@ class LunaMigrationService:
         )
     
     def _map_luna_to_updates(self, luna_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Map Luna data to update dict (excludes immutable fields)."""
+        """
+        Map Luna data to update dict (excludes immutable fields).
+        Phase 4: Uses validators for normalization.
+        """
         updates = {}
         
         # Only include fields that can be updated
@@ -705,46 +708,24 @@ class LunaMigrationService:
         for luna_field, core_field in field_mapping.items():
             if luna_field in luna_data:
                 value = luna_data[luna_field]
+                
+                # Apply normalization based on field type
                 if luna_field == "status":
-                    value = self._map_status(value)
+                    value = ClientValidator.validate_status(value)
+                elif luna_field == "email":
+                    is_valid, result = ClientValidator.validate_email(value)
+                    if is_valid and result:
+                        value = result
+                elif luna_field in ("phone", "mobile"):
+                    value = ClientValidator.normalize_phone(value)
+                elif luna_field == "abn":
+                    is_valid, result = ClientValidator.validate_abn(value)
+                    if is_valid and result:
+                        value = result
+                
                 updates[core_field] = value
         
         return updates
-    
-    def _map_entity_type(self, luna_type: Optional[str]) -> str:
-        """Map Luna entity type to Core entity type."""
-        if not luna_type:
-            return "individual"
-        
-        mapping = {
-            "individual": "individual",
-            "sole_trader": "sole_trader",
-            "company": "company",
-            "trust": "trust",
-            "partnership": "partnership",
-            "smsf": "smsf",
-            "super_fund": "smsf",
-            "pty_ltd": "company",
-            "pty": "company"
-        }
-        
-        return mapping.get(luna_type.lower(), "individual")
-    
-    def _map_status(self, luna_status: Optional[str]) -> str:
-        """Map Luna status to Core status."""
-        if not luna_status:
-            return "active"
-        
-        mapping = {
-            "active": "active",
-            "inactive": "inactive",
-            "archived": "archived",
-            "prospect": "prospect",
-            "lead": "prospect",
-            "deleted": "archived"
-        }
-        
-        return mapping.get(luna_status.lower(), "active")
     
     def _parse_date(self, date_str: Optional[str]):
         """Parse date string to date object."""
