@@ -145,7 +145,7 @@ class TestMyFDCIntakeService:
     async def test_log_hours_worked_success(self, service, mock_db, client_id):
         """Test logging hours worked."""
         hours_data = {
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "hours": 8.5,
             "start_time": "07:00",
             "end_time": "15:30",
@@ -168,7 +168,7 @@ class TestMyFDCIntakeService:
     async def test_log_hours_worked_minimal_data(self, service, mock_db, client_id):
         """Test logging hours with minimal required data."""
         hours_data = {
-            "date": date(2025, 1, 2),
+            "date": DateType(2025, 1, 2),
             "hours": 6.0
         }
         
@@ -186,7 +186,7 @@ class TestMyFDCIntakeService:
     async def test_log_occupancy_success(self, service, mock_db, client_id):
         """Test logging occupancy data."""
         occupancy_data = {
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "number_of_children": 5,
             "hours_per_day": 9.5,
             "rooms_used": ["playroom", "outdoor"],
@@ -206,7 +206,7 @@ class TestMyFDCIntakeService:
     async def test_log_occupancy_with_room_details(self, service, mock_db, client_id):
         """Test logging occupancy with detailed room usage."""
         occupancy_data = {
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "number_of_children": 4,
             "hours_per_day": 8.0,
             "room_details": [
@@ -230,7 +230,7 @@ class TestMyFDCIntakeService:
     async def test_create_diary_entry_success(self, service, mock_db, client_id):
         """Test creating a diary entry."""
         diary_data = {
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "description": "Today we explored nature in the backyard.",
             "category": "activity",
             "has_photos": True,
@@ -250,7 +250,7 @@ class TestMyFDCIntakeService:
     async def test_create_diary_entry_with_child_name(self, service, mock_db, client_id):
         """Test creating a diary entry for a specific child."""
         diary_data = {
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "description": "Emma reached a milestone - counting to 10!",
             "category": "milestone",
             "child_name": "Emma Johnson"
@@ -270,7 +270,7 @@ class TestMyFDCIntakeService:
     async def test_log_expense_success(self, service, mock_db, client_id):
         """Test logging an expense."""
         expense_data = {
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "amount": 125.50,
             "category": "food",
             "description": "Weekly groceries",
@@ -296,7 +296,7 @@ class TestMyFDCIntakeService:
         
         for category in categories:
             expense_data = {
-                "date": date(2025, 1, 1),
+                "date": DateType(2025, 1, 1),
                 "amount": 50.00,
                 "category": category
             }
@@ -316,7 +316,7 @@ class TestMyFDCIntakeService:
         """Test logging child attendance."""
         attendance_data = {
             "child_name": "Emma Johnson",
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "hours": 9.5,
             "arrival_time": "07:30",
             "departure_time": "17:00",
@@ -338,7 +338,7 @@ class TestMyFDCIntakeService:
         """Test logging an absence."""
         attendance_data = {
             "child_name": "Tom Smith",
-            "date": date(2025, 1, 1),
+            "date": DateType(2025, 1, 1),
             "hours": 0,
             "absent": True,
             "absence_reason": "Sick - flu"
@@ -368,8 +368,8 @@ class TestMyFDCIntakeService:
         
         result = await service.get_hours_summary(
             client_id=client_id,
-            start_date=date(2025, 1, 1),
-            end_date=date(2025, 1, 31)
+            start_date=DateType(2025, 1, 1),
+            end_date=DateType(2025, 1, 31)
         )
         
         assert result["client_id"] == client_id
@@ -391,8 +391,8 @@ class TestMyFDCIntakeService:
         
         result = await service.get_hours_summary(
             client_id=client_id,
-            start_date=date(2025, 2, 1),
-            end_date=date(2025, 2, 28)
+            start_date=DateType(2025, 2, 1),
+            end_date=DateType(2025, 2, 28)
         )
         
         assert result["days_worked"] == 0
@@ -413,8 +413,8 @@ class TestMyFDCIntakeService:
         
         result = await service.get_expenses_summary(
             client_id=client_id,
-            start_date=date(2025, 1, 1),
-            end_date=date(2025, 1, 31)
+            start_date=DateType(2025, 1, 1),
+            end_date=DateType(2025, 1, 31)
         )
         
         assert result["client_id"] == client_id
@@ -464,7 +464,7 @@ class TestMyFDCPydanticModels:
         request = HoursWorkedRequest(**data)
         
         assert request.hours == 8.5
-        assert request.date == date(2025, 1, 1)
+        assert request.date == DateType(2025, 1, 1)
     
     def test_hours_worked_request_invalid_hours(self):
         """Test hours worked request with invalid hours."""
