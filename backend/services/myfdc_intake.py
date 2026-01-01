@@ -437,6 +437,9 @@ class MyFDCIntakeService:
                 {"date": str(diary_data.get('date')), "category": diary_data.get('category')}
             )
             
+            # Trigger webhook notification
+            await self._trigger_webhook("diary_entry", client_id, record_id)
+            
             return {
                 "success": True,
                 "record_id": record_id,
