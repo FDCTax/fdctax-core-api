@@ -363,8 +363,9 @@ from routers.tax_modules import router as tax_modules_router
 api_router.include_router(tax_modules_router)  # Tax calculation endpoints
 
 # Core Client API (MyFDC, CRM, Bookkeeping, Workpapers integration)
-from routers.clients import router as clients_router
+from routers.clients import router as clients_router, v1_router as clients_v1_router
 api_router.include_router(clients_router)  # Unified client management
+api_router.include_router(clients_v1_router)  # V1 versioned endpoints (Ticket A3-8)
 
 # MyFDC Data Intake API (Ticket A3-2)
 from routers.myfdc_intake import router as myfdc_intake_router
