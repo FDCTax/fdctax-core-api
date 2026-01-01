@@ -1,0 +1,111 @@
+{
+  "summary": "Comprehensive E2E API testing of Core Client API (Ticket A3-8). All 28 E2E tests passed + 21 unit tests passed. Fixed a bug where UUID fields (crm_client_id, bookkeeping_id, workpaper_id) were not being converted to strings when returned from database.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/clients/{client_id}/link-crm",
+        "issue": "crm_client_id column is UUID type in database, but API accepts any string. Should add validation to reject non-UUID values with 422 instead of 500.",
+        "priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/tests/test_clients_api.py",
+    "/app/backend/tests/test_clients.py",
+    "/app/test_reports/pytest/clients_api_results.xml"
+  ],
+  "action_items": [
+    "Consider adding UUID format validation for crm_client_id in LinkCRMRequest model to return 422 instead of 500 for invalid UUIDs"
+  ],
+  "critical_code_review_comments": [
+    "V1 endpoint (/api/v1/clients/link-or-create) correctly shares implementation with original endpoint via _execute_link_or_create helper",
+    "Audit logging correctly uses dot notation (client.linked, client.created) per Ticket A3-8 requirements",
+    "PII fields (email, phone, name) are correctly excluded from audit logs",
+    "ABN is correctly masked in logs (shows only last 4 digits)",
+    "Email deduplication is case-insensitive (normalized to lowercase)",
+    "ABN deduplication correctly handles spaces and dashes",
+    "Internal API key authentication uses constant-time comparison to prevent timing attacks",
+    "FIXED: UUID fields (crm_client_id, bookkeeping_id, workpaper_id) now correctly converted to strings in get_by_id and list_all methods"
+  ],
+  "updated_files": [
+    "/app/tests/test_clients_api.py",
+    "/app/backend/services/clients.py"
+  ],
+  "success_rate": {
+    "backend": "100% (28/28 E2E tests + 21/21 unit tests passed)"
+  },
+  "test_credentials": {
+    "internal_api_key": "test-internal-api-key-for-luna-migration",
+    "golden_test_client_id": "4e8dab2c-c306-4b7c-997a-11c81e65a95b"
+  },
+  "seed_data_creation": "Multiple TEST_ prefixed clients created during testing for deduplication verification",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Ticket A3-8 Client Linking Endpoint fully tested. Both /api/clients/link-or-create and /api/v1/clients/link-or-create work identically. Deduplication logic verified: email match → link, ABN match → link, no match → create. Fixed UUID-to-string conversion bug in services/clients.py. crm_client_id must be valid UUID format (database constraint).",
+  "features_tested": {
+    "authentication": {
+      "Missing API key returns 401": "PASS",
+      "Invalid API key returns 401": "PASS",
+      "Valid API key accepted": "PASS"
+    },
+    "link_or_create_original": {
+      "POST /api/clients/link-or-create - create new": "PASS",
+      "POST /api/clients/link-or-create - link by email": "PASS",
+      "POST /api/clients/link-or-create - link by ABN": "PASS",
+      "Missing required fields returns 422": "PASS",
+      "Invalid email format returns 422": "PASS"
+    },
+    "link_or_create_v1": {
+      "POST /api/v1/clients/link-or-create - create new": "PASS",
+      "POST /api/v1/clients/link-or-create - link by email": "PASS",
+      "V1 and original share data store": "PASS",
+      "V1 requires authentication": "PASS"
+    },
+    "get_client": {
+      "GET /api/clients/{client_id}": "PASS",
+      "GET /api/clients/{nonexistent} returns 404": "PASS"
+    },
+    "list_clients": {
+      "GET /api/clients": "PASS",
+      "GET /api/clients?limit=5": "PASS",
+      "GET /api/clients?offset=2": "PASS",
+      "GET /api/clients?linked_to_myfdc=true": "PASS"
+    },
+    "link_crm": {
+      "POST /api/clients/{id}/link-crm": "PASS",
+      "Invalid UUID format returns error": "PASS",
+      "Non-existent client returns 404": "PASS"
+    },
+    "golden_test_client": {
+      "GET /api/clients/golden/test-client": "PASS",
+      "Golden client is idempotent": "PASS"
+    },
+    "normalization": {
+      "Email case-insensitive matching": "PASS",
+      "ABN handles spaces": "PASS"
+    },
+    "response_structure": {
+      "LinkOrCreateResponse schema": "PASS",
+      "ClientResponse schema": "PASS",
+      "ClientListItem schema": "PASS"
+    },
+    "audit_logging": {
+      "Uses dot notation (client.linked, client.created)": "PASS (unit tests)",
+      "Excludes email from logs": "PASS (unit tests)",
+      "Excludes phone from logs": "PASS (unit tests)",
+      "Excludes name from logs": "PASS (unit tests)",
+      "Masks ABN in logs": "PASS (unit tests)"
+    }
+  },
+  "bug_fixed": {
+    "description": "UUID fields (crm_client_id, bookkeeping_id, workpaper_id) were returned as UUID objects from database instead of strings, causing Pydantic validation error",
+    "file": "/app/backend/services/clients.py",
+    "fix": "Added str() conversion for UUID fields in get_by_id and list_all methods"
+  }
+}
