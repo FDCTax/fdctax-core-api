@@ -17,18 +17,29 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from utils.encryption import (
-    encrypt_tfn, 
-    decrypt_tfn, 
+    EncryptionService,
     is_encryption_configured,
     EncryptionError,
     DecryptionError,
-    KeyNotConfiguredError
+    KeyNotConfiguredError,
+    ValidationError
 )
 
 logger = logging.getLogger(__name__)
 
 # Create router without prefix - will be mounted at root
 router = APIRouter(tags=["Secret Authority Verification"])
+
+# Shared encryption service
+_encryption_service: Optional[EncryptionService] = None
+
+
+def get_encryption_service() -> EncryptionService:
+    """Get or create encryption service singleton."""
+    global _encryption_service
+    if _encryption_service is None:
+        _encryption_service = EncryptionService()
+    return _encryption_service
 
 
 # ==================== REQUEST/RESPONSE MODELS ====================
