@@ -128,7 +128,7 @@ class HoursWorkedRequest(BaseModel):
 
 class OccupancyRequest(BaseModel):
     """Request to log occupancy data."""
-    date: date = Field(..., description="Date of occupancy")
+    date: DateType = Field(..., description="Date of occupancy")
     number_of_children: int = Field(..., ge=0, description="Number of children present")
     hours_per_day: float = Field(..., gt=0, le=24, description="Total hours of care")
     
@@ -155,7 +155,7 @@ class OccupancyRequest(BaseModel):
 
 class DiaryEntryRequest(BaseModel):
     """Request to create a diary entry."""
-    date: date = Field(..., description="Date of entry")
+    date: DateType = Field(..., description="Date of entry")
     description: str = Field(..., min_length=1, max_length=2000, description="Entry description")
     category: str = Field(default="activity", description="Entry category")
     
@@ -180,7 +180,7 @@ class DiaryEntryRequest(BaseModel):
 
 class ExpenseRequest(BaseModel):
     """Request to log an expense."""
-    date: date = Field(..., description="Date of expense")
+    date: DateType = Field(..., description="Date of expense")
     amount: float = Field(..., gt=0, description="Expense amount")
     category: str = Field(..., description="Expense category")
     description: Optional[str] = Field(None, max_length=500, description="Expense description")
@@ -212,7 +212,7 @@ class ExpenseRequest(BaseModel):
 class AttendanceRequest(BaseModel):
     """Request to log child attendance."""
     child_name: str = Field(..., min_length=1, description="Child's name")
-    date: date = Field(..., description="Date of attendance")
+    date: DateType = Field(..., description="Date of attendance")
     hours: float = Field(..., gt=0, le=24, description="Hours attended")
     
     # Times
@@ -277,8 +277,8 @@ class BulkIntakeResponse(BaseModel):
 
 class DateRangeQuery(BaseModel):
     """Query parameters for date range queries."""
-    start_date: date
-    end_date: date
+    start_date: DateType
+    end_date: DateType
     
     class Config:
         json_schema_extra = {
