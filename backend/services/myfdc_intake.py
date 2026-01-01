@@ -13,6 +13,7 @@ Data Types:
 - Attendance
 
 All data is stored under a unified client_id.
+Triggers webhooks to notify CRM of new data.
 """
 
 import uuid
@@ -26,6 +27,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
+
+
+# ==================== WEBHOOK EVENT MAPPING ====================
+# Maps data types to webhook event types (imported when needed to avoid circular imports)
+
+WEBHOOK_EVENT_MAP = {
+    "educator_profile": "myfdc.profile.updated",
+    "hours_worked": "myfdc.hours.logged",
+    "occupancy": "myfdc.occupancy.logged",
+    "diary_entry": "myfdc.diary.created",
+    "expense": "myfdc.expense.logged",
+    "attendance": "myfdc.attendance.logged"
+}
 
 
 # ==================== AUDIT EVENTS ====================
