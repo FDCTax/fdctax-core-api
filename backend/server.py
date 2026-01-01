@@ -366,6 +366,10 @@ api_router.include_router(tax_modules_router)  # Tax calculation endpoints
 from routers.clients import router as clients_router
 api_router.include_router(clients_router)  # Unified client management
 
+# MyFDC Data Intake API (Ticket A3-2)
+from routers.myfdc_intake import router as myfdc_intake_router
+api_router.include_router(myfdc_intake_router)  # MyFDC data intake endpoints
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
