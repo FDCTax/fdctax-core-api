@@ -503,6 +503,9 @@ class MyFDCIntakeService:
                 {"date": str(expense_data.get('date')), "amount": expense_data.get('amount'), "category": expense_data.get('category')}
             )
             
+            # Trigger webhook notification
+            await self._trigger_webhook("expense", client_id, record_id)
+            
             return {
                 "success": True,
                 "record_id": record_id,
