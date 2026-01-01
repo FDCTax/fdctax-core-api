@@ -585,24 +585,34 @@ async def validate_client_data(
             result["warnings"].append(f"Email: {msg}")
     
     # Check for duplicates
-    matcher = ClientMatcher(db)
-    display_name = data.get("display_name") or data.get("name")
-    match = await matcher.find_match(
-        client_code=client_code,
-        abn=abn,
-        email=email,
-        display_name=display_name
-    )
-    
-    if match:
-        result["matches"] = {
-            "existing_profile_id": match.get("id"),
-            "existing_client_code": match.get("client_code"),
-            "match_type": match.get("match_type"),
-            "confidence": match.get("confidence")
-        }
-        if match.get("confidence", 0) >= 0.9:
-            result["warnings"].append(f"High confidence duplicate detected: {match.get('client_code')}")
+    try:
+        matcher = ClientMatcher(db)
+        display_name = data.get("display_name") or data.get("name")
+        match = await matcher.find_match(
+            client_code=client_code,
+            abn=abn,
+            email=email,
+            display_name=display_name
+        )
+        
+        if match:
+            result["matches"] = {
+                "existing_profile_id": str(match.get("id")) if match.get("id") else None,
+                "existing_client_code": match.get("client_code"),
+                "match_type": match.get("match_type"),
+                "confidence": match.get("confidence")
+            }
+            if match.get("confidence", 0) >= 0.9:
+                result["warnings"].append(f"High confidence duplicate detected: {match.get('client_code')}")
+    except Exception as e:
+        # Don't fail validation if duplicate check fails
+        logger.warning(f"Duplicate check failed: {e}")
+        result["warnings"].append("Could not check for duplicates")
+        # Rollback any failed transaction
+        try:
+            await db.rollback()
+        except Exception:
+            pass
     
     # Business rule recommendations
     entity_type = ClientValidator.validate_entity_type(data.get("entity_type"))
@@ -610,8 +620,17 @@ async def validate_client_data(
     result["recommendations"]["required_documents"] = LunaBusinessRules.get_required_documents(entity_type)
     
     if data.get("gst_registered"):
+        turnover = data.get("annual_turnover")
+        # Parse turnover if string
+        if isinstance(turnover, str):
+            turnover_mapping = {
+                '0-75K': 50000, '75K-200K': 150000, '200K-500K': 350000,
+                '500K-1M': 750000, '1M-2M': 1500000, '2M-5M': 3500000,
+            }
+            turnover = turnover_mapping.get(turnover.upper().replace('$', '').replace(',', ''), None)
+        
         result["recommendations"]["bas_frequency"] = LunaBusinessRules.determine_bas_frequency(
-            data.get("annual_turnover"),
+            turnover,
             True
         )
     
