@@ -458,6 +458,17 @@ myfdc_attendance: {id UUID PK, client_id FK, child_name, attendance_date, hours,
 - `POST /api/identity/link-existing` - Link records (admin)
 - `POST /api/identity/merge` - Merge persons (admin)
 
+### MyFDC Data Intake (NEW - Jan 2025)
+- `POST /api/myfdc/profile` - Update educator profile (Internal Auth)
+- `POST /api/myfdc/hours` - Log hours worked (Internal Auth)
+- `POST /api/myfdc/occupancy` - Log occupancy data (Internal Auth)
+- `POST /api/myfdc/diary` - Create diary entry (Internal Auth)
+- `POST /api/myfdc/expense` - Log expense (Internal Auth)
+- `POST /api/myfdc/attendance` - Log child attendance (Internal Auth)
+- `GET /api/myfdc/summary/hours` - Get hours summary (Internal Auth)
+- `GET /api/myfdc/summary/expenses` - Get expenses summary (Internal Auth)
+- `GET /api/myfdc/status` - Module status (Internal Auth)
+
 ---
 
 ## Test Credentials
