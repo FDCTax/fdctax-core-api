@@ -346,7 +346,9 @@ class LunaMigrationService:
     async def migrate_batch(
         self,
         clients: List[Dict[str, Any]],
-        migrated_by: str = "luna-migration"
+        migrated_by: str = "luna-migration",
+        sort_by_priority: bool = True,
+        skip_validation: bool = False
     ) -> MigrationBatch:
         """
         Migrate multiple clients in a batch.
@@ -354,6 +356,8 @@ class LunaMigrationService:
         Args:
             clients: List of Luna client data dicts
             migrated_by: Identifier for migration source
+            sort_by_priority: Sort clients by migration priority (higher priority first)
+            skip_validation: Skip business rule validation
             
         Returns:
             MigrationBatch with results for each client
@@ -366,8 +370,23 @@ class LunaMigrationService:
         
         logger.info(f"Starting batch migration: {batch_id} with {len(clients)} clients")
         
+        # Ensure audit table exists
+        await self.audit_logger.ensure_audit_table()
+        
+        # === Phase 4: Sort by migration priority ===
+        if sort_by_priority:
+            clients = sorted(
+                clients,
+                key=lambda c: MigrationHelpers.calculate_migration_priority(c),
+                reverse=True
+            )
+        
         for client_data in clients:
-            result = await self.migrate_client(client_data, migrated_by)
+            result = await self.migrate_client(
+                client_data, 
+                migrated_by=f"{migrated_by}-batch-{batch_id[:8]}",
+                skip_validation=skip_validation
+            )
             results.append(result)
             
             if result.success:
