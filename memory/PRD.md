@@ -379,10 +379,11 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 
 ## Upcoming Tasks
 
-### P0 - Luna Service Migration (Next Priority)
-1. **Migrate Luna business logic** - Move Luna service logic into Core module endpoints
-2. **Client data transformation** - Map remaining Luna fields to Core schema
-3. **Sync mechanism** - Real-time or batch sync from Luna to Core
+### P0 - Luna Service Migration Phase 4 (Continued)
+1. **Receive Luna field mappings** - Awaiting additional field mapping documentation from user
+2. **Implement remaining business logic** - Tax calculation rules, compliance checks
+3. **Build sync mechanism** - Real-time or batch sync from Luna to Core
+4. **Integration testing** - End-to-end testing with actual Luna data
 
 ### P1 - Frontend Development (On Hold)
 1. **VXT Phone UI** - Display call logs, transcripts, recordings, workpaper linking
