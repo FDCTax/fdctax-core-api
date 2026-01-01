@@ -286,6 +286,15 @@ async def get_client_profile(
     
     TFN is masked by default. Set include_tfn=true (admin only) to decrypt.
     """
+    # Validate UUID format
+    try:
+        uuid.UUID(profile_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid UUID format for profile_id"
+        )
+    
     # Only admin can view decrypted TFN
     if include_tfn and current_user.role != "admin":
         raise HTTPException(
