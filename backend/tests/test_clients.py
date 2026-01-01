@@ -308,7 +308,7 @@ class TestAuditLogging:
             ClientAuditEvent.CLIENT_CREATED,
             "client-123",
             "test-service",
-            {"abn": "51824753556", "name": "Test"}
+            {"abn": "51824753556", "myfdc_user_id": "test"}
         )
         
         # Check ABN is masked in log output
@@ -324,12 +324,69 @@ class TestAuditLogging:
             ClientAuditEvent.CLIENT_CREATED,
             "client-456",
             "test-service",
-            {"tfn": "123456789", "name": "Test"}  # TFN should be excluded
+            {"tfn": "123456789", "myfdc_user_id": "test"}  # TFN should be excluded
         )
         
         # TFN should not appear in logs
         for record in caplog.records:
             assert "123456789" not in record.message
+    
+    def test_log_client_event_excludes_email(self, caplog):
+        """Test that email is excluded from logs (Ticket A3-8)."""
+        import logging
+        caplog.set_level(logging.INFO)
+        
+        log_client_event(
+            ClientAuditEvent.CLIENT_CREATED,
+            "client-789",
+            "test-service",
+            {"email": "sensitive@example.com", "myfdc_user_id": "test"}
+        )
+        
+        # Email should not appear in logs
+        for record in caplog.records:
+            assert "sensitive@example.com" not in record.message
+    
+    def test_log_client_event_excludes_phone(self, caplog):
+        """Test that phone is excluded from logs (Ticket A3-8)."""
+        import logging
+        caplog.set_level(logging.INFO)
+        
+        log_client_event(
+            ClientAuditEvent.CLIENT_LINKED,
+            "client-101",
+            "test-service",
+            {"phone": "0412345678", "match_type": "email"}
+        )
+        
+        # Phone should not appear in logs
+        for record in caplog.records:
+            assert "0412345678" not in record.message
+    
+    def test_log_client_event_excludes_name(self, caplog):
+        """Test that name is excluded from logs (Ticket A3-8)."""
+        import logging
+        caplog.set_level(logging.INFO)
+        
+        log_client_event(
+            ClientAuditEvent.CLIENT_CREATED,
+            "client-102",
+            "test-service",
+            {"name": "John Smith", "myfdc_user_id": "test"}
+        )
+        
+        # Name should not appear in logs
+        for record in caplog.records:
+            assert "John Smith" not in record.message
+    
+    def test_audit_event_types_use_dot_notation(self):
+        """Test that audit event types use dot notation (Ticket A3-8)."""
+        assert ClientAuditEvent.CLIENT_LINKED == "client.linked"
+        assert ClientAuditEvent.CLIENT_CREATED == "client.created"
+        assert ClientAuditEvent.CLIENT_LOOKUP == "client.lookup"
+        assert ClientAuditEvent.CLIENT_LIST == "client.list"
+        assert ClientAuditEvent.CLIENT_UPDATED == "client.updated"
+        assert ClientAuditEvent.CRM_LINKED == "client.crm_linked"
 
 
 class TestDeduplication:
