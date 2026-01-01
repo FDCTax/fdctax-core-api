@@ -16,7 +16,7 @@ Run with: pytest tests/test_myfdc_intake.py -v
 
 import pytest
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date as DateType, datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from decimal import Decimal
 
