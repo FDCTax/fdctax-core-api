@@ -362,6 +362,10 @@ api_router.include_router(core_router)  # Client profiles, migration endpoints
 from routers.tax_modules import router as tax_modules_router
 api_router.include_router(tax_modules_router)  # Tax calculation endpoints
 
+# Core Client API (MyFDC, CRM, Bookkeeping, Workpapers integration)
+from routers.clients import router as clients_router
+api_router.include_router(clients_router)  # Unified client management
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
