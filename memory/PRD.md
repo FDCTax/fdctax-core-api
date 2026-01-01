@@ -632,7 +632,8 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 │   ├── test_identity_spine.py  # Identity Spine tests (30 tests)
 │   ├── test_myfdc_intake.py    # MyFDC Intake tests (31 tests)
 │   ├── test_bookkeeping_access.py  # Bookkeeping tests (23 tests)
-│   └── test_webhooks.py        # Webhook tests (26 tests)
+│   ├── test_webhooks.py        # Webhook tests (26 tests)
+│   └── test_sms_proxy.py       # SMS Proxy tests (26 tests)
 └── test_reports/               # Test results
 ```
 
