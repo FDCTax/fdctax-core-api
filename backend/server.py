@@ -358,6 +358,10 @@ api_router.include_router(identity_router)  # Unified identity management
 from core.router import router as core_router
 api_router.include_router(core_router)  # Client profiles, migration endpoints
 
+# Tax Modules (POB, Occupancy, Depreciation, Motor Vehicle)
+from routers.tax_modules import router as tax_modules_router
+api_router.include_router(tax_modules_router)  # Tax calculation endpoints
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
