@@ -341,12 +341,32 @@ https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
   - Internal service token authentication
   - 17 unit tests - all passing
 
+- ✅ **MyFDC Data Intake API (Ticket A3-2) - COMPLETED**
+  - `POST /api/myfdc/profile` - Update educator profile (create/update)
+  - `POST /api/myfdc/hours` - Log hours worked
+  - `POST /api/myfdc/occupancy` - Log occupancy data (children, rooms)
+  - `POST /api/myfdc/diary` - Create diary entries
+  - `POST /api/myfdc/expense` - Log expenses (with category, GST, business %)
+  - `POST /api/myfdc/attendance` - Log child attendance (with CCS hours)
+  - `GET /api/myfdc/summary/hours` - Get hours summary for date range
+  - `GET /api/myfdc/summary/expenses` - Get expenses summary by category
+  - `GET /api/myfdc/status` - Module status check
+  - Internal service token authentication (X-Internal-Api-Key)
+  - Client existence validation
+  - Audit logging (sensitive data excluded)
+  - 31 unit tests - all passing
+
 **Files Created/Modified:**
 - `/app/backend/core/luna_business_logic.py` (NEW)
 - `/app/backend/core/migration.py` (Enhanced)
 - `/app/backend/core/router.py` (Enhanced)
 - `/app/backend/core/__init__.py` (Updated exports)
 - `/app/backend/routers/secret_authority.py` (NEW)
+- `/app/backend/routers/myfdc_intake.py` (NEW - Ticket A3-2)
+- `/app/backend/services/myfdc_intake.py` (NEW - Ticket A3-2)
+- `/app/backend/models/myfdc_data.py` (NEW - Ticket A3-2)
+- `/app/backend/tests/test_myfdc_intake.py` (NEW - 31 tests)
+- `/app/backend/create_myfdc_tables.py` (NEW - Migration script)
 - `/app/backend/utils/encryption.py` (Enhanced)
 - `/app/backend/tests/test_encryption.py` (NEW - 25 tests)
 - `/app/frontend/src/App.js` (API-only mode)
