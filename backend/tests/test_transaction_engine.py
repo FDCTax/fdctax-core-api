@@ -15,7 +15,7 @@ import aiohttp
 import asyncpg
 
 # Test configuration
-BASE_URL = "https://fdccore-taxcrm.preview.emergentagent.com/api"
+BASE_URL = "https://fdctaxsync.preview.emergentagent.com/api"
 
 # Test credentials
 STAFF_CREDENTIALS = {"email": "staff@fdctax.com", "password": "staff123"}
