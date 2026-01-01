@@ -523,6 +523,19 @@ webhook_audit_log: {id UUID PK, event_type, webhook_id, service_name, details JS
 - `GET /api/bookkeeping/{client_id}/summary` - Combined summary (Internal Auth)
 - `GET /api/bookkeeping/status` - Module status (Internal Auth)
 
+### Webhook Notifications (NEW - Jan 2025)
+- `POST /api/webhooks/register` - Register webhook (Internal Auth)
+- `GET /api/webhooks` - List webhooks (Internal Auth)
+- `GET /api/webhooks/status` - Module status (Internal Auth)
+- `GET /api/webhooks/events` - List supported events (Internal Auth)
+- `GET /api/webhooks/{id}` - Get webhook details (Internal Auth)
+- `DELETE /api/webhooks/{id}` - Delete webhook (Internal Auth)
+- `PUT /api/webhooks/{id}/status` - Enable/disable webhook (Internal Auth)
+- `GET /api/webhooks/queue/stats` - Queue statistics (Internal Auth)
+- `GET /api/webhooks/queue/dead-letter` - Dead letter items (Internal Auth)
+- `POST /api/webhooks/queue/dead-letter/{id}/retry` - Retry failed delivery (Internal Auth)
+- `POST /api/webhooks/queue/process` - Manual queue processing (Internal Auth)
+
 ---
 
 ## Test Credentials
