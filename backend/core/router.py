@@ -422,6 +422,8 @@ async def delete_client_profile(
 @router.post("/migration/client")
 async def migrate_single_client(
     request: MigrateSingleRequest,
+    skip_validation: bool = Query(False, description="Skip business rule validation"),
+    force_create: bool = Query(False, description="Force create even if duplicate detected"),
     service: InternalService = Depends(get_internal_service),
     db: AsyncSession = Depends(get_db)
 ):
@@ -431,6 +433,10 @@ async def migrate_single_client(
     **Auth:** Internal API Key (X-Internal-Api-Key header)
     
     Called by Luna CRM during migration.
+    
+    **Phase 4 Options:**
+    - `skip_validation`: Skip ABN/TFN/email validation (use for bulk imports)
+    - `force_create`: Skip deduplication check (use when confident no duplicates)
     """
     logger.info(f"Migration request from service: {service.name}")
     
@@ -438,7 +444,9 @@ async def migrate_single_client(
     
     result = await migration_service.migrate_client(
         luna_data=request.dict(exclude_none=True),
-        migrated_by=service.name
+        migrated_by=service.name,
+        skip_validation=skip_validation,
+        force_create=force_create
     )
     
     return result.to_dict()
@@ -447,6 +455,8 @@ async def migrate_single_client(
 @router.post("/migration/batch")
 async def migrate_batch_clients(
     request: MigrateBatchRequest,
+    skip_validation: bool = Query(False, description="Skip business rule validation"),
+    sort_by_priority: bool = Query(True, description="Sort by migration priority (active/high-tier first)"),
     service: InternalService = Depends(get_internal_service),
     db: AsyncSession = Depends(get_db)
 ):
@@ -456,6 +466,10 @@ async def migrate_batch_clients(
     **Auth:** Internal API Key (X-Internal-Api-Key header)
     
     Called by Luna CRM for bulk migration.
+    
+    **Phase 4 Options:**
+    - `skip_validation`: Skip business rule validation for all clients
+    - `sort_by_priority`: Process high-priority clients first (default: true)
     """
     logger.info(f"Batch migration request from service: {service.name} with {len(request.clients)} clients")
     
@@ -463,10 +477,13 @@ async def migrate_batch_clients(
     
     result = await migration_service.migrate_batch(
         clients=request.clients,
-        migrated_by=service.name
+        migrated_by=service.name,
+        sort_by_priority=sort_by_priority,
+        skip_validation=skip_validation
     )
     
     return result.to_dict()
+
 
 
 @router.post("/migration/sync")
