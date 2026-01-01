@@ -79,15 +79,15 @@ class EducatorProfileRequest(BaseModel):
     
     # Service approval details
     service_approval_number: Optional[str] = Field(None, description="FDC service approval number")
-    approval_start_date: Optional[date] = Field(None)
-    approval_expiry_date: Optional[date] = Field(None)
+    approval_start_date: Optional[DateType] = Field(None)
+    approval_expiry_date: Optional[DateType] = Field(None)
     max_children: Optional[int] = Field(None, ge=0, description="Maximum children approved")
     
     # Qualifications
     qualifications: Optional[List[str]] = Field(default_factory=list)
-    first_aid_expiry: Optional[date] = Field(None)
+    first_aid_expiry: Optional[DateType] = Field(None)
     wwcc_number: Optional[str] = Field(None, description="Working With Children Check number")
-    wwcc_expiry: Optional[date] = Field(None)
+    wwcc_expiry: Optional[DateType] = Field(None)
     
     class Config:
         json_schema_extra = {
