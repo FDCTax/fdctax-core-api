@@ -387,6 +387,20 @@ https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
   - MyFDC intake triggers webhooks automatically
   - 26 unit tests - all passing
 
+- ✅ **Core SMS Proxy (Ticket A3-7) - COMPLETED**
+  - `POST /api/internal/sms/send` - Send single SMS via Agent 5
+  - `POST /api/internal/sms/bulk` - Send bulk SMS (max 100)
+  - `GET /api/internal/sms/health` - Check Agent 5 health
+  - `GET /api/internal/sms/status/{message_id}` - Get delivery status
+  - `GET /api/internal/sms/module-status` - Module configuration
+  - Internal service token + X-Internal-Service header required
+  - Phone numbers and message content NEVER logged (security)
+  - Retry logic with exponential backoff (1s, 3s, 10s)
+  - 503 fallback handling for Agent 5 unavailability
+  - Mock mode when Agent 5 not configured
+  - Audit logging for all SMS operations
+  - 26 unit tests - all passing
+
 **Files Created/Modified:**
 - `/app/backend/core/luna_business_logic.py` (NEW)
 - `/app/backend/core/migration.py` (Enhanced)
@@ -396,14 +410,18 @@ https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
 - `/app/backend/routers/myfdc_intake.py` (NEW - Ticket A3-2)
 - `/app/backend/routers/bookkeeping_access.py` (NEW - Ticket A3-3.3)
 - `/app/backend/routers/webhooks.py` (NEW - Ticket A3-4)
+- `/app/backend/routers/sms_proxy.py` (NEW - Ticket A3-7)
 - `/app/backend/services/myfdc_intake.py` (Enhanced - Ticket A3-2, A3-4)
 - `/app/backend/services/bookkeeping_access.py` (NEW - Ticket A3-3.3)
 - `/app/backend/services/webhook_service.py` (NEW - Ticket A3-4)
+- `/app/backend/services/sms_proxy.py` (NEW - Ticket A3-7)
 - `/app/backend/models/myfdc_data.py` (NEW - Ticket A3-2)
 - `/app/backend/tests/test_myfdc_intake.py` (NEW - 31 tests)
 - `/app/backend/tests/test_bookkeeping_access.py` (NEW - 23 tests)
 - `/app/backend/tests/test_webhooks.py` (NEW - 26 tests)
+- `/app/backend/tests/test_sms_proxy.py` (NEW - 26 tests)
 - `/app/backend/create_myfdc_tables.py` (NEW - Migration script)
+- `/app/backend/config.py` (Enhanced - Agent 5 config)
 - `/app/backend/utils/encryption.py` (Enhanced)
 - `/app/backend/tests/test_encryption.py` (NEW - 25 tests)
 - `/app/frontend/src/App.js` (API-only mode)
