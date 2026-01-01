@@ -22,7 +22,7 @@ import aiohttp
 import asyncpg
 
 # Test configuration
-BASE_URL = "https://fdctaxsync.preview.emergentagent.com/api"
+BASE_URL = "https://taxcore-crm.preview.emergentagent.com/api"
 
 # Test credentials as specified in the review request
 TEST_CREDENTIALS = {

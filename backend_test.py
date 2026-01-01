@@ -16,7 +16,7 @@ import aiohttp
 import asyncpg
 
 # Test configuration
-BASE_URL = "https://fdctaxsync.preview.emergentagent.com/api"
+BASE_URL = "https://taxcore-crm.preview.emergentagent.com/api"
 
 # Test credentials for RBAC testing
 ADMIN_CREDENTIALS = {"email": "admin@fdctax.com", "password": "admin123"}

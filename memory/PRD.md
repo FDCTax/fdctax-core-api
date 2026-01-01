@@ -45,7 +45,7 @@ FDC Tax Core is a comprehensive tax management and bookkeeping platform designed
 
 **Production Webhook URL:**
 ```
-https://fdctaxsync.preview.emergentagent.com/api/vxt/webhook
+https://taxcore-crm.preview.emergentagent.com/api/vxt/webhook
 ```
 
 **Supported Events:** call.completed, call.transcribed, call.recording_ready
