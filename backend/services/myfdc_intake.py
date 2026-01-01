@@ -100,6 +100,8 @@ class MyFDCIntakeService:
     
     All data is stored in a unified structure that can be queried
     by CRM, Bookkeeping, and Workpapers.
+    
+    Automatically triggers webhooks to notify CRM of new data.
     """
     
     def __init__(self, db: AsyncSession):
@@ -113,6 +115,34 @@ class MyFDCIntakeService:
         """)
         result = await self.db.execute(query, {'client_id': client_id})
         return result.fetchone() is not None
+    
+    async def _trigger_webhook(
+        self,
+        data_type: str,
+        client_id: str,
+        record_id: str
+    ):
+        """
+        Trigger webhook notification for the specified data type.
+        
+        Fails silently if webhook service is unavailable.
+        """
+        event_type = WEBHOOK_EVENT_MAP.get(data_type)
+        if not event_type:
+            logger.warning(f"No webhook event mapping for data type: {data_type}")
+            return
+        
+        try:
+            # Import here to avoid circular imports
+            from services.webhook_service import WebhookService, WebhookEventType
+            
+            webhook_service = WebhookService(self.db)
+            event_enum = WebhookEventType(event_type)
+            await webhook_service.dispatch_event(event_enum, client_id, record_id)
+            logger.debug(f"Webhook dispatched: {event_type} for client {client_id}")
+        except Exception as e:
+            # Don't fail the main operation if webhook fails
+            logger.warning(f"Failed to trigger webhook for {data_type}: {e}")
     
     # ==================== EDUCATOR PROFILE ====================
     
