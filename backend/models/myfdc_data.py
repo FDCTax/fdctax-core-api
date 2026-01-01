@@ -12,7 +12,7 @@ Pydantic models for MyFDC data intake:
 All data is stored under a unified client_id in Core.
 """
 
-from datetime import date, datetime
+from datetime import date as DateType, datetime
 from typing import Optional, List
 from decimal import Decimal
 from enum import Enum
@@ -108,7 +108,7 @@ class EducatorProfileRequest(BaseModel):
 
 class HoursWorkedRequest(BaseModel):
     """Request to log hours worked."""
-    date: date = Field(..., description="Date of work")
+    date: DateType = Field(..., description="Date of work")
     hours: float = Field(..., gt=0, le=24, description="Hours worked")
     start_time: Optional[str] = Field(None, description="Start time (HH:MM)")
     end_time: Optional[str] = Field(None, description="End time (HH:MM)")
