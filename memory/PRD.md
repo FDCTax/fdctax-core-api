@@ -405,6 +405,16 @@ vxt_recordings: {id, call_id, recording_url}
 workpapers_call_links: {id, call_id, workpaper_id}
 ```
 
+### MyFDC Data Intake Module (NEW - Jan 2025)
+```sql
+myfdc_educator_profiles: {id UUID PK, client_id FK, educator_name, phone, email, address_*, suburb, state, postcode, abn, service_approval_number, approval_start_date, approval_expiry_date, max_children, qualifications JSONB, first_aid_expiry, wwcc_number, wwcc_expiry, created_at, updated_at, created_by, updated_by}
+myfdc_hours_worked: {id UUID PK, client_id FK, work_date, hours, start_time, end_time, notes, created_at, created_by}
+myfdc_occupancy: {id UUID PK, client_id FK, occupancy_date, number_of_children, hours_per_day, rooms_used JSONB, room_details JSONB, preschool_program, notes, created_at, created_by}
+myfdc_diary_entries: {id UUID PK, client_id FK, entry_date, description, category, child_name, has_photos, photo_count, created_at, created_by}
+myfdc_expenses: {id UUID PK, client_id FK, expense_date, amount, category, description, gst_included, tax_deductible, business_percentage, receipt_number, vendor, created_at, created_by}
+myfdc_attendance: {id UUID PK, client_id FK, child_name, attendance_date, hours, arrival_time, departure_time, ccs_hours, notes, absent, absence_reason, created_at, created_by}
+```
+
 ---
 
 ## API Endpoints Summary
