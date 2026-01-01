@@ -374,6 +374,10 @@ api_router.include_router(myfdc_intake_router)  # MyFDC data intake endpoints
 from routers.bookkeeping_access import router as bookkeeping_access_router
 api_router.include_router(bookkeeping_access_router)  # CRM Bookkeeping read endpoints
 
+# Webhook Notification System (Ticket A3-4)
+from routers.webhooks import router as webhooks_router
+api_router.include_router(webhooks_router)  # Webhook management endpoints
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
