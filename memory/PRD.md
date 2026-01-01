@@ -452,6 +452,14 @@ myfdc_expenses: {id UUID PK, client_id FK, expense_date, amount, category, descr
 myfdc_attendance: {id UUID PK, client_id FK, child_name, attendance_date, hours, arrival_time, departure_time, ccs_hours, notes, absent, absence_reason, created_at, created_by}
 ```
 
+### Webhook Notification Module (NEW - Jan 2025)
+```sql
+webhook_registrations: {id UUID PK, service_name, url, events TEXT[], secret_key, is_active, created_at, created_by, updated_at}
+webhook_delivery_queue: {id UUID PK, webhook_id FK, event_type, payload JSONB, status, attempts, max_attempts, next_retry_at, last_error, created_at, delivered_at, failed_at}
+webhook_dead_letter: {id UUID PK, original_queue_id, webhook_id, event_type, payload JSONB, attempts, last_error, failed_at}
+webhook_audit_log: {id UUID PK, event_type, webhook_id, service_name, details JSONB, performed_by, created_at}
+```
+
 ---
 
 ## API Endpoints Summary
