@@ -321,6 +321,15 @@ https://fdctaxsync.preview.emergentagent.com/api/vxt/webhook
   - Audit logging (no plaintext in logs)
   - 25 unit tests - all passing
 
+- ✅ **Tax Module Logic Endpoints (A3-4)**
+  - POB (Place of Business / Home Office): Fixed rate (67c/hr), actual cost, shortcut
+  - Occupancy Expenses: Mortgage interest, council rates, insurance, rent, CGT warnings
+  - Depreciation: Diminishing value, prime cost, instant write-off, SB pool
+  - Motor Vehicle: Cents per km (85c, max 5000km), logbook method
+  - Combined calculation endpoint
+  - ATO 2024-25 tax year compliance
+  - 26 unit tests - all passing
+
 **Files Created/Modified:**
 - `/app/backend/core/luna_business_logic.py` (NEW)
 - `/app/backend/core/migration.py` (Enhanced)
