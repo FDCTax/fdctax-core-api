@@ -330,6 +330,17 @@ https://fdctaxsync.preview.emergentagent.com/api/vxt/webhook
   - ATO 2024-25 tax year compliance
   - 26 unit tests - all passing
 
+- ✅ **Core Client API (A3-1.4) - MyFDC Beta Critical Path**
+  - `POST /api/clients/link-or-create` - Link or create Core client
+  - `GET /api/clients/{client_id}` - Get client by ID
+  - `GET /api/clients` - List all clients with filters
+  - `POST /api/clients/{client_id}/link-crm` - Link CRM client ID
+  - `GET /api/clients/golden/test-client` - Get/create Golden Test Client
+  - Deduplication by email and ABN
+  - Audit logging (no plaintext TFN/ABN in logs)
+  - Internal service token authentication
+  - 17 unit tests - all passing
+
 **Files Created/Modified:**
 - `/app/backend/core/luna_business_logic.py` (NEW)
 - `/app/backend/core/migration.py` (Enhanced)
