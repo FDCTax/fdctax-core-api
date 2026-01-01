@@ -35,7 +35,7 @@ import uuid
 import aiohttp
 
 # Test configuration
-BASE_URL = "https://taxcore-crm.preview.emergentagent.com/api"
+BASE_URL = "https://tax-sync-core.preview.emergentagent.com/api"
 
 # Test credentials (4 roles)
 ADMIN_CREDENTIALS = {"email": "admin@fdctax.com", "password": "admin123"}
