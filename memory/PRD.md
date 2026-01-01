@@ -145,7 +145,35 @@ https://fdctaxsync.preview.emergentagent.com/api/vxt/webhook
 - `SMS_AUTH_TOKEN` - Twilio Auth Token
 - `SMS_FROM_NUMBER` - Twilio Phone Number
 
-### 10. Existing Modules
+### 10. Core Module - Phase 3 Scaffolding ✅ (Backend - Jan 2025)
+**Backend:** `/api/core/...`
+- 86-field client profile schema with full CRUD
+- TFN encryption utilities (ready, awaiting ENCRYPTION_KEY)
+- Internal API key authentication for service-to-service calls
+- Luna migration endpoints (single, batch, sync, rollback)
+- UUID validation on profile lookups
+
+**Endpoints:**
+- `GET /api/core/status` - Module status with feature flags
+- `POST /api/core/client-profiles` - Create profile (staff, admin)
+- `GET /api/core/client-profiles` - List/search profiles
+- `GET /api/core/client-profiles/{id}` - Get by ID
+- `GET /api/core/client-profiles/by-code/{code}` - Get by code
+- `PATCH /api/core/client-profiles/{id}` - Update profile
+- `DELETE /api/core/client-profiles/{id}` - Archive profile (admin)
+- `POST /api/core/migration/client` - Migrate single client (API key auth)
+- `POST /api/core/migration/batch` - Batch migration (API key auth)
+- `POST /api/core/migration/sync` - Sync client (API key auth)
+- `GET /api/core/migration/status` - Migration stats (API key or admin)
+- `POST /api/core/migration/rollback/{batch_id}` - Rollback batch (admin)
+
+**Database Table:** `public.client_profiles` (86 fields)
+
+**Environment Variables Required:**
+- `INTERNAL_API_KEY` - For service-to-service auth
+- `ENCRYPTION_KEY` - For TFN encryption (optional, recommended)
+
+### 11. Existing Modules
 - CRM/Clients Management
 - Workpaper Management
 - Transaction Engine
