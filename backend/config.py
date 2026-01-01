@@ -138,6 +138,24 @@ class Settings(BaseSettings):
         description="SMS webhook signing secret"
     )
     
+    # ==================== AGENT 5 SMS PROXY ====================
+    AGENT5_SMS_URL: str = Field(
+        default="https://agent5-sms.internal.fdccore.com/api/sms",
+        description="Agent 5 SMS service URL"
+    )
+    AGENT5_SMS_TOKEN: str = Field(
+        default="",
+        description="Agent 5 internal authentication token"
+    )
+    AGENT5_SMS_TIMEOUT: int = Field(
+        default=30,
+        description="Agent 5 request timeout in seconds"
+    )
+    AGENT5_SMS_MAX_RETRIES: int = Field(
+        default=3,
+        description="Maximum retry attempts for Agent 5 requests"
+    )
+    
     # ==================== BAS MODULE ====================
     BAS_PROVIDER: str = Field(
         default="",
