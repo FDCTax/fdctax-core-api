@@ -502,7 +502,7 @@ class TestMyFDCPydanticModels:
         data = {
             "child_name": "Emma",
             "date": "2025-01-01",
-            "hours": 0,
+            "hours": 0.1,  # Minimal hours for validation (booking was made)
             "absent": True,
             "absence_reason": "Sick"
         }
