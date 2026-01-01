@@ -407,3 +407,493 @@ def log_tfn_access(
         logger.info(f"TFN access: {action} for client {client_id} by {user_id}")
     else:
         logger.warning(f"TFN access failed: {action} for client {client_id} by {user_id}")
+
+
+# ==================== ENCRYPTION SERVICE CLASS ====================
+
+class EncryptionService:
+    """
+    Comprehensive encryption service for sensitive data.
+    
+    Handles encryption/decryption of:
+    - TFN (Tax File Number)
+    - ABN (Australian Business Number)
+    - ACN (Australian Company Number)
+    - Bank Details (BSB + Account Number)
+    
+    Features:
+    - Field validation before encryption
+    - Masking for safe display
+    - Audit logging
+    - No plaintext in logs
+    """
+    
+    # Validation patterns
+    TFN_PATTERN = re.compile(r'^\d{8,9}$')
+    ABN_PATTERN = re.compile(r'^\d{11}$')
+    ACN_PATTERN = re.compile(r'^\d{9}$')
+    BSB_PATTERN = re.compile(r'^\d{6}$')
+    ACCOUNT_PATTERN = re.compile(r'^\d{6,10}$')
+    
+    def __init__(self):
+        """Initialize encryption service."""
+        self._fernet = _get_fernet()
+    
+    @property
+    def is_configured(self) -> bool:
+        """Check if encryption is configured."""
+        return self._fernet is not None
+    
+    def _encrypt(self, plaintext: str) -> str:
+        """Internal encryption method."""
+        if not self._fernet:
+            raise KeyNotConfiguredError("ENCRYPTION_KEY not configured")
+        
+        return self._fernet.encrypt(plaintext.encode('utf-8')).decode('utf-8')
+    
+    def _decrypt(self, ciphertext: str) -> str:
+        """Internal decryption method."""
+        if not self._fernet:
+            raise KeyNotConfiguredError("ENCRYPTION_KEY not configured")
+        
+        try:
+            return self._fernet.decrypt(ciphertext.encode('utf-8')).decode('utf-8')
+        except InvalidToken:
+            raise DecryptionError("Invalid encryption token - data may be corrupted or key mismatch")
+    
+    # ==================== TFN OPERATIONS ====================
+    
+    def encrypt_tfn(self, tfn: str, validate: bool = True) -> str:
+        """
+        Encrypt a Tax File Number.
+        
+        Args:
+            tfn: 8-9 digit TFN
+            validate: Whether to validate format
+            
+        Returns:
+            Encrypted TFN string
+        """
+        if not tfn:
+            raise ValidationError("TFN cannot be empty")
+        
+        # Clean the input
+        cleaned = re.sub(r'[\s\-]', '', tfn)
+        
+        if validate and not self.TFN_PATTERN.match(cleaned):
+            raise ValidationError("TFN must be 8-9 digits")
+        
+        # SECURITY: Never log the actual TFN
+        logger.debug(f"Encrypting TFN (last 4: ***{cleaned[-4:]})")
+        
+        return self._encrypt(cleaned)
+    
+    def decrypt_tfn(self, ciphertext: str) -> str:
+        """
+        Decrypt a Tax File Number.
+        
+        Args:
+            ciphertext: Encrypted TFN
+            
+        Returns:
+            Decrypted TFN string
+        """
+        if not ciphertext:
+            raise ValidationError("Ciphertext cannot be empty")
+        
+        result = self._decrypt(ciphertext)
+        
+        # SECURITY: Never log the actual TFN
+        logger.debug(f"Decrypted TFN (last 4: ***{result[-4:]})")
+        
+        return result
+    
+    def mask_tfn(self, tfn: str, visible: int = 4) -> str:
+        """
+        Mask TFN for safe display.
+        
+        Args:
+            tfn: Plain or partial TFN
+            visible: Number of digits to show
+            
+        Returns:
+            Masked string (e.g., "*****6789")
+        """
+        if not tfn:
+            return ""
+        
+        cleaned = re.sub(r'[\s\-]', '', tfn)
+        
+        if len(cleaned) <= visible:
+            return cleaned
+        
+        return '*' * (len(cleaned) - visible) + cleaned[-visible:]
+    
+    # ==================== ABN OPERATIONS ====================
+    
+    def encrypt_abn(self, abn: str, validate: bool = True) -> str:
+        """
+        Encrypt an Australian Business Number.
+        
+        Args:
+            abn: 11 digit ABN
+            validate: Whether to validate format and checksum
+            
+        Returns:
+            Encrypted ABN string
+        """
+        if not abn:
+            raise ValidationError("ABN cannot be empty")
+        
+        cleaned = re.sub(r'[\s\-]', '', abn)
+        
+        if validate:
+            if not self.ABN_PATTERN.match(cleaned):
+                raise ValidationError("ABN must be exactly 11 digits")
+            
+            # ABN checksum validation
+            if not self._validate_abn_checksum(cleaned):
+                raise ValidationError("Invalid ABN checksum")
+        
+        logger.debug(f"Encrypting ABN (last 4: ***{cleaned[-4:]})")
+        
+        return self._encrypt(cleaned)
+    
+    def decrypt_abn(self, ciphertext: str) -> str:
+        """Decrypt an Australian Business Number."""
+        if not ciphertext:
+            raise ValidationError("Ciphertext cannot be empty")
+        
+        result = self._decrypt(ciphertext)
+        logger.debug(f"Decrypted ABN (last 4: ***{result[-4:]})")
+        
+        return result
+    
+    def mask_abn(self, abn: str, visible: int = 4) -> str:
+        """Mask ABN for safe display."""
+        if not abn:
+            return ""
+        
+        cleaned = re.sub(r'[\s\-]', '', abn)
+        
+        if len(cleaned) <= visible:
+            return cleaned
+        
+        return '*' * (len(cleaned) - visible) + cleaned[-visible:]
+    
+    def _validate_abn_checksum(self, abn: str) -> bool:
+        """Validate ABN using weighted modulus algorithm."""
+        try:
+            weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+            digits = [int(d) for d in abn]
+            digits[0] -= 1  # Subtract 1 from first digit
+            
+            checksum = sum(d * w for d, w in zip(digits, weights))
+            return checksum % 89 == 0
+        except (ValueError, IndexError):
+            return False
+    
+    # ==================== ACN OPERATIONS ====================
+    
+    def encrypt_acn(self, acn: str, validate: bool = True) -> str:
+        """
+        Encrypt an Australian Company Number.
+        
+        Args:
+            acn: 9 digit ACN
+            validate: Whether to validate format
+            
+        Returns:
+            Encrypted ACN string
+        """
+        if not acn:
+            raise ValidationError("ACN cannot be empty")
+        
+        cleaned = re.sub(r'[\s\-]', '', acn)
+        
+        if validate and not self.ACN_PATTERN.match(cleaned):
+            raise ValidationError("ACN must be exactly 9 digits")
+        
+        logger.debug(f"Encrypting ACN (last 4: ***{cleaned[-4:]})")
+        
+        return self._encrypt(cleaned)
+    
+    def decrypt_acn(self, ciphertext: str) -> str:
+        """Decrypt an Australian Company Number."""
+        if not ciphertext:
+            raise ValidationError("Ciphertext cannot be empty")
+        
+        result = self._decrypt(ciphertext)
+        logger.debug(f"Decrypted ACN (last 4: ***{result[-4:]})")
+        
+        return result
+    
+    def mask_acn(self, acn: str, visible: int = 4) -> str:
+        """Mask ACN for safe display."""
+        if not acn:
+            return ""
+        
+        cleaned = re.sub(r'[\s\-]', '', acn)
+        
+        if len(cleaned) <= visible:
+            return cleaned
+        
+        return '*' * (len(cleaned) - visible) + cleaned[-visible:]
+    
+    # ==================== BANK DETAILS OPERATIONS ====================
+    
+    def encrypt_bank_account(
+        self, 
+        bsb: str, 
+        account_number: str,
+        validate: bool = True
+    ) -> str:
+        """
+        Encrypt bank account details.
+        
+        Args:
+            bsb: 6 digit BSB
+            account_number: 6-10 digit account number
+            validate: Whether to validate format
+            
+        Returns:
+            Encrypted JSON string containing both values
+        """
+        if not bsb or not account_number:
+            raise ValidationError("BSB and account number are required")
+        
+        clean_bsb = re.sub(r'[\s\-]', '', bsb)
+        clean_account = re.sub(r'[\s\-]', '', account_number)
+        
+        if validate:
+            if not self.BSB_PATTERN.match(clean_bsb):
+                raise ValidationError("BSB must be exactly 6 digits")
+            if not self.ACCOUNT_PATTERN.match(clean_account):
+                raise ValidationError("Account number must be 6-10 digits")
+        
+        # Combine into JSON for structured storage
+        bank_data = json.dumps({
+            "bsb": clean_bsb,
+            "account": clean_account
+        })
+        
+        logger.debug(f"Encrypting bank details (BSB: ***{clean_bsb[-3:]}, Acc: ***{clean_account[-4:]})")
+        
+        return self._encrypt(bank_data)
+    
+    def decrypt_bank_account(self, ciphertext: str) -> Dict[str, str]:
+        """
+        Decrypt bank account details.
+        
+        Returns:
+            Dict with 'bsb' and 'account' keys
+        """
+        if not ciphertext:
+            raise ValidationError("Ciphertext cannot be empty")
+        
+        decrypted = self._decrypt(ciphertext)
+        
+        try:
+            data = json.loads(decrypted)
+            logger.debug(f"Decrypted bank details (BSB: ***{data['bsb'][-3:]}, Acc: ***{data['account'][-4:]})")
+            return data
+        except json.JSONDecodeError:
+            raise DecryptionError("Invalid bank details format")
+    
+    def mask_bsb(self, bsb: str) -> str:
+        """Mask BSB for safe display (format: ***-456)."""
+        if not bsb:
+            return ""
+        
+        cleaned = re.sub(r'[\s\-]', '', bsb)
+        
+        if len(cleaned) <= 3:
+            return cleaned
+        
+        return '***-' + cleaned[-3:]
+    
+    def mask_account_number(self, account: str, visible: int = 4) -> str:
+        """Mask account number for safe display."""
+        if not account:
+            return ""
+        
+        cleaned = re.sub(r'[\s\-]', '', account)
+        
+        if len(cleaned) <= visible:
+            return cleaned
+        
+        return '*' * (len(cleaned) - visible) + cleaned[-visible:]
+    
+    # ==================== GENERIC FIELD OPERATIONS ====================
+    
+    def encrypt_field(self, value: str, field_type: str = "generic") -> EncryptedField:
+        """
+        Encrypt any sensitive field with metadata.
+        
+        Args:
+            value: Value to encrypt
+            field_type: Type of field for audit logging
+            
+        Returns:
+            EncryptedField with ciphertext and metadata
+        """
+        if not value:
+            raise ValidationError("Value cannot be empty")
+        
+        logger.debug(f"Encrypting {field_type} field")
+        
+        ciphertext = self._encrypt(value)
+        last_four = value[-4:] if len(value) >= 4 else None
+        
+        return EncryptedField(
+            ciphertext=ciphertext,
+            field_type=field_type,
+            encrypted_at=datetime.now(timezone.utc).isoformat(),
+            last_four=last_four
+        )
+    
+    def decrypt_field(self, ciphertext: str, field_type: str = "generic") -> str:
+        """
+        Decrypt any sensitive field.
+        
+        Args:
+            ciphertext: Encrypted value
+            field_type: Type of field for audit logging
+            
+        Returns:
+            Decrypted string
+        """
+        if not ciphertext:
+            raise ValidationError("Ciphertext cannot be empty")
+        
+        result = self._decrypt(ciphertext)
+        logger.debug(f"Decrypted {field_type} field")
+        
+        return result
+    
+    # ==================== BATCH OPERATIONS ====================
+    
+    def encrypt_client_sensitive_data(
+        self,
+        tfn: Optional[str] = None,
+        abn: Optional[str] = None,
+        acn: Optional[str] = None,
+        bsb: Optional[str] = None,
+        account_number: Optional[str] = None,
+        validate: bool = True
+    ) -> Dict[str, Optional[str]]:
+        """
+        Encrypt all sensitive fields for a client profile.
+        
+        Returns dict with encrypted values (None if input was None).
+        """
+        result = {}
+        
+        if tfn:
+            result['tfn_encrypted'] = self.encrypt_tfn(tfn, validate)
+            result['tfn_last_four'] = tfn[-4:] if len(tfn) >= 4 else None
+        else:
+            result['tfn_encrypted'] = None
+            result['tfn_last_four'] = None
+        
+        if abn:
+            result['abn_encrypted'] = self.encrypt_abn(abn, validate)
+        else:
+            result['abn_encrypted'] = None
+        
+        if acn:
+            result['acn_encrypted'] = self.encrypt_acn(acn, validate)
+        else:
+            result['acn_encrypted'] = None
+        
+        if bsb and account_number:
+            result['bank_encrypted'] = self.encrypt_bank_account(bsb, account_number, validate)
+        else:
+            result['bank_encrypted'] = None
+        
+        return result
+    
+    def decrypt_client_sensitive_data(
+        self,
+        tfn_encrypted: Optional[str] = None,
+        abn_encrypted: Optional[str] = None,
+        acn_encrypted: Optional[str] = None,
+        bank_encrypted: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Decrypt all sensitive fields for a client profile.
+        
+        Returns dict with decrypted values.
+        """
+        result = {}
+        
+        if tfn_encrypted:
+            result['tfn'] = self.decrypt_tfn(tfn_encrypted)
+        
+        if abn_encrypted:
+            result['abn'] = self.decrypt_abn(abn_encrypted)
+        
+        if acn_encrypted:
+            result['acn'] = self.decrypt_acn(acn_encrypted)
+        
+        if bank_encrypted:
+            bank_data = self.decrypt_bank_account(bank_encrypted)
+            result['bsb'] = bank_data['bsb']
+            result['account_number'] = bank_data['account']
+        
+        return result
+
+
+# ==================== AUDIT LOGGING ====================
+
+def log_sensitive_access(
+    field_type: str,
+    action: str,
+    entity_id: str,
+    user_id: str,
+    success: bool,
+    reason: Optional[str] = None
+):
+    """
+    Log access to sensitive data for audit purposes.
+    
+    SECURITY: Never logs actual sensitive values.
+    
+    Args:
+        field_type: Type of field (tfn, abn, bank_details, etc.)
+        action: Type of access (encrypt, decrypt, view, update)
+        entity_id: ID of entity (client, profile, etc.)
+        user_id: User who performed the action
+        success: Whether the action succeeded
+        reason: Optional reason for access
+    """
+    field_name = SENSITIVE_FIELD_TYPES.get(field_type, field_type)
+    
+    # Structured log for audit trail
+    log_entry = {
+        "event": "sensitive_data_access",
+        "field_type": field_type,
+        "field_name": field_name,
+        "action": action,
+        "entity_id": entity_id,
+        "user_id": user_id,
+        "success": success,
+        "reason": reason,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if success:
+        logger.info(
+            f"Sensitive data access: {action} {field_name} for entity {entity_id} by {user_id}",
+            extra=log_entry
+        )
+    else:
+        logger.warning(
+            f"Sensitive data access FAILED: {action} {field_name} for entity {entity_id} by {user_id}",
+            extra=log_entry
+        )
+
+
+# ==================== MODULE-LEVEL CONVENIENCE FUNCTIONS ====================
+# (Keep existing functions for backwards compatibility)
+
