@@ -313,52 +313,37 @@ class ClientMatcher:
         limit: int = 5
     ) -> List[Dict[str, Any]]:
         """
-        Find by name similarity using trigram matching.
-        Requires pg_trgm extension.
+        Find by name similarity using ILIKE (more reliable than trigram).
         """
         try:
-            query = text("""
-                SELECT 
-                    id, client_code, display_name, abn, primary_contact_email, client_status,
-                    similarity(LOWER(display_name), LOWER(:name)) as sim
-                FROM public.client_profiles
-                WHERE client_status != 'archived'
-                AND similarity(LOWER(display_name), LOWER(:name)) > :threshold
-                ORDER BY sim DESC
-                LIMIT :limit
-            """)
-            result = await self.db.execute(query, {
-                'name': name,
-                'threshold': threshold,
-                'limit': limit
-            })
-            rows = result.fetchall()
-            
-            return [
-                {**dict(row._mapping), 'similarity': row.sim}
-                for row in rows
-            ]
-        except Exception as e:
-            # pg_trgm might not be available - fall back to ILIKE
-            logger.warning(f"Trigram search failed, using ILIKE: {e}")
-            
             query = text("""
                 SELECT id, client_code, display_name, abn, primary_contact_email, client_status
                 FROM public.client_profiles
                 WHERE client_status != 'archived'
                 AND LOWER(display_name) ILIKE :pattern
+                ORDER BY 
+                    CASE 
+                        WHEN LOWER(display_name) = LOWER(:exact_name) THEN 1
+                        WHEN LOWER(display_name) LIKE LOWER(:starts_with) THEN 2
+                        ELSE 3
+                    END
                 LIMIT :limit
             """)
             result = await self.db.execute(query, {
                 'pattern': f'%{name}%',
+                'exact_name': name,
+                'starts_with': f'{name}%',
                 'limit': limit
             })
             rows = result.fetchall()
             
             return [
-                {**dict(row._mapping), 'similarity': 0.5}
+                {**dict(row._mapping), 'similarity': 0.7 if name.lower() in str(row.display_name).lower() else 0.5}
                 for row in rows
             ]
+        except Exception as e:
+            logger.warning(f"Name similarity search failed: {e}")
+            return []
 
 
 # ==================== BUSINESS RULES ====================
