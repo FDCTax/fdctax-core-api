@@ -220,7 +220,7 @@ async def get_ingested_transactions(
     status: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
-    current_user: AuthUser = Depends(require_authenticated),
+    current_user: AuthUser = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db)
 ):
     """
