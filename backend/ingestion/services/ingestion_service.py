@@ -173,6 +173,11 @@ class IngestionService:
         ]
         if successful_ids:
             await self._queue_normalisation(batch_id, client_id, successful_ids)
+            # Commit the queue entry
+            try:
+                await self.db.commit()
+            except Exception as e:
+                logger.warning(f"Failed to commit normalisation queue: {e}")
         
         # Log batch completion
         log_ingestion_event(
