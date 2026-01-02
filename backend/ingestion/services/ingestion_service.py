@@ -339,22 +339,25 @@ class IngestionService:
         # Agent 8 will implement the actual processing
         
         try:
+            import json
+            queue_id = str(uuid.uuid4())
+            transaction_ids_json = json.dumps(transaction_ids)
+            
             query = text("""
                 INSERT INTO public.normalisation_queue (
                     id, batch_id, client_id, transaction_ids,
                     status, created_at
                 ) VALUES (
-                    :id, :batch_id, :client_id, :transaction_ids::jsonb,
+                    :id, :batch_id, :client_id, :transaction_ids,
                     'PENDING', NOW()
                 )
             """)
             
-            import json
             await self.db.execute(query, {
-                'id': str(uuid.uuid4()),
+                'id': queue_id,
                 'batch_id': batch_id,
                 'client_id': client_id,
-                'transaction_ids': json.dumps(transaction_ids)
+                'transaction_ids': transaction_ids_json
             })
             
             log_ingestion_event(
@@ -365,9 +368,8 @@ class IngestionService:
             )
             
         except Exception as e:
-            # If queue table doesn't exist, just log
-            # Agent 8 will create this table when implementing A8-INGEST-03
-            logger.info(f"Normalisation queue not available yet (A8-INGEST-03 dependency): {e}")
+            # Log but don't fail - normalisation can be triggered manually
+            logger.warning(f"Failed to queue normalisation: {e}")
     
     async def get_transactions_by_client(
         self,
