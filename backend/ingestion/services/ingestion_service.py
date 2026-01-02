@@ -278,12 +278,12 @@ class IngestionService:
             'business_percentage': transaction.business_percentage,
             'vendor': transaction.vendor,
             'receipt_number': transaction.receipt_number,
-            'attachments': json.dumps(attachments_json),
+            'attachments': attachments_json,
             'status': transaction.status.value if hasattr(transaction.status, 'value') else str(transaction.status),
             'error_message': transaction.error_message,
-            'audit': json.dumps(audit_json),
-            'raw_payload': json.dumps(transaction.raw_payload) if transaction.raw_payload else None,
-            'metadata': json.dumps(transaction.metadata) if transaction.metadata else None,
+            'audit': audit_json,
+            'raw_payload': raw_payload_json,
+            'metadata': metadata_json,
             'bookkeeping_transaction_id': transaction.bookkeeping_transaction_id
         })
         
