@@ -601,12 +601,20 @@ class ReconciliationService:
         if not row:
             return None
         
+        # Handle transaction_date which might be date object or string
+        txn_date = row[4]
+        if txn_date is not None:
+            if hasattr(txn_date, 'isoformat'):
+                txn_date = txn_date.isoformat()
+            else:
+                txn_date = str(txn_date)
+        
         return {
             "id": str(row[0]),
             "source": row[1],
             "source_transaction_id": row[2],
             "client_id": str(row[3]),
-            "transaction_date": row[4].isoformat() if row[4] else None,
+            "transaction_date": txn_date,
             "transaction_type": row[5],
             "amount": str(row[6]) if row[6] else "0",
             "gst_included": row[7],
