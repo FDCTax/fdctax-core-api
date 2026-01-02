@@ -358,6 +358,100 @@ async def link_crm_client(
     }
 
 
+# ==================== MERGE OPERATIONS (A3-12) ====================
+
+@router.post("/merge", response_model=MergeClientsResponse)
+async def merge_clients(
+    request: MergeClientsRequest,
+    service: InternalService = Depends(get_internal_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Merge two client accounts into one (Ticket A3-12).
+    
+    **Auth:** Internal Service Token (X-Internal-Api-Key header)
+    
+    **Merge Rules:**
+    1. Target is preserved as canonical record
+    2. All Core data from source moves to target
+    3. CRM references updated to point to target
+    4. MyFDC references updated to point to target
+    5. Source is archived (not deleted for audit trail)
+    
+    **Returns:**
+    - `merged_client_id`: The canonical client UUID after merge
+    - `records_moved`: Count of records moved per table
+    - `references_updated`: Count of updated references
+    - `success`: Whether merge completed successfully
+    """
+    logger.info(f"Merge request from {service.name}: {request.source_account_id} -> {request.target_account_id}")
+    
+    client_service = CoreClientService(db)
+    
+    result = await client_service.merge_clients(
+        source_client_id=request.source_account_id,
+        target_client_id=request.target_account_id,
+        service_name=service.name
+    )
+    
+    if not result.success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.error or "Merge failed"
+        )
+    
+    return MergeClientsResponse(
+        merged_client_id=result.merged_client_id,
+        source_client_id=result.source_client_id,
+        target_client_id=result.target_client_id,
+        records_moved=result.records_moved,
+        references_updated=result.references_updated,
+        success=result.success,
+        error=result.error
+    )
+
+
+@v1_router.post("/merge", response_model=MergeClientsResponse)
+async def merge_clients_v1(
+    request: MergeClientsRequest,
+    service: InternalService = Depends(get_internal_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    [V1] Merge two client accounts into one (Ticket A3-12).
+    
+    **Auth:** Internal Service Token (X-Internal-Api-Key header)
+    
+    Versioned alias of POST /api/clients/merge.
+    See that endpoint for full documentation.
+    """
+    logger.info(f"[V1] Merge request from {service.name}: {request.source_account_id} -> {request.target_account_id}")
+    
+    client_service = CoreClientService(db)
+    
+    result = await client_service.merge_clients(
+        source_client_id=request.source_account_id,
+        target_client_id=request.target_account_id,
+        service_name=service.name
+    )
+    
+    if not result.success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.error or "Merge failed"
+        )
+    
+    return MergeClientsResponse(
+        merged_client_id=result.merged_client_id,
+        source_client_id=result.source_client_id,
+        target_client_id=result.target_client_id,
+        records_moved=result.records_moved,
+        references_updated=result.references_updated,
+        success=result.success,
+        error=result.error
+    )
+
+
 # ==================== GOLDEN TEST CLIENT ====================
 
 @router.get("/golden/test-client")
