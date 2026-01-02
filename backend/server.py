@@ -334,6 +334,10 @@ api_router.include_router(lodgeit_router)  # LodgeIT export/import
 from routers.ingestion import router as ingestion_router
 api_router.include_router(ingestion_router)  # File upload/import pipeline
 
+# MyFDC Unified Ingestion (A3-INGEST-02)
+from ingestion.endpoints.myfdc_ingest import router as myfdc_ingestion_router
+api_router.include_router(myfdc_ingestion_router)  # MyFDC → Core ingestion pipeline
+
 # BAS Backend
 from routers.bas import router as bas_router
 api_router.include_router(bas_router)  # BAS history, PDF, sign-off
