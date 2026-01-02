@@ -707,16 +707,15 @@ class ReconciliationService:
         # TODO: Add dedicated bank_feed table when available
         query = text("""
             SELECT 
-                id, 'BANK' as target_type,
-                transaction_date as date, amount, description,
+                id::text, 'BANK' as target_type,
+                date as date, amount, description,
                 category as category_code, NULL as memo,
-                gst_amount, gst_included, NULL as attachments,
+                gst_amount, true as gst_included, NULL as attachments,
                 reference as reference
             FROM public.workpaper_transactions
             WHERE client_id = :client_id
-            AND transaction_date BETWEEN :start_date AND :end_date
-            AND NOT is_deleted
-            ORDER BY transaction_date DESC
+            AND date BETWEEN :start_date AND :end_date
+            ORDER BY date DESC
             LIMIT 200
         """)
         
@@ -761,19 +760,18 @@ class ReconciliationService:
         """Get all unmatched target transactions for a client."""
         query = text("""
             SELECT 
-                wt.id, 'BANK' as target_type,
-                wt.transaction_date as date, wt.amount, wt.description,
+                wt.id::text, 'BANK' as target_type,
+                wt.date as date, wt.amount, wt.description,
                 wt.category as category_code, NULL as memo,
-                wt.gst_amount, wt.gst_included, NULL as attachments,
+                wt.gst_amount, true as gst_included, NULL as attachments,
                 wt.reference as reference
             FROM public.workpaper_transactions wt
             LEFT JOIN public.reconciliation_matches rm 
                 ON rm.target_transaction_id = CAST(wt.id AS TEXT)
                 AND rm.match_status IN ('MATCHED', 'CONFIRMED')
             WHERE wt.client_id = :client_id
-            AND NOT wt.is_deleted
             AND rm.id IS NULL
-            ORDER BY wt.transaction_date DESC
+            ORDER BY wt.date DESC
             LIMIT 500
         """)
         
