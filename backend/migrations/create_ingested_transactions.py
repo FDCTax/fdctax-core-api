@@ -16,7 +16,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import text
-from database.connection import async_engine
+from database.connection import engine
 
 
 CREATE_TABLE_SQL = """
