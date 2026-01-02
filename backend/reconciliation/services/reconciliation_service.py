@@ -727,10 +727,11 @@ class ReconciliationService:
         start_date = txn_date - timedelta(days=14) if txn_date else date.today() - timedelta(days=30)
         end_date = txn_date + timedelta(days=14) if txn_date else date.today()
         
+        # Convert dates to ISO strings for asyncpg
         result = await self.db.execute(query, {
             "client_id": client_id,
-            "start_date": start_date,
-            "end_date": end_date
+            "start_date": str(start_date),
+            "end_date": str(end_date)
         })
         rows = result.fetchall()
         
