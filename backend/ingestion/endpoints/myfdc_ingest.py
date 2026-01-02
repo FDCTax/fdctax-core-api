@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.connection import get_db
-from middleware.auth import get_current_user, require_authenticated, AuthUser
+from middleware.auth import get_current_user_required, AuthUser
 from ingestion.services.ingestion_service import IngestionService
 
 logger = logging.getLogger(__name__)
