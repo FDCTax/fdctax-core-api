@@ -673,13 +673,22 @@ class ReconciliationService:
         result = await self.db.execute(query, params)
         rows = result.fetchall()
         
-        return [
-            {
+        transactions = []
+        for row in rows:
+            # Handle transaction_date which might be date object or string
+            txn_date = row[4]
+            if txn_date is not None:
+                if hasattr(txn_date, 'isoformat'):
+                    txn_date = txn_date.isoformat()
+                else:
+                    txn_date = str(txn_date)
+            
+            transactions.append({
                 "id": str(row[0]),
                 "source": row[1],
                 "source_transaction_id": row[2],
                 "client_id": str(row[3]),
-                "transaction_date": row[4].isoformat() if row[4] else None,
+                "transaction_date": txn_date,
                 "transaction_type": row[5],
                 "amount": str(row[6]) if row[6] else "0",
                 "gst_included": row[7],
@@ -692,9 +701,9 @@ class ReconciliationService:
                 "receipt_number": row[14],
                 "attachments": row[15] if row[15] else [],
                 "status": row[16]
-            }
-            for row in rows
-        ]
+            })
+        
+        return transactions
     
     async def _get_target_transactions(
         self,
