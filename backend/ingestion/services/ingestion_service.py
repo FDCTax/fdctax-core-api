@@ -199,12 +199,17 @@ class IngestionService:
     
     async def _store_transaction(self, transaction: IngestedTransaction) -> str:
         """Store a single transaction in the database."""
+        import json
         
         # Convert audit entries to JSON-serializable format
-        audit_json = [entry.to_dict() for entry in transaction.audit]
+        audit_json = json.dumps([entry.to_dict() for entry in transaction.audit])
         
         # Convert attachments to JSON-serializable format
-        attachments_json = [att.to_dict() for att in transaction.attachments]
+        attachments_json = json.dumps([att.to_dict() for att in transaction.attachments])
+        
+        # Serialize raw_payload and metadata
+        raw_payload_json = json.dumps(transaction.raw_payload) if transaction.raw_payload else None
+        metadata_json = json.dumps(transaction.metadata) if transaction.metadata else None
         
         query = text("""
             INSERT INTO public.ingested_transactions (
@@ -217,12 +222,12 @@ class IngestionService:
                 raw_payload, metadata, bookkeeping_transaction_id,
                 created_at, updated_at
             ) VALUES (
-                :id, :source, :source_transaction_id, :client_id,
+                :id, :source, :source_transaction_id, :client_id::uuid,
                 :ingested_at, :transaction_date, :transaction_type,
                 :amount, :currency, :gst_included, :gst_amount,
                 :description, :notes, :category_raw, :category_normalised, :category_code,
                 :business_percentage, :vendor, :receipt_number,
-                :attachments::jsonb, :status, :error_message, :audit::jsonb,
+                COALESCE(:attachments, '[]')::jsonb, :status, :error_message, COALESCE(:audit, '[]')::jsonb,
                 :raw_payload::jsonb, :metadata::jsonb, :bookkeeping_transaction_id,
                 NOW(), NOW()
             )
@@ -252,8 +257,6 @@ class IngestionService:
                 updated_at = NOW()
             RETURNING id
         """)
-        
-        import json
         
         result = await self.db.execute(query, {
             'id': transaction.id,
