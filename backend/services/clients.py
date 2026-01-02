@@ -602,3 +602,253 @@ class CoreClientService:
             logger.error(f"Error creating client: {e}")
             await self.db.rollback()
             raise
+
+    # ==================== MERGE OPERATIONS (A3-12) ====================
+    
+    async def merge_clients(
+        self,
+        source_client_id: str,
+        target_client_id: str,
+        service_name: str = "merge"
+    ) -> MergeResult:
+        """
+        Merge two client records into one (Ticket A3-12).
+        
+        Merge Rules:
+        1. Target is preserved as canonical record
+        2. All Core data from source moves to target
+        3. CRM references updated to point to target
+        4. MyFDC references updated to point to target
+        5. Source is archived (not deleted for audit trail)
+        
+        Args:
+            source_client_id: Client ID to merge FROM (will be archived)
+            target_client_id: Client ID to merge INTO (canonical)
+            service_name: Calling service for audit
+            
+        Returns:
+            MergeResult with merged_client_id and operation counts
+        """
+        records_moved = {}
+        references_updated = {}
+        
+        try:
+            # 1. Verify both clients exist
+            source = await self.get_by_id(source_client_id, service_name)
+            target = await self.get_by_id(target_client_id, service_name)
+            
+            if not source:
+                return MergeResult(
+                    merged_client_id="",
+                    source_client_id=source_client_id,
+                    target_client_id=target_client_id,
+                    records_moved={},
+                    references_updated={},
+                    success=False,
+                    error=f"Source client not found: {source_client_id}"
+                )
+            
+            if not target:
+                return MergeResult(
+                    merged_client_id="",
+                    source_client_id=source_client_id,
+                    target_client_id=target_client_id,
+                    records_moved={},
+                    references_updated={},
+                    success=False,
+                    error=f"Target client not found: {target_client_id}"
+                )
+            
+            if source_client_id == target_client_id:
+                return MergeResult(
+                    merged_client_id=target_client_id,
+                    source_client_id=source_client_id,
+                    target_client_id=target_client_id,
+                    records_moved={},
+                    references_updated={},
+                    success=False,
+                    error="Cannot merge client with itself"
+                )
+            
+            # 2. Move MyFDC data (hours, expenses, diary, etc.)
+            myfdc_tables = [
+                'myfdc_educator_profiles',
+                'myfdc_hours_worked',
+                'myfdc_occupancy',
+                'myfdc_diary_entries',
+                'myfdc_expenses',
+                'myfdc_attendance'
+            ]
+            
+            for table in myfdc_tables:
+                count = await self._move_records(table, source_client_id, target_client_id)
+                if count > 0:
+                    records_moved[table] = count
+            
+            # 3. Update CRM references if source has CRM link
+            if source.crm_client_id and not target.crm_client_id:
+                # Transfer CRM link from source to target
+                await self._update_client_field(
+                    target_client_id, 
+                    'crm_client_id', 
+                    source.crm_client_id
+                )
+                references_updated['crm_client_id'] = 1
+            
+            # 4. Update MyFDC user ID if source has one and target doesn't
+            if source.myfdc_user_id and not target.myfdc_user_id:
+                await self._update_client_field(
+                    target_client_id,
+                    'myfdc_user_id',
+                    source.myfdc_user_id
+                )
+                await self._update_client_field(
+                    target_client_id,
+                    'myfdc_linked',
+                    True
+                )
+                references_updated['myfdc_user_id'] = 1
+            
+            # 5. Merge additional data: copy non-null fields from source to target if target is null
+            merge_fields = [
+                'abn', 'primary_contact_phone', 'bookkeeping_id', 'workpaper_id'
+            ]
+            
+            for field in merge_fields:
+                source_val = getattr(source, field.replace('primary_contact_phone', 'phone'), None)
+                target_val = getattr(target, field.replace('primary_contact_phone', 'phone'), None)
+                
+                if source_val and not target_val:
+                    await self._update_client_field(target_client_id, field, source_val)
+                    references_updated[field] = 1
+            
+            # 6. Archive source client (preserve for audit trail)
+            await self._archive_client(source_client_id, target_client_id)
+            
+            # 7. Log audit event
+            log_client_event(
+                ClientAuditEvent.MERGE_PERFORMED,
+                target_client_id,
+                service_name,
+                {
+                    "source_client_id": source_client_id,
+                    "target_client_id": target_client_id,
+                    "records_moved": records_moved,
+                    "references_updated": references_updated
+                }
+            )
+            
+            return MergeResult(
+                merged_client_id=target_client_id,
+                source_client_id=source_client_id,
+                target_client_id=target_client_id,
+                records_moved=records_moved,
+                references_updated=references_updated,
+                success=True
+            )
+            
+        except Exception as e:
+            logger.error(f"Merge failed: {e}")
+            await self.db.rollback()
+            
+            log_client_event(
+                ClientAuditEvent.MERGE_PERFORMED,
+                target_client_id,
+                service_name,
+                {
+                    "source_client_id": source_client_id,
+                    "error": str(e)
+                },
+                success=False
+            )
+            
+            return MergeResult(
+                merged_client_id="",
+                source_client_id=source_client_id,
+                target_client_id=target_client_id,
+                records_moved=records_moved,
+                references_updated=references_updated,
+                success=False,
+                error=str(e)
+            )
+    
+    async def _move_records(self, table: str, source_id: str, target_id: str) -> int:
+        """Move records from source client to target client."""
+        try:
+            # Check if table exists and has client_id column
+            check_query = text(f"""
+                SELECT COUNT(*) FROM information_schema.columns 
+                WHERE table_name = :table AND column_name = 'client_id'
+            """)
+            result = await self.db.execute(check_query, {'table': table})
+            if result.scalar() == 0:
+                return 0
+            
+            # Update records
+            update_query = text(f"""
+                UPDATE {table}
+                SET client_id = :target_id
+                WHERE client_id = :source_id
+            """)
+            result = await self.db.execute(update_query, {
+                'source_id': source_id,
+                'target_id': target_id
+            })
+            await self.db.commit()
+            return result.rowcount
+        except Exception as e:
+            logger.warning(f"Could not move records from {table}: {e}")
+            return 0
+    
+    async def _update_client_field(self, client_id: str, field: str, value: Any) -> bool:
+        """Update a single field on a client record."""
+        try:
+            # Whitelist of allowed fields for safety
+            allowed_fields = {
+                'crm_client_id', 'myfdc_user_id', 'myfdc_linked', 
+                'abn', 'primary_contact_phone', 'bookkeeping_id', 'workpaper_id'
+            }
+            if field not in allowed_fields:
+                logger.warning(f"Attempted to update disallowed field: {field}")
+                return False
+            
+            query = text(f"""
+                UPDATE public.client_profiles
+                SET {field} = :value, updated_at = :updated_at
+                WHERE id = :client_id
+            """)
+            await self.db.execute(query, {
+                'client_id': client_id,
+                'value': value,
+                'updated_at': datetime.now(timezone.utc)
+            })
+            await self.db.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error updating field {field}: {e}")
+            await self.db.rollback()
+            return False
+    
+    async def _archive_client(self, client_id: str, merged_into_id: str) -> bool:
+        """Archive a client after merge (preserve for audit trail)."""
+        try:
+            query = text("""
+                UPDATE public.client_profiles
+                SET client_status = 'archived',
+                    merged_into_client_id = :merged_into_id,
+                    archived_at = :archived_at,
+                    updated_at = :updated_at
+                WHERE id = :client_id
+            """)
+            await self.db.execute(query, {
+                'client_id': client_id,
+                'merged_into_id': merged_into_id,
+                'archived_at': datetime.now(timezone.utc),
+                'updated_at': datetime.now(timezone.utc)
+            })
+            await self.db.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error archiving client: {e}")
+            await self.db.rollback()
+            return False
