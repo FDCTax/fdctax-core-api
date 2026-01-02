@@ -289,6 +289,8 @@ async def find_candidates(
         
         return result.to_dict()
         
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
