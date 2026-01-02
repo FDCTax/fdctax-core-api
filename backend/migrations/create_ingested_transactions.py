@@ -186,7 +186,7 @@ async def create_tables():
     """Create the ingested_transactions and ingestion_attachments tables."""
     print("Creating ingested_transactions and ingestion_attachments tables...")
     
-    async with async_engine.begin() as conn:
+    async with engine.begin() as conn:
         try:
             await conn.execute(text(CREATE_TABLE_SQL))
             print("✅ Tables created successfully!")
