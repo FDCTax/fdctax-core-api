@@ -162,6 +162,33 @@ class LinkOrCreateResult:
         }
 
 
+@dataclass
+class MergeResult:
+    """
+    Result of merge operation (Ticket A3-12).
+    
+    Merge unifies two client records into one, preserving target as canonical.
+    """
+    merged_client_id: str
+    source_client_id: str
+    target_client_id: str
+    records_moved: Dict[str, int]  # Count of moved records per table
+    references_updated: Dict[str, int]  # Count of updated references
+    success: bool
+    error: Optional[str] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "merged_client_id": self.merged_client_id,
+            "source_client_id": self.source_client_id,
+            "target_client_id": self.target_client_id,
+            "records_moved": self.records_moved,
+            "references_updated": self.references_updated,
+            "success": self.success,
+            "error": self.error
+        }
+
+
 # ==================== CLIENT SERVICE ====================
 
 class CoreClientService:
