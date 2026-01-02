@@ -132,7 +132,7 @@ class MyFDCIngestionResponse(BaseModel):
 @router.post("/myfdc", response_model=MyFDCIngestionResponse, status_code=status.HTTP_202_ACCEPTED)
 async def ingest_myfdc_transactions(
     request: MyFDCIngestionRequest,
-    current_user: AuthUser = Depends(require_authenticated),
+    current_user: AuthUser = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db)
 ):
     """
