@@ -276,6 +276,33 @@ https://fdctax-core-1.preview.emergentagent.com/api/vxt/webhook
   - Full test coverage (42/42 tests passed, minor bug fixed)
   - Internal auth configured via `INTERNAL_API_KEY` env var
 
+### Session 6: Reconciliation Engine (January 2, 2026)
+- ✅ **Reconciliation Engine (Ticket A3-RECON-01)** - Complete
+  - Core reconciliation service with configurable matching rules
+  - MyFDC recognized as valid transaction source for matching
+  - Weighted scoring algorithm: amount (35%), date (25%), category (15%), description (10%), GST (10%), attachment (5%)
+  - Auto-match threshold: 0.85, Suggest-match threshold: 0.60 (configurable per source)
+  - Match status lifecycle: PENDING → MATCHED/SUGGESTED/NO_MATCH → CONFIRMED/REJECTED
+  - Internal API key authentication for all protected endpoints
+  - Comprehensive audit logging for reconciliation events
+  - Full test coverage (29/29 tests passed)
+
+**Endpoints:**
+- `GET /api/reconciliation/status` - Module status (public)
+- `GET /api/reconciliation/sources` - List supported sources (public)
+- `POST /api/reconciliation/match` - Run reconciliation for a client
+- `POST /api/reconciliation/candidates/{client_id}` - Find match candidates
+- `GET /api/reconciliation/matches/{client_id}` - Get matches for a client
+- `GET /api/reconciliation/match/{match_id}` - Get single match
+- `POST /api/reconciliation/match/{match_id}/confirm` - Confirm a match
+- `POST /api/reconciliation/match/{match_id}/reject` - Reject a match
+- `GET /api/reconciliation/stats/{client_id}` - Get reconciliation statistics
+- `GET /api/reconciliation/suggested/{client_id}` - Get suggested matches for review
+
+**Database Tables:**
+- `reconciliation_matches` - Stores match records with scoring breakdown
+- `reconciliation_audit_log` - Audit trail for all reconciliation actions
+
 ### Session 5: Luna Service Migration Phase 4 (January 1, 2025)
 - ✅ **Business Logic Migration - Structural Phase**
   - Client validation utilities (ABN, ACN, TFN, email, phone)
