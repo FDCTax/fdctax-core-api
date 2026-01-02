@@ -277,3 +277,116 @@ async def get_ingested_transaction(
         "success": True,
         "transaction": transaction
     }
+
+
+# ==================== NORMALISATION ENDPOINTS (A3-INGEST-03) ====================
+
+@router.post("/normalisation/process")
+async def process_normalisation_queue(
+    batch_size: int = 10,
+    current_user: AuthUser = Depends(get_current_user_required),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Trigger normalisation queue processing.
+    
+    **Auth:** Standard Core JWT (staff or admin)
+    
+    **Processing:**
+    1. Fetches pending queue items
+    2. Loads corresponding transactions
+    3. Calls Agent 8 mapping engine
+    4. Updates transactions with mapping results
+    5. Transitions status to READY_FOR_BOOKKEEPING
+    
+    **Note:** This is a synchronous trigger. For production, use the
+    background worker: `python -m ingestion.workers.normalisation_worker`
+    """
+    # Check role (staff or admin only)
+    if current_user.role not in ("admin", "staff", "tax_agent"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only staff/admin can trigger normalisation"
+        )
+    
+    service = NormalisationService(db)
+    
+    try:
+        results = await service.process_queue(batch_size=batch_size)
+        
+        total_processed = sum(r.transactions_processed for r in results)
+        total_succeeded = sum(r.transactions_succeeded for r in results)
+        total_failed = sum(r.transactions_failed for r in results)
+        all_errors = []
+        for r in results:
+            all_errors.extend(r.errors)
+        
+        return {
+            "success": True,
+            "queue_items_processed": len(results),
+            "transactions_processed": total_processed,
+            "transactions_succeeded": total_succeeded,
+            "transactions_failed": total_failed,
+            "errors": all_errors if all_errors else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Normalisation processing failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Normalisation failed: {str(e)}"
+        )
+
+
+@router.post("/normalisation/transaction/{transaction_id}")
+async def normalise_single_transaction(
+    transaction_id: str,
+    current_user: AuthUser = Depends(get_current_user_required),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Normalise a single transaction (manual/retry).
+    
+    **Auth:** Standard Core JWT (staff or admin)
+    """
+    if current_user.role not in ("admin", "staff", "tax_agent"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only staff/admin can normalise transactions"
+        )
+    
+    service = NormalisationService(db)
+    
+    success = await service.process_single_transaction(transaction_id)
+    await db.commit()
+    
+    if success:
+        return {
+            "success": True,
+            "transaction_id": transaction_id,
+            "message": "Transaction normalised successfully"
+        }
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to normalise transaction"
+        )
+
+
+@router.get("/normalisation/stats")
+async def get_normalisation_stats(
+    current_user: AuthUser = Depends(get_current_user_required),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get normalisation queue statistics.
+    
+    **Auth:** Standard Core JWT
+    """
+    service = NormalisationService(db)
+    stats = await service.get_queue_stats()
+    
+    return {
+        "success": True,
+        "stats": stats
+    }
