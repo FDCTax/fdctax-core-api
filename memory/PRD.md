@@ -663,6 +663,15 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 │   │   ├── router.py           # API endpoints
 │   │   └── service.py          # Business logic
 │   ├── ingestion/              # Ingestion module
+│   ├── reconciliation/          # Reconciliation Engine module (NEW)
+│   │   ├── __init__.py
+│   │   ├── source_registry.py   # Source configuration
+│   │   ├── endpoints/           # API endpoints
+│   │   │   └── reconciliation_api.py
+│   │   ├── services/            # Business logic
+│   │   │   └── reconciliation_service.py
+│   │   └── matching_rules/      # Matching rule engines
+│   │       └── myfdc_rules.py
 │   ├── vxt/                    # VXT module
 │   ├── lodgeit_integration/    # LodgeIT module
 │   ├── email_integration/      # Email module (blocked by API key)
