@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional, List
 import aiohttp
 
 # Test configuration
-BASE_URL = "https://tax-sync-core.preview.emergentagent.com/api"
+BASE_URL = "https://fdctax-core-1.preview.emergentagent.com/api"
 
 # Test credentials
 STAFF_CREDENTIALS = {"email": "staff@fdctax.com", "password": "staff123"}

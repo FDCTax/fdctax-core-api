@@ -1,114 +1,31 @@
 <analysis>**original_problem_statement:**
-The user's objective is to build a FDC Tax Core + CRM Sync application. The project is ticket-driven, focusing on creating a unified backend (the Core service) to act as a single source of truth for client data across multiple applications (MyFDC, CRM, Bookkeeping, Workpapers).
+The user's objective is to build a FDC Tax Core + CRM Sync application. The project is ticket-driven, focusing on creating a unified backend (the Core service) to act as a single source of truth for client data, and to build out a full data ingestion and processing pipeline.
 
 **PRODUCT REQUIREMENTS:**
 The development is guided by a series of tickets. The main goals are:
-1.  **Identity Spine:** A unified identity model for user data.
-2.  **BAS Module:** A multi-step sign-off workflow for BAS statements.
-3.  **SMS Integration:** Real SMS sending via Twilio (proxied through Core).
-4.  **Core Module:** Foundational components for client profiles, TFN encryption, and internal service-to-service authentication.
-5.  **Luna Service Migration:** Structural migration of the legacy Luna service logic.
-6.  **Secret Authority Integration:** Implementation of verification endpoints and an audit of environment variables to ensure production secrets are handled by an external Secret Authority service.
-7.  **Encryption Integration:** Services to encrypt/decrypt sensitive data like TFNs.
-8.  **Tax Module Logic:** API endpoints for tax calculations.
-9.  **Core Client API (Ticket A3-1.4, A3-8):** Endpoints to allow other services (like MyFDC) to create new clients in Core or link to existing ones.
-10. **MyFDC Data Intake (Ticket A3-2):** Endpoints to receive and store various data points from the MyFDC application.
-11. **Bookkeeping Data Access (Ticket A3-3.3):** Endpoints for CRM to read MyFDC data.
-12. **Webhook Notifications (Ticket A3-4):** A system to notify CRM in real-time when new MyFDC data arrives.
-13. **Core SMS Proxy (Ticket A3-7):** A secure proxy to forward SMS requests from internal services to an external SMS agent.
+1.  **Identity Spine & Client Linking (A3-8, A3-03, A3-04, A3-05, A3-07, A3-08):** Implement and stabilize a versioned endpoint for MyFDC to link its users to Core clients, resolving deployment and configuration issues.
+2.  **Client Merge Logic (A3-12):** Implement functionality to merge two client accounts into a single canonical record.
+3.  **Unified Ingestion Schema (A3-INGEST-01):** Define a canonical data model for all inbound financial transactions.
+4.  **MyFDC Ingestion Endpoint (A3-INGEST-02):** Create an API endpoint to receive and store raw transaction data from the MyFDC application.
+5.  **Normalisation Processor (A3-INGEST-03):** Implement a queue-based system to process ingested transactions, calling a (mocked) external mapping engine to normalize data.
+6.  **Bookkeeping API (A3-BOOK-01):** Expose an API to allow the bookkeeping engine to consume clean, validated, and normalized transactions.
+7.  **Reconciliation Engine (A3-RECON-01):** Extend the core reconciliation engine to recognize MyFDC as a valid transaction source for matching against other financial data.
+8.  **OCR Integration (A1-OCR-02):** Investigate and plan for the integration of an OCR service.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack system with a FastAPI/PostgreSQL backend and a React frontend that currently serves only as an API-only placeholder page. The backend is extensively built out with several modules:
--   **Core Services:** Client profile management, data migration, and secure internal authentication.
--   **MyFDC Data Intake:** A full suite of endpoints () to accept and store educator profiles, hours, occupancy, expenses, etc. The corresponding database tables have been created.
--   **CRM Bookkeeping Access:** Read-only endpoints () for the CRM to retrieve all data submitted by MyFDC.
--   **Webhook System:** Endpoints for registering and managing webhooks () that trigger upon MyFDC data submission. Includes a delivery queue.
--   **SMS Proxy:** An internal proxy () to securely forward SMS requests from other services to an external Agent 5 service.
--   **Supporting Modules:** Services for tax calculations, encryption, and Secret Authority verification are implemented and tested.
--   A comprehensive ============================= test session starts ==============================
-platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0
-rootdir: /app
-plugins: asyncio-1.3.0, anyio-4.12.0
-asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 219 items / 6 errors
-
-==================================== ERRORS ====================================
-__________ ERROR collecting backend/tests/test_bookkeeping_access.py ___________
-ImportError while importing test module '/app/backend/tests/test_bookkeeping_access.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_bookkeeping_access.py:21: in <module>
-    from services.bookkeeping_access import (
-E   ModuleNotFoundError: No module named 'services'
-________________ ERROR collecting backend/tests/test_clients.py ________________
-ImportError while importing test module '/app/backend/tests/test_clients.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_clients.py:18: in <module>
-    from services.clients import (
-E   ModuleNotFoundError: No module named 'services'
-_____________ ERROR collecting backend/tests/test_myfdc_intake.py ______________
-ImportError while importing test module '/app/backend/tests/test_myfdc_intake.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_myfdc_intake.py:23: in <module>
-    from services.myfdc_intake import (
-E   ModuleNotFoundError: No module named 'services'
-_______________ ERROR collecting backend/tests/test_sms_proxy.py _______________
-ImportError while importing test module '/app/backend/tests/test_sms_proxy.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_sms_proxy.py:24: in <module>
-    from services.sms_proxy import (
-E   ModuleNotFoundError: No module named 'services'
-______________ ERROR collecting backend/tests/test_tax_modules.py ______________
-ImportError while importing test module '/app/backend/tests/test_tax_modules.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_tax_modules.py:12: in <module>
-    from services.tax_modules import (
-E   ModuleNotFoundError: No module named 'services'
-_______________ ERROR collecting backend/tests/test_webhooks.py ________________
-ImportError while importing test module '/app/backend/tests/test_webhooks.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_webhooks.py:23: in <module>
-    from services.webhook_service import (
-E   ModuleNotFoundError: No module named 'services'
-=========================== short test summary info ============================
-ERROR backend/tests/test_bookkeeping_access.py
-ERROR backend/tests/test_clients.py
-ERROR backend/tests/test_myfdc_intake.py
-ERROR backend/tests/test_sms_proxy.py
-ERROR backend/tests/test_tax_modules.py
-ERROR backend/tests/test_webhooks.py
-!!!!!!!!!!!!!!!!!!! Interrupted: 6 errors during collection !!!!!!!!!!!!!!!!!!!!
-============================== 6 errors in 1.24s =============================== suite covers all implemented modules.
+The application is a full-stack system with a FastAPI/PostgreSQL backend and a React frontend that serves as an API-only placeholder. The backend has been significantly expanded with a complete data ingestion pipeline:
+-   **Client Management:** Endpoints for creating, linking (), and merging () clients are implemented and tested. Internal authentication using a shared API key is enforced.
+-   **Unified Ingestion:** A new module () has been created. It includes a unified data schema, DB tables (, ), a transformer for MyFDC data, and an ingestion endpoint ().
+-   **Asynchronous Processing:** A normalisation pipeline has been implemented using a database table () as a queue. An endpoint () triggers a (mocked) worker that processes queued items and updates their status to .
+-   **Bookkeeping API:** A new API () exposes transactions that have successfully completed the ingestion and normalisation pipeline.
+-   **Reconciliation Engine:** The initial scaffolding for the reconciliation engine has been created, including DB tables and module structure.
 
 **Last working item**:
-The agent started work on Ticket A3-8, which requires an endpoint for the MyFDC application to link its users to Core clients. The agent discovered that a similar endpoint () already exists. The plan is to enhance the existing functionality to fully meet the ticket's requirements.
+The agent began implementing Ticket A3-RECON-01, which involves extending the Core Reconciliation Engine to support MyFDC as a transaction source.
 
--   **Last item agent was working:** Investigating the existing client linking implementation in  and  to prepare for enhancements as per Ticket A3-8.
+-   **Last item agent was working:** Setting up the foundational components for the Reconciliation Engine. The agent successfully created the necessary database tables (, ) and laid out the initial module structure by creating  and .
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
 -   **Which testing method agent to use?** backend testing agent
@@ -116,62 +33,75 @@ The agent started work on Ticket A3-8, which requires an endpoint for the MyFDC 
 
 **All Pending/In progress Issue list**:
 -   **Issue 1: Invalid Resend API Key for Email Module (P0)**
-    -   **Description:** The email sending functionality is complete but non-operational in the preview environment because the  is an invalid placeholder.
+    -   **Description:** The email sending functionality is complete but non-operational because the  is an invalid placeholder.
     -   **Status:** BLOCKED (on production deployment, where a valid key will be injected by Secret Authority). The agent should not attempt to fix this.
     -   **Is recurring issue?** Y
 
 -   **Issue 2: TFN Encryption Not Active in Preview (P1)**
-    -   **Description:** The encryption/decryption logic is fully implemented and tested, but it is not active in the preview environment because the  is missing from .
+    -   **Description:** The encryption/decryption logic is implemented but not active because the  is missing from .
     -   **Status:** BLOCKED (on production deployment, where the key will be injected by Secret Authority).
     -   **Is recurring issue?** Y
 
 -   **Issue 3: Database Migration Permissions (P1)**
-    -   **Description:** The application's database user () lacks privileges to create new schemas or run .
-    -   **Status:** BLOCKED (on infrastructure/DB admin). The agent must continue using the established workaround: creating tables via raw SQL in temporary Python scripts.
+    -   **Description:** The application's database user () lacks privileges for schema-level changes ().
+    -   **Status:** BLOCKED (on infrastructure/DB admin). The established workaround is creating tables via raw SQL in temporary Python scripts, which the agent has been following.
     -   **Is recurring issue?** Y
 
 **In progress Task List**:
--   **Task 1: Enhance Client Linking Endpoint (Ticket A3-8) (P0)**
-    -   **Where to resume:** The existing implementation in  and  is a good starting point.
-        1.  Add a new versioned alias endpoint at  in  that calls the existing service logic.
-        2.  Enhance the audit logging in  to create specific events for  and  actions, ensuring no PII is logged.
-        3.  Review and add to the existing test suite in  to ensure the new alias and logging enhancements are covered.
-    -   **What will be achieved with this?** A versioned, fully compliant endpoint for MyFDC to link users to Core clients, completing the primary data flow for the Golden Test Client.
+-   **Task 1: Implement Reconciliation Engine (Ticket A3-RECON-01) (P0)**
+    -   **Where to resume:** The database tables and initial module files are created. The next step is to implement the core logic.
+        1.  Implement the  in  to handle the matching logic.
+        2.  Implement the API endpoints (, ) in .
+        3.  Register the new router in .
+        4.  Create a comprehensive test suite to validate the matching rules and API behavior.
+    -   **What will be achieved with this?** MyFDC transactions will be recognized as a valid source for reconciliation, allowing them to be matched against bank feeds and other financial data, completing a major part of the data pipeline.
     -   **Status:** IN PROGRESS
     -   **Should Test frontend/backend/both after fix?** Backend
     -   **Blocked on something:** No
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **P0: Luna Service Migration (Full Logic):** Migrate the remaining business rules from the legacy Luna service into the new Core module endpoints.
-    -   **P1: Implement automatic webhook processing:** Currently, the webhook queue is processed by a manual API call (). This should be converted to a background task (e.g., using  or a separate worker).
-    -   **P1: Frontend for VXT Integration:** Build the UI to display call logs and transcripts.
-    -   **P2: Frontend for BAS Module:** Develop the UI for the new BAS workflow, history, and sign-off process.
+    -   **P0: Automate Queue Processing:** Convert the manual API triggers for the webhook queue () and the normalisation queue () into automated background tasks (e.g., using ).
+    -   **P1: Integrate with Agent 8's Mapping Engine:** Replace the mock normalisation logic in  with a real HTTP call to Agent 8's category mapping engine.
+    -   **P1: Core Access to OCR Service (A1-OCR-02):** Implement the client-side logic in Core to call the OCR service provided by Agent 5, and integrate it into the ingestion pipeline for enriching transactions with attachment data.
+    -   **P2: Frontend for VXT Integration & BAS Module:** Begin development on the UI for displaying call logs/transcripts and the BAS sign-off workflow.
 
 -   **Future Tasks:**
+    -   Migrate the remaining business rules from the legacy Luna service.
     -   Deprecate the old  table.
-    -   Migrate legacy file-based services (Audit, Calendly, Documents) to use PostgreSQL.
+    -   Refactor file-based services (Audit, Calendly) to use PostgreSQL.
     -   Refactor the document upload service to use cloud storage (e.g., S3).
 
 **Completed work in this session**
--   **MyFDC Data Intake (Ticket A3-2):** Implemented a full suite of endpoints () and corresponding database tables to receive data from the MyFDC app.
--   **CRM Bookkeeping Data Access (Ticket A3-3.3):** Implemented read-only endpoints () for the CRM to retrieve all MyFDC data stored in Core.
--   **Webhook Notification System (Ticket A3-4):** Created services, database tables, and endpoints () to notify external services (like CRM) in real-time when new MyFDC data is submitted.
--   **Core SMS Proxy (Ticket A3-7):** Implemented a secure internal proxy () to forward SMS requests to an external SMS service (Agent 5), centralizing authentication and logging.
--   **Pydantic Model Fix:** Resolved a  error by aliasing  to  in  to avoid a name conflict.
--   **Deployment Readiness Fixes:** Corrected a malformed  file and added production domains to the CORS configuration in .
+-   **Client Linking & Stabilization (Tickets A3-8, A3-03, A3-04, A3-05, A3-07, A3-08):** Implemented, tested, and stabilized the critical  endpoint, including fixing API key mismatches and cleaning up debug logs.
+-   **Client Merge Logic (Ticket A3-12):** Implemented  to unify duplicate client accounts.
+-   **Unified Ingestion Schema (Ticket A3-INGEST-01):** Created the canonical  model and corresponding database tables.
+-   **MyFDC Ingestion Endpoint (Ticket A3-INGEST-02):** Implemented  to receive and store raw transactions from MyFDC.
+-   **Normalisation Processor (Ticket A3-INGEST-03):** Created a service and (manually triggered) worker to process ingested transactions and update their status.
+-   **Bookkeeping API (Ticket A3-BOOK-01):** Implemented  to expose clean, bookkeeping-ready data to downstream services.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, PostgreSQL, SQLAlchemy Core.
--   **Testing:** ============================= test session starts ==============================
+-   **Ingestion Pipeline:** A new multi-step pipeline was built: Ingest () -> Queue for Normalisation ( table) -> Process Queue () -> Expose to Bookkeeping ().
+-   **Transformer Pattern:** The  factory is used to convert source-specific data (from MyFDC) into the canonical  schema.
+-   **Database as a Queue:** The  table is used as a simple, durable queue for asynchronous processing, which is currently triggered by a manual API call.
+-   **API Versioning:** A versioned endpoint () was added to provide a stable contract for the MyFDC service.
+
+**key DB schema**
+-   **ingested_transactions:** Stores all incoming transactions in the unified schema. Fields include , , , , , ,  (JSONB).
+-   **ingestion_attachments:** Stores metadata for files attached to transactions.
+-   **normalisation_queue:** A queue table to manage transactions waiting for category normalization.
+-   **reconciliation_runs, reconciliation_matches:** Tables to manage and audit the transaction reconciliation process.
+
+**changes in tech stack**
+-   No new libraries were added. The existing stack of FastAPI, PostgreSQL (via SQLAlchemy Core and ), and ============================= test session starts ==============================
 platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0
 rootdir: /app
 plugins: asyncio-1.3.0, anyio-4.12.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 219 items / 6 errors
+collected 247 items / 6 errors
 
 ==================================== ERRORS ====================================
 __________ ERROR collecting backend/tests/test_bookkeeping_access.py ___________
@@ -191,7 +121,7 @@ Traceback:
 /usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
     return _bootstrap._gcd_import(name[level:], package, level)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_clients.py:18: in <module>
+backend/tests/test_clients.py:19: in <module>
     from services.clients import (
 E   ModuleNotFoundError: No module named 'services'
 _____________ ERROR collecting backend/tests/test_myfdc_intake.py ______________
@@ -242,80 +172,60 @@ ERROR backend/tests/test_sms_proxy.py
 ERROR backend/tests/test_tax_modules.py
 ERROR backend/tests/test_webhooks.py
 !!!!!!!!!!!!!!!!!!! Interrupted: 6 errors during collection !!!!!!!!!!!!!!!!!!!!
-============================== 6 errors in 0.80s =============================== with . Test suites created for all new modules.
--   **Architecture:** Modular backend with routers, services, and models. Strong focus on internal, service-to-service authentication using a shared API key ().
--   **Secrets Management:** Dual approach where  is used for preview, and Secret Authority is expected for production.
--   **Database Management:** Schema changes are performed via raw SQL in Python scripts due to restrictive DB permissions.
--   **Event-Driven:** A webhook system was introduced to enable real-time notifications, moving away from a polling-based architecture.
--   **Service Proxy:** An internal SMS proxy was created to abstract away a third-party service and centralize control.
-
-**key DB schema**
--   **New Tables for MyFDC Intake:** , , , , , . All are linked to .
--   **New Tables for Webhooks:** , , .
-
-**changes in tech stack**
--   No new libraries were added, but  is used within the new  for making asynchronous HTTP requests.
+============================== 6 errors in 2.24s =============================== was used.
 
 **All files of reference**
--   **/app/backend/services/myfdc_intake.py**: Service for MyFDC data, updated to trigger webhooks.
--   **/app/backend/routers/myfdc_intake.py**: Router for MyFDC data endpoints.
--   **/app/backend/tests/test_myfdc_intake.py**: Tests for MyFDC endpoints.
--   **/app/backend/services/bookkeeping_access.py**: Service for CRM to read data.
--   **/app/backend/routers/bookkeeping_access.py**: Router for CRM data access endpoints.
--   **/app/backend/tests/test_bookkeeping_access.py**: Tests for CRM access endpoints.
--   **/app/backend/services/webhook_service.py**: Service to manage webhook logic.
--   **/app/backend/routers/webhooks.py**: Router for webhook management endpoints.
--   **/app/backend/tests/test_webhooks.py**: Tests for the webhook system.
--   **/app/backend/services/sms_proxy.py**: Service for the internal SMS proxy.
--   **/app/backend/routers/sms_proxy.py**: Router for the SMS proxy endpoints.
--   **/app/backend/tests/test_sms_proxy.py**: Tests for the SMS proxy.
--   **/app/backend/models/myfdc_data.py**: Pydantic models, updated to fix a date type conflict.
--   **/app/backend/server.py**: Main application file, updated to include all new routers.
--   **/app/backend/config.py**: Settings model, updated to include new environment variables.
--   **/app/backend/.env**: Environment variables, updated with new CORS and integration URLs.
--   **/app/.gitignore**: Fixed duplicated and malformed entries.
--   **/app/memory/PRD.md**: Updated extensively with all completed work.
+-   **/app/backend/ingestion/**: The entire new module for the ingestion pipeline.
+-   **/app/backend/reconciliation/**: The entire new module for the reconciliation engine.
+-   **/app/backend/migrations/create_*.py**: New migration scripts for all new tables.
+-   **/app/backend/routers/clients.py**: Modified to add  endpoint and merge logic.
+-   **/app/backend/services/clients.py**: Modified to add merge service logic.
+-   **/app/backend/tests/test_clients.py**: Updated with new tests for linking and merging.
+-   **/app/backend/.env**: Updated to support a secondary internal API key for backward compatibility during key rotation.
+-   **/app/backend/server.py**: Updated to mount all new routers for the ingestion and bookkeeping APIs.
 
 **Areas that need refactoring**:
--   The webhook queue processing is currently triggered by a manual API call to . This should be automated into a background task for a production-ready system.
--   The frontend application is still disabled. Any future UI work will require re-implementing the core React structure.
+-   The manual triggers for the webhook queue and the new normalisation queue should be automated into a persistent background task/worker for a production-ready system.
+-   The SQL queries in  were refactored to handle  parameter binding issues with JSONB/UUID types. The current solution works but relies on  in Python code, which is a common but less-than-ideal pattern.
 
 **key api endpoints**
--   : Create/update MyFDC data (educator profile, hours, expenses, etc.).
--   : Read-only access to all MyFDC data for a given client.
--   : Register, list, delete, and manage webhook subscriptions and queues.
--   : Send SMS messages via a secure internal proxy.
--   : (Existing) Link or create Core clients.
+-   : (New) Links or creates a Core client for an external service.
+-   : (New) Merges two client profiles into one.
+-   : (New) Ingests a batch of raw transactions from MyFDC.
+-   : (New) Manually triggers the processing of the normalisation queue.
+-   : (New) Fetches bookkeeping-ready transactions for a client.
+-   : (New) Fetches a single bookkeeping-ready transaction by its ID.
 
 **Critical Info for New Agent**
--   **Environment Dichotomy:** The preview environment is NOT the same as production. Secrets like  and  are intentionally missing from . Do not try to fix this.
--   **DB Permissions:** You do not have permissions to run  or . For any new tables, use the existing pattern of executing raw SQL within a temporary Python script.
--   **Frontend is Disabled:** The user explicitly requested the removal of all UI. The React app serves a simple API-only mode message.
--   **Manual Webhook Processing:** The webhook delivery queue is NOT processed automatically. You must call  to trigger it. A future task is to automate this.
+-   **Environment Dichotomy & DB Permissions:** The preview environment is NOT production. Secrets are missing by design, and you do not have  permissions. Continue using the SQL script pattern for migrations.
+-   **API Key Rotation:** The  was updated. The system now supports a comma-separated list in  for backward compatibility. The primary key for new services is .
+-   **Manual Queue Processing:** The entire ingestion pipeline is not fully automated. You must call  to ingest data, and then call  to trigger the next step.
+-   **Asyncpg Query Nuances:** When writing raw SQL with , be aware that  and  type casts do not work well with bind parameters. The established pattern is to perform data serialization (e.g., ) in the Python code before passing it to the  construct.
 
 **documents and test reports created in this job**
--   /app/backend/tests/test_myfdc_intake.py
--   /app/backend/tests/test_bookkeeping_access.py
--   /app/backend/tests/test_webhooks.py
--   /app/backend/tests/test_sms_proxy.py
+-   /app/test_reports/iteration_7.json
+-   /app/backend/migrations/create_ingested_transactions.py
+-   /app/backend/migrations/create_normalisation_queue.py
+-   /app/backend/migrations/create_reconciliation_tables.py
 -   /app/memory/PRD.md (updated multiple times)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Provided Ticket A3-8 for the Client Linking Endpoint. (IN PROGRESS)
-2.  **User:** Provided Ticket A3-7 for the Core SMS Proxy. (COMPLETED)
-3.  **User:** Requested a deployment health check. (COMPLETED, issues found and fixed)
-4.  **User:** Provided Ticket A3-4 for the Webhook Notification System. (COMPLETED)
-5.  **User:** Provided Ticket A3-3.3 for the CRM Bookkeeping Data Access Endpoints. (COMPLETED)
-6.  **User:** Interrupted the agent's  action to provide the next ticket.
-7.  **User:** Interrupted the agent's  action to provide the next ticket.
-8.  **User:** Responded to  with Continue with 3-2. Thank you. (COMPLETED)
+1.  **User:** Provided Ticket A3-12 for Merge Logic. (COMPLETED)
+2.  **User:** Provided Ticket A1-OCR-02 to investigate OCR integration. (IN PROGRESS - deferred)
+3.  **User:** Provided Ticket A3-INGEST-01 to define the Unified Ingestion Schema. (COMPLETED)
+4.  **User:** Provided Ticket A3-INGEST-02 to implement the MyFDC Ingestion Endpoint. (COMPLETED)
+5.  **User:** Provided Ticket A3-INGEST-03 to implement the Normalisation Queue Processor. (COMPLETED)
+6.  **User:** Provided Ticket A3-BOOK-01 to expose the Bookkeeping-Ready API. (COMPLETED)
+7.  **User:** Provided Ticket A3-RECON-01 to implement the Reconciliation Engine. (IN PROGRESS)
+8.  **User Messages (multiple):** A series of tickets were provided back-to-back as the agent completed them, driving the development of the entire ingestion pipeline.
 
 **Project Health Check:**
 -   **Broken:**
-    -   Real-time email sending () is non-functional in preview due to an invalid API key.
+    -   Real-time email sending () remains non-functional in preview due to an invalid API key.
 -   **Mocked:**
     -   TFN Encryption is non-functional in preview due to a missing .
-    -   The SMS Proxy service is functional, but its outbound requests to Agent 5 will fail as the target URL () likely points to a non-existent service in the preview environment. The service correctly handles this failure.
+    -   The SMS Proxy outbound requests will fail as the target URL is a placeholder.
+    -   The Normalisation Worker's call to Agent 8's mapping engine is currently mocked and returns a hardcoded category.
 
 **3rd Party Integrations**
 -   **PostgreSQL:** Primary database.
@@ -323,98 +233,17 @@ ERROR backend/tests/test_webhooks.py
 -   **Twilio:** Not used directly. An Agent 5 service is assumed to handle SMS, and the Core application acts as a secure proxy to it.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO (Agent used ============================= test session starts ==============================
-platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0
-rootdir: /app
-plugins: asyncio-1.3.0, anyio-4.12.0
-asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 219 items / 6 errors
-
-==================================== ERRORS ====================================
-__________ ERROR collecting backend/tests/test_bookkeeping_access.py ___________
-ImportError while importing test module '/app/backend/tests/test_bookkeeping_access.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_bookkeeping_access.py:21: in <module>
-    from services.bookkeeping_access import (
-E   ModuleNotFoundError: No module named 'services'
-________________ ERROR collecting backend/tests/test_clients.py ________________
-ImportError while importing test module '/app/backend/tests/test_clients.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_clients.py:18: in <module>
-    from services.clients import (
-E   ModuleNotFoundError: No module named 'services'
-_____________ ERROR collecting backend/tests/test_myfdc_intake.py ______________
-ImportError while importing test module '/app/backend/tests/test_myfdc_intake.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_myfdc_intake.py:23: in <module>
-    from services.myfdc_intake import (
-E   ModuleNotFoundError: No module named 'services'
-_______________ ERROR collecting backend/tests/test_sms_proxy.py _______________
-ImportError while importing test module '/app/backend/tests/test_sms_proxy.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_sms_proxy.py:24: in <module>
-    from services.sms_proxy import (
-E   ModuleNotFoundError: No module named 'services'
-______________ ERROR collecting backend/tests/test_tax_modules.py ______________
-ImportError while importing test module '/app/backend/tests/test_tax_modules.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_tax_modules.py:12: in <module>
-    from services.tax_modules import (
-E   ModuleNotFoundError: No module named 'services'
-_______________ ERROR collecting backend/tests/test_webhooks.py ________________
-ImportError while importing test module '/app/backend/tests/test_webhooks.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/usr/local/lib/python3.11/importlib/__init__.py:126: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-backend/tests/test_webhooks.py:23: in <module>
-    from services.webhook_service import (
-E   ModuleNotFoundError: No module named 'services'
-=========================== short test summary info ============================
-ERROR backend/tests/test_bookkeeping_access.py
-ERROR backend/tests/test_clients.py
-ERROR backend/tests/test_myfdc_intake.py
-ERROR backend/tests/test_sms_proxy.py
-ERROR backend/tests/test_tax_modules.py
-ERROR backend/tests/test_webhooks.py
-!!!!!!!!!!!!!!!!!!! Interrupted: 6 errors during collection !!!!!!!!!!!!!!!!!!!!
-============================== 6 errors in 0.48s =============================== and  extensively for all new modules).
+-   **Testing agent used after significant changes:** YES (For the client linking endpoint, Ticket A3-8. It found and fixed a UUID serialization bug).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
--   **Test files created:**
-    -   
-    -   
-    -   
-    -   
+-   **Test files created:** None, but  was significantly updated. The agent performed extensive manual  testing for all new ingestion pipeline endpoints.
 -   **Known regressions:** None.
 
 **Credentials to test flow:**
--   **Internal API Key:**  (for  header)
+-   **Internal API Key (Primary):** 
+-   **Internal API Key (Legacy):** 
 -   **Admin:**  / 
 -   **Staff (Bookkeeper):**  / 
--   **Tax Agent:**  / 
 -   **Client:**  / 
--   **Golden Test Client ID:** 
 
 **What agent forgot to execute**
--   The agent correctly followed all ticket requirements. The implementation of a manual trigger for webhook processing in Ticket A3-4 appears to be a deliberate, incremental step rather than an oversight, as it was tested. The next logical step, which is noted in the Upcoming Tasks, is to automate this process.</analysis>
+-   The agent correctly followed all ticket requirements in sequence. The implementation of manual triggers for queue processing appears to be a deliberate, incremental approach rather than an oversight, as it is noted as a future task to automate.</analysis>
