@@ -338,6 +338,10 @@ api_router.include_router(ingestion_router)  # File upload/import pipeline
 from ingestion.endpoints.myfdc_ingest import router as myfdc_ingestion_router
 api_router.include_router(myfdc_ingestion_router)  # MyFDC → Core ingestion pipeline
 
+# Bookkeeping-Ready Transactions (A3-BOOK-01)
+from ingestion.endpoints.bookkeeping_ready import router as bookkeeping_ready_router
+api_router.include_router(bookkeeping_ready_router)  # Bookkeeping-ready transaction API
+
 # BAS Backend
 from routers.bas import router as bas_router
 api_router.include_router(bas_router)  # BAS history, PDF, sign-off
