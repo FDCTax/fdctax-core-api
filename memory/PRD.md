@@ -628,11 +628,14 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 
 ## Upcoming Tasks
 
-### P0 - Luna Service Migration Phase 4 (Continued)
-1. **Receive Luna field mappings** - Awaiting additional field mapping documentation from user
-2. **Implement remaining business logic** - Tax calculation rules, compliance checks
-3. **Build sync mechanism** - Real-time or batch sync from Luna to Core
-4. **Integration testing** - End-to-end testing with actual Luna data
+### P0 - Automate Queue Processing
+1. Convert manual API triggers for webhook queue (`/api/webhooks/queue/process`) into automated background tasks
+2. Convert manual API triggers for normalisation queue (`/api/ingestion/process-normalisation-queue`) into automated background tasks
+3. Use FastAPI-Scheduler or similar for persistent background workers
+
+### P1 - External Integrations
+1. **Integrate with Agent 8's Mapping Engine** - Replace mock normalisation logic in `NormalisationService` with real HTTP call to Agent 8's category mapping engine
+2. **Core Access to OCR Service (A1-OCR-02)** - Implement client-side logic in Core to call OCR service provided by Agent 5, integrate into ingestion pipeline
 
 ### P1 - Frontend Development (On Hold)
 1. **VXT Phone UI** - Display call logs, transcripts, recordings, workpaper linking
