@@ -113,6 +113,36 @@ class LinkCRMRequest(BaseModel):
     crm_client_id: str = Field(..., description="CRM client ID")
 
 
+class MergeClientsRequest(BaseModel):
+    """
+    Request to merge two client accounts (Ticket A3-12).
+    
+    Source client will be merged INTO target client.
+    Target becomes the canonical record.
+    """
+    source_account_id: str = Field(..., description="Client ID to merge FROM (will be archived)")
+    target_account_id: str = Field(..., description="Client ID to merge INTO (canonical)")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "source_account_id": "550e8400-e29b-41d4-a716-446655440001",
+                "target_account_id": "550e8400-e29b-41d4-a716-446655440002"
+            }
+        }
+
+
+class MergeClientsResponse(BaseModel):
+    """Response from merge operation."""
+    merged_client_id: str = Field(..., description="The canonical client ID after merge")
+    source_client_id: str = Field(..., description="Client ID that was merged (now archived)")
+    target_client_id: str = Field(..., description="Client ID that was preserved")
+    records_moved: dict = Field(default_factory=dict, description="Count of moved records per table")
+    references_updated: dict = Field(default_factory=dict, description="Count of updated references")
+    success: bool = Field(..., description="Whether merge completed successfully")
+    error: Optional[str] = Field(None, description="Error message if failed")
+
+
 # ==================== ENDPOINTS ====================
 
 async def _execute_link_or_create(
