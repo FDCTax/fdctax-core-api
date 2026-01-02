@@ -43,6 +43,7 @@ class ClientAuditEvent:
     CLIENT_LIST = "client.list"
     CLIENT_UPDATED = "client.updated"
     CRM_LINKED = "client.crm_linked"
+    MERGE_PERFORMED = "merge.performed"  # A3-12: Client merge operation
 
 
 def log_client_event(
