@@ -391,6 +391,10 @@ api_router.include_router(webhooks_router)  # Webhook management endpoints
 from routers.sms_proxy import router as sms_proxy_router
 api_router.include_router(sms_proxy_router)  # SMS proxy endpoints
 
+# Reconciliation Engine (A3-RECON-01)
+from reconciliation.endpoints.reconciliation_api import router as reconciliation_router
+api_router.include_router(reconciliation_router)  # Reconciliation engine endpoints
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
