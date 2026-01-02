@@ -752,12 +752,21 @@ class ReconciliationService:
         })
         rows = result.fetchall()
         
-        return [
-            {
+        transactions = []
+        for row in rows:
+            # Handle date which might be date object or string
+            row_date = row[2]
+            if row_date is not None:
+                if hasattr(row_date, 'isoformat'):
+                    row_date = row_date.isoformat()
+                else:
+                    row_date = str(row_date)
+            
+            transactions.append({
                 "id": str(row[0]),
                 "target_type": row[1],
-                "date": row[2].isoformat() if row[2] else None,
-                "transaction_date": row[2].isoformat() if row[2] else None,
+                "date": row_date,
+                "transaction_date": row_date,
                 "amount": str(row[3]) if row[3] else "0",
                 "description": row[4],
                 "category_code": row[5],
@@ -766,9 +775,9 @@ class ReconciliationService:
                 "gst_included": row[8],
                 "attachments": row[9] if row[9] else [],
                 "reference": row[10]
-            }
-            for row in rows
-        ]
+            })
+        
+        return transactions
     
     async def _get_all_target_transactions(
         self,
