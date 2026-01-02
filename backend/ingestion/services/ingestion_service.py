@@ -211,6 +211,7 @@ class IngestionService:
         raw_payload_json = json.dumps(transaction.raw_payload) if transaction.raw_payload else None
         metadata_json = json.dumps(transaction.metadata) if transaction.metadata else None
         
+        # Use a simpler INSERT without type casts (asyncpg handles type inference)
         query = text("""
             INSERT INTO public.ingested_transactions (
                 id, source, source_transaction_id, client_id,
@@ -222,12 +223,12 @@ class IngestionService:
                 raw_payload, metadata, bookkeeping_transaction_id,
                 created_at, updated_at
             ) VALUES (
-                :id, :source, :source_transaction_id, :client_id::uuid,
+                :id::uuid, :source, :source_transaction_id, :client_id::uuid,
                 :ingested_at, :transaction_date, :transaction_type,
                 :amount, :currency, :gst_included, :gst_amount,
                 :description, :notes, :category_raw, :category_normalised, :category_code,
                 :business_percentage, :vendor, :receipt_number,
-                COALESCE(:attachments, '[]')::jsonb, :status, :error_message, COALESCE(:audit, '[]')::jsonb,
+                :attachments::jsonb, :status, :error_message, :audit::jsonb,
                 :raw_payload::jsonb, :metadata::jsonb, :bookkeeping_transaction_id,
                 NOW(), NOW()
             )
@@ -258,34 +259,39 @@ class IngestionService:
             RETURNING id
         """)
         
-        result = await self.db.execute(query, {
-            'id': transaction.id,
-            'source': transaction.source.value if hasattr(transaction.source, 'value') else str(transaction.source),
-            'source_transaction_id': transaction.source_transaction_id,
-            'client_id': transaction.client_id,
-            'ingested_at': transaction.ingested_at,
-            'transaction_date': transaction.transaction_date,
-            'transaction_type': transaction.transaction_type.value if hasattr(transaction.transaction_type, 'value') else str(transaction.transaction_type),
-            'amount': float(transaction.amount),
-            'currency': transaction.currency,
-            'gst_included': transaction.gst_included,
-            'gst_amount': float(transaction.gst_amount) if transaction.gst_amount else None,
-            'description': transaction.description,
-            'notes': transaction.notes,
-            'category_raw': transaction.category_raw,
-            'category_normalised': transaction.category_normalised,
-            'category_code': transaction.category_code,
-            'business_percentage': transaction.business_percentage,
-            'vendor': transaction.vendor,
-            'receipt_number': transaction.receipt_number,
-            'attachments': attachments_json,
-            'status': transaction.status.value if hasattr(transaction.status, 'value') else str(transaction.status),
-            'error_message': transaction.error_message,
-            'audit': audit_json,
-            'raw_payload': raw_payload_json,
-            'metadata': metadata_json,
-            'bookkeeping_transaction_id': transaction.bookkeeping_transaction_id
-        })
+        # Manually bind parameters with proper type handling
+        from sqlalchemy import bindparam
+        
+        result = await self.db.execute(
+            query.bindparams(
+                bindparam('id', value=transaction.id),
+                bindparam('source', value=transaction.source.value if hasattr(transaction.source, 'value') else str(transaction.source)),
+                bindparam('source_transaction_id', value=transaction.source_transaction_id),
+                bindparam('client_id', value=transaction.client_id),
+                bindparam('ingested_at', value=transaction.ingested_at),
+                bindparam('transaction_date', value=transaction.transaction_date),
+                bindparam('transaction_type', value=transaction.transaction_type.value if hasattr(transaction.transaction_type, 'value') else str(transaction.transaction_type)),
+                bindparam('amount', value=float(transaction.amount)),
+                bindparam('currency', value=transaction.currency),
+                bindparam('gst_included', value=transaction.gst_included),
+                bindparam('gst_amount', value=float(transaction.gst_amount) if transaction.gst_amount else None),
+                bindparam('description', value=transaction.description),
+                bindparam('notes', value=transaction.notes),
+                bindparam('category_raw', value=transaction.category_raw),
+                bindparam('category_normalised', value=transaction.category_normalised),
+                bindparam('category_code', value=transaction.category_code),
+                bindparam('business_percentage', value=transaction.business_percentage),
+                bindparam('vendor', value=transaction.vendor),
+                bindparam('receipt_number', value=transaction.receipt_number),
+                bindparam('attachments', value=attachments_json),
+                bindparam('status', value=transaction.status.value if hasattr(transaction.status, 'value') else str(transaction.status)),
+                bindparam('error_message', value=transaction.error_message),
+                bindparam('audit', value=audit_json),
+                bindparam('raw_payload', value=raw_payload_json),
+                bindparam('metadata', value=metadata_json),
+                bindparam('bookkeeping_transaction_id', value=transaction.bookkeeping_transaction_id),
+            )
+        )
         
         row = result.fetchone()
         return str(row[0]) if row else transaction.id
