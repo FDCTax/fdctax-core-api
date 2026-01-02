@@ -254,7 +254,7 @@ async def get_ingested_transactions(
 @router.get("/transaction/{transaction_id}")
 async def get_ingested_transaction(
     transaction_id: str,
-    current_user: AuthUser = Depends(require_authenticated),
+    current_user: AuthUser = Depends(get_current_user_required),
     db: AsyncSession = Depends(get_db)
 ):
     """
