@@ -200,6 +200,7 @@ class IngestionService:
     async def _store_transaction(self, transaction: IngestedTransaction) -> str:
         """Store a single transaction in the database."""
         import json
+        import uuid as uuid_module
         
         # Convert audit entries to JSON-serializable format
         audit_json = json.dumps([entry.to_dict() for entry in transaction.audit])
@@ -211,90 +212,116 @@ class IngestionService:
         raw_payload_json = json.dumps(transaction.raw_payload) if transaction.raw_payload else None
         metadata_json = json.dumps(transaction.metadata) if transaction.metadata else None
         
-        # Use a simpler INSERT without type casts (asyncpg handles type inference)
-        query = text("""
-            INSERT INTO public.ingested_transactions (
-                id, source, source_transaction_id, client_id,
-                ingested_at, transaction_date, transaction_type,
-                amount, currency, gst_included, gst_amount,
-                description, notes, category_raw, category_normalised, category_code,
-                business_percentage, vendor, receipt_number,
-                attachments, status, error_message, audit,
-                raw_payload, metadata, bookkeeping_transaction_id,
-                created_at, updated_at
-            ) VALUES (
-                :id::uuid, :source, :source_transaction_id, :client_id::uuid,
-                :ingested_at, :transaction_date, :transaction_type,
-                :amount, :currency, :gst_included, :gst_amount,
-                :description, :notes, :category_raw, :category_normalised, :category_code,
-                :business_percentage, :vendor, :receipt_number,
-                :attachments::jsonb, :status, :error_message, :audit::jsonb,
-                :raw_payload::jsonb, :metadata::jsonb, :bookkeeping_transaction_id,
-                NOW(), NOW()
-            )
-            ON CONFLICT (source, source_transaction_id, client_id) 
-            DO UPDATE SET
-                transaction_date = EXCLUDED.transaction_date,
-                transaction_type = EXCLUDED.transaction_type,
-                amount = EXCLUDED.amount,
-                gst_included = EXCLUDED.gst_included,
-                gst_amount = EXCLUDED.gst_amount,
-                description = EXCLUDED.description,
-                notes = EXCLUDED.notes,
-                category_raw = EXCLUDED.category_raw,
-                business_percentage = EXCLUDED.business_percentage,
-                vendor = EXCLUDED.vendor,
-                receipt_number = EXCLUDED.receipt_number,
-                attachments = EXCLUDED.attachments,
-                status = CASE 
-                    WHEN public.ingested_transactions.status IN ('NORMALISED', 'READY_FOR_BOOKKEEPING') 
-                    THEN public.ingested_transactions.status 
-                    ELSE EXCLUDED.status 
-                END,
-                error_message = EXCLUDED.error_message,
-                audit = public.ingested_transactions.audit || EXCLUDED.audit,
-                raw_payload = EXCLUDED.raw_payload,
-                metadata = EXCLUDED.metadata,
-                updated_at = NOW()
-            RETURNING id
+        # Convert string UUIDs to UUID objects for asyncpg
+        txn_uuid = uuid_module.UUID(transaction.id) if isinstance(transaction.id, str) else transaction.id
+        client_uuid = uuid_module.UUID(transaction.client_id) if isinstance(transaction.client_id, str) else transaction.client_id
+        
+        # Simple INSERT without ON CONFLICT for now (asyncpg issues with complex queries)
+        # Check if exists first
+        check_query = text("""
+            SELECT id FROM public.ingested_transactions 
+            WHERE source = :source AND source_transaction_id = :source_txn_id AND client_id = :client_id
         """)
+        existing = await self.db.execute(check_query, {
+            'source': transaction.source.value if hasattr(transaction.source, 'value') else str(transaction.source),
+            'source_txn_id': transaction.source_transaction_id,
+            'client_id': str(client_uuid)
+        })
+        existing_row = existing.fetchone()
         
-        # Manually bind parameters with proper type handling
-        from sqlalchemy import bindparam
-        
-        result = await self.db.execute(
-            query.bindparams(
-                bindparam('id', value=transaction.id),
-                bindparam('source', value=transaction.source.value if hasattr(transaction.source, 'value') else str(transaction.source)),
-                bindparam('source_transaction_id', value=transaction.source_transaction_id),
-                bindparam('client_id', value=transaction.client_id),
-                bindparam('ingested_at', value=transaction.ingested_at),
-                bindparam('transaction_date', value=transaction.transaction_date),
-                bindparam('transaction_type', value=transaction.transaction_type.value if hasattr(transaction.transaction_type, 'value') else str(transaction.transaction_type)),
-                bindparam('amount', value=float(transaction.amount)),
-                bindparam('currency', value=transaction.currency),
-                bindparam('gst_included', value=transaction.gst_included),
-                bindparam('gst_amount', value=float(transaction.gst_amount) if transaction.gst_amount else None),
-                bindparam('description', value=transaction.description),
-                bindparam('notes', value=transaction.notes),
-                bindparam('category_raw', value=transaction.category_raw),
-                bindparam('category_normalised', value=transaction.category_normalised),
-                bindparam('category_code', value=transaction.category_code),
-                bindparam('business_percentage', value=transaction.business_percentage),
-                bindparam('vendor', value=transaction.vendor),
-                bindparam('receipt_number', value=transaction.receipt_number),
-                bindparam('attachments', value=attachments_json),
-                bindparam('status', value=transaction.status.value if hasattr(transaction.status, 'value') else str(transaction.status)),
-                bindparam('error_message', value=transaction.error_message),
-                bindparam('audit', value=audit_json),
-                bindparam('raw_payload', value=raw_payload_json),
-                bindparam('metadata', value=metadata_json),
-                bindparam('bookkeeping_transaction_id', value=transaction.bookkeeping_transaction_id),
-            )
-        )
-        
-        row = result.fetchone()
-        return str(row[0]) if row else transaction.id
+        if existing_row:
+            # Update existing
+            update_query = text("""
+                UPDATE public.ingested_transactions SET
+                    transaction_date = :transaction_date,
+                    transaction_type = :transaction_type,
+                    amount = :amount,
+                    gst_included = :gst_included,
+                    gst_amount = :gst_amount,
+                    description = :description,
+                    notes = :notes,
+                    category_raw = :category_raw,
+                    business_percentage = :business_percentage,
+                    vendor = :vendor,
+                    receipt_number = :receipt_number,
+                    error_message = :error_message,
+                    updated_at = NOW()
+                WHERE id = :existing_id
+                RETURNING id
+            """)
+            result = await self.db.execute(update_query, {
+                'existing_id': str(existing_row[0]),
+                'transaction_date': transaction.transaction_date,
+                'transaction_type': transaction.transaction_type.value if hasattr(transaction.transaction_type, 'value') else str(transaction.transaction_type),
+                'amount': float(transaction.amount),
+                'gst_included': transaction.gst_included,
+                'gst_amount': float(transaction.gst_amount) if transaction.gst_amount else None,
+                'description': transaction.description,
+                'notes': transaction.notes,
+                'category_raw': transaction.category_raw,
+                'business_percentage': transaction.business_percentage,
+                'vendor': transaction.vendor,
+                'receipt_number': transaction.receipt_number,
+                'error_message': transaction.error_message,
+            })
+            row = result.fetchone()
+            return str(row[0]) if row else str(existing_row[0])
+        else:
+            # Insert new
+            insert_query = text("""
+                INSERT INTO public.ingested_transactions (
+                    id, source, source_transaction_id, client_id,
+                    ingested_at, transaction_date, transaction_type,
+                    amount, currency, gst_included, gst_amount,
+                    description, notes, category_raw, category_normalised, category_code,
+                    business_percentage, vendor, receipt_number,
+                    attachments, status, error_message, audit,
+                    raw_payload, metadata, bookkeeping_transaction_id,
+                    created_at, updated_at
+                ) VALUES (
+                    :id, :source, :source_transaction_id, :client_id,
+                    :ingested_at, :transaction_date, :transaction_type,
+                    :amount, :currency, :gst_included, :gst_amount,
+                    :description, :notes, :category_raw, :category_normalised, :category_code,
+                    :business_percentage, :vendor, :receipt_number,
+                    :attachments, :status, :error_message, :audit,
+                    :raw_payload, :metadata, :bookkeeping_transaction_id,
+                    NOW(), NOW()
+                )
+                RETURNING id
+            """)
+            
+            result = await self.db.execute(insert_query, {
+                'id': str(txn_uuid),
+                'source': transaction.source.value if hasattr(transaction.source, 'value') else str(transaction.source),
+                'source_transaction_id': transaction.source_transaction_id,
+                'client_id': str(client_uuid),
+                'ingested_at': transaction.ingested_at,
+                'transaction_date': transaction.transaction_date,
+                'transaction_type': transaction.transaction_type.value if hasattr(transaction.transaction_type, 'value') else str(transaction.transaction_type),
+                'amount': float(transaction.amount),
+                'currency': transaction.currency,
+                'gst_included': transaction.gst_included,
+                'gst_amount': float(transaction.gst_amount) if transaction.gst_amount else None,
+                'description': transaction.description,
+                'notes': transaction.notes,
+                'category_raw': transaction.category_raw,
+                'category_normalised': transaction.category_normalised,
+                'category_code': transaction.category_code,
+                'business_percentage': transaction.business_percentage,
+                'vendor': transaction.vendor,
+                'receipt_number': transaction.receipt_number,
+                'attachments': attachments_json,
+                'status': transaction.status.value if hasattr(transaction.status, 'value') else str(transaction.status),
+                'error_message': transaction.error_message,
+                'audit': audit_json,
+                'raw_payload': raw_payload_json,
+                'metadata': metadata_json,
+                'bookkeeping_transaction_id': transaction.bookkeeping_transaction_id,
+            })
+            
+            row = result.fetchone()
+            return str(row[0]) if row else transaction.id
     
     async def _queue_normalisation(
         self,
