@@ -27,7 +27,7 @@ from database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from middleware.internal_auth import get_internal_service, InternalService
 
-from services.clients import CoreClientService, CoreClient
+from services.clients import CoreClientService, CoreClient, MergeResult
 
 logger = logging.getLogger(__name__)
 
