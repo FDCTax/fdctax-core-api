@@ -218,7 +218,7 @@ async def create_tables():
 async def drop_tables():
     """Drop the tables (for testing)."""
     print("Dropping tables...")
-    async with async_engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.execute(text("DROP TABLE IF EXISTS public.ingestion_attachments CASCADE"))
         await conn.execute(text("DROP TABLE IF EXISTS public.ingested_transactions CASCADE"))
         print("✅ Tables dropped")
