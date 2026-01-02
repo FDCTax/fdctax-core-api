@@ -1014,7 +1014,7 @@ class ReconciliationService:
             "auto_matched": row[11],
             "user_confirmed": row[12],
             "confirmed_by": row[13],
-            "confirmed_at": row[14].isoformat() if row[14] else None,
-            "created_at": row[15].isoformat() if row[15] else None,
-            "updated_at": row[16].isoformat() if row[16] else None
+            "confirmed_at": row[14].isoformat() if row[14] and hasattr(row[14], 'isoformat') else (str(row[14]) if row[14] else None),
+            "created_at": row[15].isoformat() if row[15] and hasattr(row[15], 'isoformat') else (str(row[15]) if row[15] else None),
+            "updated_at": row[16].isoformat() if row[16] and hasattr(row[16], 'isoformat') else (str(row[16]) if row[16] else None)
         }
