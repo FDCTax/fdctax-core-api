@@ -24,10 +24,10 @@ if not DATABASE_URL:
 original_url = DATABASE_URL
 if DATABASE_URL.startswith('postgresql://') and '+asyncpg' not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
-    print(f"[DB] Converted postgresql:// to postgresql+asyncpg://")
+    print("[DB] Converted postgresql:// to postgresql+asyncpg://")
 elif DATABASE_URL.startswith('postgres://') and '+asyncpg' not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)
-    print(f"[DB] Converted postgres:// to postgresql+asyncpg://")
+    print("[DB] Converted postgres:// to postgresql+asyncpg://")
 
 # Verify the URL has asyncpg driver
 if '+asyncpg' not in DATABASE_URL:
