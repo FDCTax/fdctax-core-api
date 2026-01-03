@@ -284,18 +284,25 @@ async def _store_attachment(
     """Store attachment metadata in database."""
     try:
         attachment_id = attachment.id
+        now = datetime.now(timezone.utc)
+        
+        # Get uploaded_at as datetime object (not string)
+        uploaded_at = attachment.uploaded_at if attachment.uploaded_at else now
         
         query = text("""
             INSERT INTO public.ingestion_attachments (
                 id, client_id, file_name, file_type, file_size,
-                storage_path, ocr_status, ocr_result, uploaded_at
+                storage_path, ocr_status, ocr_result, uploaded_at,
+                created_at, updated_at
             ) VALUES (
                 :id, :client_id, :file_name, :file_type, :file_size,
-                :storage_path, :ocr_status, :ocr_result, :uploaded_at
+                :storage_path, :ocr_status, :ocr_result, :uploaded_at,
+                :created_at, :updated_at
             )
             ON CONFLICT (id) DO UPDATE SET
                 ocr_status = EXCLUDED.ocr_status,
-                ocr_result = EXCLUDED.ocr_result
+                ocr_result = EXCLUDED.ocr_result,
+                updated_at = EXCLUDED.updated_at
             RETURNING id
         """)
         
@@ -308,7 +315,9 @@ async def _store_attachment(
             "storage_path": attachment.storage_path,
             "ocr_status": attachment.ocr_status.value if hasattr(attachment.ocr_status, 'value') else str(attachment.ocr_status),
             "ocr_result": json.dumps(attachment.ocr_result) if attachment.ocr_result else None,
-            "uploaded_at": attachment.uploaded_at.isoformat() if attachment.uploaded_at else datetime.now(timezone.utc).isoformat()
+            "uploaded_at": uploaded_at,
+            "created_at": now,
+            "updated_at": now
         })
         
         row = result.fetchone()
