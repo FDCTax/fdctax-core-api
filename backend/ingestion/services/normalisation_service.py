@@ -289,16 +289,18 @@ class Agent8MappingClient:
         elif transaction_type == "EXPENSE":
             return MappingResult(
                 success=True,
-                category_normalised="Other Expense",
+                category_normalised="Other Expense - Pending Review",
                 category_code="6999",
-                confidence=0.3
+                confidence=0.2,
+                raw_response={"source": "preliminary_default", "needs_review": True}
             )
         
         return MappingResult(
             success=True,
-            category_normalised="Uncategorised",
+            category_normalised="Uncategorised - Pending Review",
             category_code="9999",
-            confidence=0.0
+            confidence=0.0,
+            raw_response={"source": "preliminary_uncategorised", "needs_review": True}
         )
 
 
