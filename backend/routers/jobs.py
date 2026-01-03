@@ -478,16 +478,23 @@ async def update_job(
     if "metadata" in updates:
         updates["metadata"] = json.dumps(updates["metadata"])
     
-    # Auto-set started_at when status changes to in_progress
+    # Auto-set started_at when status changes to in_progress (use SQL NOW())
+    auto_started = False
     if updates.get("status") == "in_progress":
-        updates["started_at"] = datetime.now(timezone.utc).isoformat()
+        auto_started = True
     
-    # Auto-set completed_at when status changes to completed
+    # Auto-set completed_at when status changes to completed (use SQL NOW())
+    auto_completed = False
     if updates.get("status") == "completed":
-        updates["completed_at"] = datetime.now(timezone.utc).isoformat()
+        auto_completed = True
     
     set_clauses = [f"{k} = :{k}" for k in updates.keys()]
     set_clauses.append("updated_at = NOW()")
+    
+    if auto_started:
+        set_clauses.append("started_at = COALESCE(started_at, NOW())")
+    if auto_completed:
+        set_clauses.append("completed_at = NOW()")
     
     query = text(f"""
         UPDATE public.jobs
