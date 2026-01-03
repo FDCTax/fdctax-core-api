@@ -330,13 +330,14 @@ api_router.include_router(import_router)  # Bank/OCR import
 from routers.lodgeit import router as lodgeit_router
 api_router.include_router(lodgeit_router)  # LodgeIT export/import
 
-# Bookkeeping Ingestion
-from routers.ingestion import router as ingestion_router
-api_router.include_router(ingestion_router)  # File upload/import pipeline
-
-# CRM Integration Endpoints (must be before myfdc_ingest for route priority)
+# CRM Integration Endpoints (MUST be before ingestion_router for route priority)
+# These endpoints support internal API key auth for CRM → Core communication
 from routers.crm_integration import router as crm_integration_router
 api_router.include_router(crm_integration_router)  # CRM-specific endpoints with internal API auth
+
+# Bookkeeping Ingestion (JWT auth - for UI access)
+from routers.ingestion import router as ingestion_router
+api_router.include_router(ingestion_router)  # File upload/import pipeline
 
 # MyFDC Unified Ingestion (A3-INGEST-02)
 from ingestion.endpoints.myfdc_ingest import router as myfdc_ingestion_router
