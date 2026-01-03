@@ -269,6 +269,12 @@ async def find_candidates(
     
     Requires internal API key authentication.
     """
+    # Validate client_id is a valid UUID
+    validated_client_id = validate_required_uuid(client_id, "client_id")
+    
+    # Validate source_transaction_id is a valid UUID
+    validated_source_id = validate_required_uuid(request.source_transaction_id, "source_transaction_id")
+    
     try:
         # Parse target type if provided
         target_type = None
@@ -276,15 +282,16 @@ async def find_candidates(
             try:
                 target_type = TargetType(request.target_type)
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid target_type. Valid values: {[t.value for t in TargetType]}"
+                raise_invalid_parameter(
+                    "target_type",
+                    f"Invalid target_type. Valid values: {[t.value for t in TargetType]}",
+                    request.target_type
                 )
         
         service = ReconciliationService(db)
         result = await service.find_candidates(
-            client_id=client_id,
-            source_transaction_id=request.source_transaction_id,
+            client_id=validated_client_id,
+            source_transaction_id=validated_source_id,
             target_type=target_type
         )
         
