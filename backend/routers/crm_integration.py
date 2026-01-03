@@ -22,7 +22,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.connection import get_db
-from utils.validation_errors import validate_optional_uuid, raise_missing_parameter
+from utils.validation_errors import validate_client_id, raise_missing_parameter
 
 logger = logging.getLogger(__name__)
 
