@@ -498,8 +498,25 @@ async def ingest_myfdc_transactions(
     **Auth:** Internal API Key (X-Internal-Api-Key header)
     
     **Request Body:**
-    - client_id: Core client ID
-    - transactions: List of transaction objects
+    ```json
+    {
+        "client_id": "uuid",
+        "transactions": [
+            {
+                "id": "MYFDC-001",
+                "transaction_date": "2026-01-03",
+                "transaction_type": "expense",
+                "amount": 150.00,
+                "gst_included": true,
+                "category": "Office Supplies",
+                "description": "Printer paper",
+                "vendor": "Officeworks",
+                "receipt_number": "INV-123",
+                "business_percentage": 100
+            }
+        ]
+    }
+    ```
     """
     from ingestion.services.ingestion_service import IngestionService
     
@@ -509,7 +526,7 @@ async def ingest_myfdc_transactions(
     if not client_id:
         raise HTTPException(status_code=400, detail="client_id is required")
     if not transactions:
-        raise HTTPException(status_code=400, detail="transactions list is required")
+        raise HTTPException(status_code=400, detail="transactions list is required and cannot be empty")
     
     service = IngestionService(db)
     
@@ -546,3 +563,238 @@ async def ingest_myfdc_transactions(
     except Exception as e:
         logger.error(f"MyFDC ingestion failed: {e}")
         raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+
+
+# ==================== DOCUMENT PREPARATION ENDPOINT ====================
+
+@router.post("/ingestion/prepare-document", summary="Prepare document for ingestion")
+async def prepare_document(
+    request: dict,
+    db: AsyncSession = Depends(get_db),
+    _auth: bool = Depends(verify_internal_auth)
+):
+    """
+    Prepare a document for ingestion (OCR or file parsing).
+    
+    **Auth:** Internal API Key (X-Internal-Api-Key header)
+    
+    **Request Body:**
+    ```json
+    {
+        "client_id": "uuid",
+        "document_url": "https://...",
+        "document_type": "receipt|invoice|bank_statement",
+        "transaction_id": "optional-uuid-to-link"
+    }
+    ```
+    
+    **Processing:**
+    1. Downloads the document
+    2. Determines document type (image → OCR, CSV/Excel → parse)
+    3. Extracts data based on type
+    4. Returns structured data ready for import
+    """
+    from ocr.services.ocr_service import ocr_service
+    
+    client_id = request.get("client_id")
+    document_url = request.get("document_url")
+    document_type = request.get("document_type", "receipt")
+    transaction_id = request.get("transaction_id")
+    
+    if not client_id:
+        raise HTTPException(status_code=400, detail="client_id is required")
+    if not document_url:
+        raise HTTPException(status_code=400, detail="document_url is required")
+    
+    # Determine processing method based on URL/type
+    url_lower = document_url.lower()
+    is_image = any(ext in url_lower for ext in ['.jpg', '.jpeg', '.png', '.webp', '.pdf'])
+    
+    if is_image or document_type in ['receipt', 'invoice']:
+        # Use OCR for images and receipts
+        if not ocr_service.validate_file_url(document_url):
+            raise HTTPException(status_code=400, detail="Invalid document URL")
+        
+        try:
+            ocr_result, attachment = await ocr_service.process_receipt(
+                file_url=document_url,
+                client_id=client_id,
+                transaction_id=transaction_id
+            )
+            
+            return {
+                "success": ocr_result.success,
+                "document_id": attachment.id if attachment else None,
+                "processing_type": "ocr",
+                "document_type": document_type,
+                "extracted_data": {
+                    "vendor": ocr_result.vendor,
+                    "amount": str(ocr_result.amount) if ocr_result.amount else None,
+                    "date": ocr_result.date,
+                    "description": ocr_result.description,
+                    "gst_amount": str(ocr_result.gst_amount) if ocr_result.gst_amount else None,
+                    "gst_included": ocr_result.gst_included,
+                    "items": ocr_result.items,
+                    "raw_text": ocr_result.raw_text,
+                    "confidence": ocr_result.confidence
+                } if ocr_result.success else None,
+                "error": ocr_result.error_message if not ocr_result.success else None,
+                "ready_for_import": ocr_result.success
+            }
+            
+        except Exception as e:
+            logger.error(f"Document preparation failed: {e}")
+            return {
+                "success": False,
+                "processing_type": "ocr",
+                "document_type": document_type,
+                "error": str(e),
+                "ready_for_import": False
+            }
+    else:
+        # For CSV/Excel, return info about the document
+        return {
+            "success": True,
+            "processing_type": "file_parse",
+            "document_type": document_type,
+            "message": "Document URL stored. Use /api/ingestion/upload to upload the file for parsing.",
+            "next_steps": [
+                "1. Download the document from document_url",
+                "2. POST to /api/ingestion/upload with the file",
+                "3. POST to /api/ingestion/parse with the batch_id",
+                "4. POST to /api/ingestion/import with column mappings"
+            ],
+            "ready_for_import": False
+        }
+
+
+# ==================== IMPORT ENDPOINT (Internal Auth) ====================
+
+@router.post("/ingestion/import", summary="Import transactions from batch")
+async def import_from_batch(
+    request: dict,
+    db: AsyncSession = Depends(get_db),
+    _auth: bool = Depends(verify_internal_auth)
+):
+    """
+    Import transactions from a parsed batch (internal API key auth).
+    
+    **Auth:** Internal API Key (X-Internal-Api-Key header)
+    
+    **Request Body:**
+    ```json
+    {
+        "batch_id": "uuid",
+        "column_mapping": {
+            "date": "Transaction Date",
+            "amount": "Amount",
+            "description": "Description",
+            "payee": "Merchant"
+        },
+        "skip_duplicates": true
+    }
+    ```
+    
+    **Alternative - Direct Transaction Import:**
+    ```json
+    {
+        "client_id": "uuid",
+        "transactions": [
+            {
+                "date": "2026-01-03",
+                "amount": -150.00,
+                "description": "Office supplies",
+                "payee": "Officeworks",
+                "category": "office_expenses"
+            }
+        ]
+    }
+    ```
+    """
+    from ingestion.service import ImportService
+    from ingestion.services.ingestion_service import IngestionService
+    
+    # Check which mode: batch import or direct import
+    batch_id = request.get("batch_id")
+    client_id = request.get("client_id")
+    transactions = request.get("transactions")
+    
+    if batch_id:
+        # Batch import mode - use existing ImportService
+        column_mapping = request.get("column_mapping", {})
+        skip_duplicates = request.get("skip_duplicates", True)
+        
+        if "date" not in column_mapping:
+            raise HTTPException(status_code=400, detail="column_mapping must include 'date'")
+        if "amount" not in column_mapping:
+            raise HTTPException(status_code=400, detail="column_mapping must include 'amount'")
+        
+        service = ImportService(db)
+        
+        try:
+            result = await service.import_transactions(
+                batch_id=batch_id,
+                column_mapping=column_mapping,
+                user_id="crm-service",
+                user_email="crm@internal.fdccore.com",
+                skip_duplicates=skip_duplicates
+            )
+            
+            return {
+                "success": True,
+                "import_type": "batch",
+                **result
+            }
+            
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            logger.error(f"Batch import failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+    
+    elif client_id and transactions:
+        # Direct transaction import mode - convert to MyFDC format
+        service = IngestionService(db)
+        
+        # Transform simple format to MyFDC format
+        myfdc_payloads = []
+        for i, txn in enumerate(transactions):
+            myfdc_payloads.append({
+                "id": txn.get("id", f"CRM-IMPORT-{i}"),
+                "transaction_date": txn.get("date"),
+                "transaction_type": "expense" if (txn.get("amount", 0) < 0) else "income",
+                "amount": abs(float(txn.get("amount", 0))),
+                "description": txn.get("description"),
+                "vendor": txn.get("payee") or txn.get("vendor"),
+                "category": txn.get("category"),
+                "gst_included": txn.get("gst_included", True),
+                "business_percentage": txn.get("business_percentage", 100)
+            })
+        
+        try:
+            result = await service.ingest_myfdc_batch(
+                client_id=client_id,
+                payloads=myfdc_payloads,
+                user_id="crm-service",
+                user_email="crm@internal.fdccore.com"
+            )
+            
+            return {
+                "success": result.error_count == 0,
+                "import_type": "direct",
+                "batch_id": result.batch_id,
+                "client_id": result.client_id,
+                "imported_count": result.ingested_count,
+                "error_count": result.error_count,
+                "errors": result.errors if result.errors else None
+            }
+            
+        except Exception as e:
+            logger.error(f"Direct import failed: {e}")
+            raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+    
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Request must include either 'batch_id' with 'column_mapping', or 'client_id' with 'transactions'"
+        )
