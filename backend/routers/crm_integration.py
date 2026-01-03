@@ -176,7 +176,7 @@ async def list_bookkeeping_transactions(
     # Resolve client_id to Core UUID (handles both UUID and CRM numeric IDs)
     if client_id:
         resolved_client_id = await resolve_client_id(db, client_id)
-        conditions.append("client_id = :client_id::uuid")
+        conditions.append("client_id = CAST(:client_id AS uuid)")
         params["client_id"] = resolved_client_id
     
     if status:
@@ -285,7 +285,7 @@ async def get_reconciliation_groups(
     # Resolve client_id to Core UUID (handles both UUID and CRM numeric IDs)
     if client_id:
         resolved_client_id = await resolve_client_id(db, client_id)
-        conditions.append("client_id = :client_id::uuid")
+        conditions.append("client_id = CAST(:client_id AS uuid)")
         params["client_id"] = resolved_client_id
     
     if status:
@@ -466,7 +466,7 @@ async def list_myfdc_imports(
     # Resolve client_id to Core UUID (handles both UUID and CRM numeric IDs)
     if client_id:
         resolved_client_id = await resolve_client_id(db, client_id)
-        conditions.append("client_id = :client_id::uuid")
+        conditions.append("client_id = CAST(:client_id AS uuid)")
         params["client_id"] = resolved_client_id
     
     where_clause = " AND ".join(conditions)
