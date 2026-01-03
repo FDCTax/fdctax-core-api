@@ -490,36 +490,3 @@ class SMSProxyService:
                 'status': 'error',
                 'error': str(e)[:100]
             }
-
-
-# ==================== MOCK SERVICE FOR TESTING ====================
-
-class MockSMSProxyService(SMSProxyService):
-    """
-    Mock SMS Proxy for testing when Agent 5 is not available.
-    
-    Returns successful responses without actually sending SMS.
-    """
-    
-    async def _forward_to_agent5(
-        self,
-        request: SMSSendRequest,
-        request_id: str
-    ) -> SMSProxyResponse:
-        """Mock implementation - always succeeds."""
-        # Simulate network delay
-        await asyncio.sleep(0.1)
-        
-        return SMSProxyResponse(
-            success=True,
-            message_id=f"mock-{request_id}",
-            status='sent'
-        )
-    
-    async def check_health(self) -> Dict[str, Any]:
-        """Mock health check - always healthy."""
-        return {
-            'agent5_status': 'healthy (mock)',
-            'agent5_available': True,
-            'mock_mode': True
-        }
