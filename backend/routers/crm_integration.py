@@ -62,6 +62,46 @@ def verify_internal_auth(x_internal_api_key: Optional[str] = Header(None, alias=
     return True
 
 
+async def resolve_client_id(db: AsyncSession, client_id: str) -> Optional[str]:
+    """
+    Resolve a client ID to a Core UUID.
+    
+    Accepts:
+    - UUID format: Returns as-is if valid
+    - Numeric format: Looks up by crm_client_id
+    
+    Returns None if client not found (allows empty result queries).
+    """
+    import uuid
+    
+    if not client_id:
+        return None
+    
+    # Check if it's a valid UUID
+    try:
+        uuid.UUID(client_id)
+        return client_id
+    except ValueError:
+        pass
+    
+    # Try to look up by crm_client_id
+    query = text("""
+        SELECT id::text FROM public.client_profiles
+        WHERE crm_client_id = :crm_id
+        LIMIT 1
+    """)
+    
+    result = await db.execute(query, {"crm_id": client_id})
+    row = result.fetchone()
+    
+    if row:
+        return row[0]
+    
+    # Return a placeholder UUID that won't match anything
+    # This allows the query to run but return empty results
+    return "00000000-0000-0000-0000-000000000000"
+
+
 # ==================== Response Models ====================
 
 class TransactionSummary(BaseModel):
