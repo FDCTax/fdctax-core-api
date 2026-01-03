@@ -704,6 +704,14 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 │   │   ├── router.py           # API endpoints
 │   │   └── service.py          # Business logic
 │   ├── ingestion/              # Ingestion module
+│   ├── ocr/                     # OCR Module (A3-OCR-01) (NEW)
+│   │   ├── __init__.py
+│   │   ├── endpoints/           # API endpoints
+│   │   │   └── ocr_api.py
+│   │   ├── services/            # Business logic
+│   │   │   └── ocr_service.py
+│   │   └── clients/             # External clients
+│   │       └── secret_authority.py
 │   ├── reconciliation/          # Reconciliation Engine module (NEW)
 │   │   ├── __init__.py
 │   │   ├── source_registry.py   # Source configuration
