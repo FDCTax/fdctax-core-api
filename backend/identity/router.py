@@ -129,6 +129,69 @@ async def get_identity_status():
     }
 
 
+# ==================== SIMPLE LINK ENDPOINT (CRM Compatibility) ====================
+
+class SimpleLinkRequest(BaseModel):
+    """Simple link request for CRM compatibility"""
+    myfdc_user_id: str = Field(..., description="MyFDC user ID")
+    email: EmailStr = Field(..., description="User email")
+    name: Optional[str] = Field(None, description="User name")
+
+
+@router.post("/link")
+async def simple_link(
+    request: SimpleLinkRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Simple link endpoint for CRM compatibility.
+    
+    Links a MyFDC user to the identity system.
+    This is a simplified alias for myfdc-signup.
+    
+    **No authentication required** (public endpoint)
+    """
+    service = IdentityService(db)
+    
+    # Parse name into first/last
+    first_name = None
+    last_name = None
+    if request.name:
+        parts = request.name.split(' ', 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else None
+    
+    try:
+        result = await service.myfdc_signup(
+            email=request.email,
+            password_hash=None,
+            first_name=first_name,
+            last_name=last_name,
+            mobile=None,
+            auth_provider="myfdc",
+            auth_provider_id=request.myfdc_user_id,
+            settings=None,
+            performed_by="identity_link"
+        )
+        
+        return {
+            "success": result.get("success", False),
+            "linked": result.get("existing_person", False),
+            "created": not result.get("existing_person", False),
+            "person_id": result.get("person_id"),
+            "myfdc_user_id": request.myfdc_user_id
+        }
+        
+    except Exception as e:
+        # If signup fails due to existing account, try to return the existing link
+        logger.warning(f"Link attempt for {request.email}: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "myfdc_user_id": request.myfdc_user_id
+        }
+
+
 @router.post("/myfdc-signup")
 async def myfdc_signup(
     request: MyFDCSignupRequest,
