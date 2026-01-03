@@ -29,7 +29,7 @@ from reconciliation.source_registry import (
     source_registry
 )
 from reconciliation.services.reconciliation_service import ReconciliationService
-from utils.validation_errors import validate_required_uuid, validate_optional_uuid, raise_invalid_parameter
+from utils.validation_errors import validate_required_uuid, validate_client_id, raise_invalid_parameter
 
 logger = logging.getLogger(__name__)
 
