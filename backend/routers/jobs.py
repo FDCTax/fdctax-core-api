@@ -414,6 +414,11 @@ async def create_job_full(
     """)
     
     try:
+        # Handle created_by - only set if it's a valid UUID
+        created_by = None
+        if auth.get("user_id") and auth.get("user_id") != "crm-service":
+            created_by = auth.get("user_id")
+        
         result = await db.execute(query, {
             "client_id": request.client_id,
             "name": request.name,
@@ -431,7 +436,7 @@ async def create_job_full(
             "metadata": json.dumps(request.metadata or {}),
             "parent_job_id": request.parent_job_id,
             "workpaper_job_id": request.workpaper_job_id,
-            "created_by": auth.get("user_id")
+            "created_by": created_by
         })
         
         row = result.fetchone()
