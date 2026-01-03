@@ -105,15 +105,19 @@ class BulkSMSResponseModel(BaseModel):
 
 def get_sms_service(db: AsyncSession) -> SMSProxyService:
     """
-    Get appropriate SMS service based on configuration.
+    Get SMS service instance.
     
-    Uses mock service if Agent 5 token is not configured.
+    Requires Agent 5 token to be configured.
+    Raises error if not configured - no mock fallback.
     """
     agent5_token = os.environ.get('AGENT5_SMS_TOKEN', '')
     
     if not agent5_token or agent5_token == 'agent5-internal-token-placeholder':
-        logger.warning("Using mock SMS service - Agent 5 not configured")
-        return MockSMSProxyService(db)
+        logger.error("SMS service unavailable - Agent 5 token not configured")
+        raise HTTPException(
+            status_code=503,
+            detail="SMS service unavailable - Agent 5 not configured"
+        )
     
     return SMSProxyService(db)
 
