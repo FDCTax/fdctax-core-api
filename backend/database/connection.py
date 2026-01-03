@@ -18,6 +18,15 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
+# Ensure asyncpg driver is used (fix for sync driver injection)
+# Convert postgresql:// to postgresql+asyncpg:// if needed
+if DATABASE_URL.startswith('postgresql://'):
+    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
+    logger.info("Converted DATABASE_URL to use asyncpg driver")
+elif DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)
+    logger.info("Converted DATABASE_URL to use asyncpg driver")
+
 # Create async engine with SSL
 engine = create_async_engine(
     DATABASE_URL,
