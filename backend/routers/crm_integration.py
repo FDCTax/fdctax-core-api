@@ -458,17 +458,16 @@ async def list_myfdc_imports(
     Returns summary of import batches with counts and status.
     
     **Filters:**
-    - client_id: Filter by specific client (accepts UUID or numeric format)
+    - client_id: Filter by specific client (accepts UUID or CRM numeric ID)
     """
-    # Validate client_id accepts both UUID (Core) and numeric (CRM) formats
-    validated_client_id = validate_client_id(client_id, "client_id", required=False)
-    
     conditions = ["source = 'MYFDC'"]
     params = {"limit": limit, "offset": offset}
     
-    if validated_client_id:
-        conditions.append("client_id = :client_id")
-        params["client_id"] = validated_client_id
+    # Resolve client_id to Core UUID (handles both UUID and CRM numeric IDs)
+    if client_id:
+        resolved_client_id = await resolve_client_id(db, client_id)
+        conditions.append("client_id = :client_id::uuid")
+        params["client_id"] = resolved_client_id
     
     where_clause = " AND ".join(conditions)
     
