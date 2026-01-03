@@ -122,7 +122,7 @@ async def list_bookkeeping_transactions(
     **Auth:** Internal API Key (X-Internal-Api-Key header)
     
     **Filters:**
-    - client_id: Filter by specific client
+    - client_id: Filter by specific client (must be valid UUID if provided)
     - status: Filter by status (READY_FOR_BOOKKEEPING, INGESTED, etc.)
     - source: Filter by source (MYFDC, OCR, etc.)
     
@@ -130,12 +130,15 @@ async def list_bookkeeping_transactions(
     - limit: Max results (1-500, default 100)
     - offset: Skip N records
     """
+    # Validate client_id is a valid UUID if provided
+    validated_client_id = validate_optional_uuid(client_id, "client_id")
+    
     conditions = []
     params = {"limit": limit, "offset": offset}
     
-    if client_id:
+    if validated_client_id:
         conditions.append("client_id = :client_id")
-        params["client_id"] = client_id
+        params["client_id"] = validated_client_id
     
     if status:
         conditions.append("status = :status")
