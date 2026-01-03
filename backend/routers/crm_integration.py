@@ -148,7 +148,7 @@ class ImportBatch(BaseModel):
 
 @router.get("/bookkeeping/transactions", summary="List bookkeeping transactions")
 async def list_bookkeeping_transactions(
-    client_id: Optional[str] = Query(None, description="Filter by client ID"),
+    client_id: Optional[str] = Query(None, description="Filter by client ID (UUID or CRM ID)"),
     status: Optional[str] = Query(None, description="Filter by status"),
     source: Optional[str] = Query(None, description="Filter by source"),
     limit: int = Query(100, ge=1, le=500),
@@ -162,7 +162,7 @@ async def list_bookkeeping_transactions(
     **Auth:** Internal API Key (X-Internal-Api-Key header)
     
     **Filters:**
-    - client_id: Filter by specific client (must be valid UUID if provided)
+    - client_id: Filter by specific client (accepts UUID or CRM numeric ID)
     - status: Filter by status (READY_FOR_BOOKKEEPING, INGESTED, etc.)
     - source: Filter by source (MYFDC, OCR, etc.)
     
@@ -170,15 +170,14 @@ async def list_bookkeeping_transactions(
     - limit: Max results (1-500, default 100)
     - offset: Skip N records
     """
-    # Validate client_id accepts both UUID (Core) and numeric (CRM) formats
-    validated_client_id = validate_client_id(client_id, "client_id", required=False)
-    
     conditions = []
     params = {"limit": limit, "offset": offset}
     
-    if validated_client_id:
-        conditions.append("client_id = :client_id")
-        params["client_id"] = validated_client_id
+    # Resolve client_id to Core UUID (handles both UUID and CRM numeric IDs)
+    if client_id:
+        resolved_client_id = await resolve_client_id(db, client_id)
+        conditions.append("client_id = :client_id::uuid")
+        params["client_id"] = resolved_client_id
     
     if status:
         conditions.append("status = :status")
