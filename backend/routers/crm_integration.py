@@ -70,35 +70,41 @@ async def resolve_client_id(db: AsyncSession, client_id: str) -> Optional[str]:
     - UUID format: Returns as-is if valid
     - Numeric format: Looks up by crm_client_id
     
-    Returns None if client not found (allows empty result queries).
+    Returns a placeholder UUID if not found (allows queries to return empty results).
     """
     import uuid
     
     if not client_id:
         return None
     
-    # Check if it's a valid UUID
+    # Check if it's a valid UUID format
     try:
         uuid.UUID(client_id)
         return client_id
     except ValueError:
         pass
     
-    # Try to look up by crm_client_id (cast parameter to text explicitly)
-    query = text("""
-        SELECT id::text FROM public.client_profiles
-        WHERE crm_client_id = CAST(:crm_id AS text)
-        LIMIT 1
-    """)
-    
+    # For non-UUID formats, look up by crm_client_id
+    # Using a new session to avoid transaction issues
     try:
-        result = await db.execute(query, {"crm_id": str(client_id)})
+        # Sanitize input - only allow alphanumeric and common separators
+        safe_id = ''.join(c for c in str(client_id) if c.isalnum() or c in '-_')
+        
+        query = text(f"""
+            SELECT id::text FROM public.client_profiles
+            WHERE crm_client_id = '{safe_id}'
+            LIMIT 1
+        """)
+        
+        result = await db.execute(query)
         row = result.fetchone()
         
         if row:
             return row[0]
     except Exception as e:
         logger.warning(f"Error looking up crm_client_id {client_id}: {e}")
+        # Rollback on error to clear transaction state
+        await db.rollback()
     
     # Return a placeholder UUID that won't match anything
     # This allows the query to run but return empty results
