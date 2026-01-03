@@ -20,6 +20,15 @@ load_dotenv(ROOT_DIR / '.env')
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# Ensure asyncpg driver is used (fix for sync driver injection)
+if DATABASE_URL:
+    if DATABASE_URL.startswith('postgresql://'):
+        DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
+        logger.info("Converted DATABASE_URL to use asyncpg driver")
+    elif DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)
+        logger.info("Converted DATABASE_URL to use asyncpg driver")
+
 
 async def create_tables():
     """Create all tables in the database"""
