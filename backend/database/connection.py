@@ -18,14 +18,22 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-# Ensure asyncpg driver is used (fix for sync driver injection)
-# Convert postgresql:// to postgresql+asyncpg:// if needed
-if DATABASE_URL.startswith('postgresql://'):
+# CRITICAL FIX: Ensure asyncpg driver is used
+# Production Secret Authority injects postgresql:// but we need postgresql+asyncpg://
+# This conversion MUST happen before create_async_engine is called
+original_url = DATABASE_URL
+if DATABASE_URL.startswith('postgresql://') and '+asyncpg' not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
-    logger.info("Converted DATABASE_URL to use asyncpg driver")
-elif DATABASE_URL.startswith('postgres://'):
+    print(f"[DB] Converted postgresql:// to postgresql+asyncpg://")
+elif DATABASE_URL.startswith('postgres://') and '+asyncpg' not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)
-    logger.info("Converted DATABASE_URL to use asyncpg driver")
+    print(f"[DB] Converted postgres:// to postgresql+asyncpg://")
+
+# Verify the URL has asyncpg driver
+if '+asyncpg' not in DATABASE_URL:
+    raise ValueError(f"DATABASE_URL must use asyncpg driver. Got: {DATABASE_URL[:50]}...")
+
+print(f"[DB] Using async driver: {DATABASE_URL.split('@')[0].split('/')[-1] if '@' in DATABASE_URL else 'asyncpg'}")
 
 # Create async engine with SSL
 engine = create_async_engine(
