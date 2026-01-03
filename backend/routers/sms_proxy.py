@@ -319,7 +319,7 @@ async def get_sms_proxy_status(
         "status": "operational",
         "version": "1.0.0",
         "agent5_configured": agent5_configured,
-        "mode": "live" if agent5_configured else "mock",
+        "mode": "live" if agent5_configured else "unavailable",
         "config": {
             "max_retries": int(os.environ.get('AGENT5_SMS_MAX_RETRIES', '3')),
             "timeout_seconds": int(os.environ.get('AGENT5_SMS_TIMEOUT', '30')),

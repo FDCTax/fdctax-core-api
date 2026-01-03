@@ -546,7 +546,7 @@ class NormalisationService:
                 "category_normalised": category_normalised,
                 "category_code": category_code,
                 "confidence": confidence,
-                "mapper": "agent8_mock"  # Will be "agent8" when live
+                "mapper": "preliminary"  # Pending Agent 8 integration
             }
         }
         

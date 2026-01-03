@@ -11,8 +11,7 @@ from services.auth import (
     ChangePasswordRequest,
     Token,
     AuthUser,
-    UserRole,
-    seed_test_users
+    UserRole
 )
 from middleware.auth import (
     get_current_user_required,
