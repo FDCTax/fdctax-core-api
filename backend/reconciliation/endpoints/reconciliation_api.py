@@ -407,9 +407,12 @@ async def get_match(
     
     Requires internal API key authentication.
     """
+    # Validate match_id is a valid UUID
+    validated_match_id = validate_required_uuid(match_id, "match_id")
+    
     try:
         service = ReconciliationService(db)
-        match = await service.get_match(match_id)
+        match = await service.get_match(validated_match_id)
         
         if not match:
             raise HTTPException(status_code=404, detail="Match not found")
@@ -437,10 +440,13 @@ async def confirm_match(
     
     Requires internal API key authentication.
     """
+    # Validate match_id is a valid UUID
+    validated_match_id = validate_required_uuid(match_id, "match_id")
+    
     try:
         service = ReconciliationService(db)
         result = await service.confirm_match(
-            match_id=match_id,
+            match_id=validated_match_id,
             user_id=x_user_id
         )
         
@@ -472,10 +478,13 @@ async def reject_match(
     
     Requires internal API key authentication.
     """
+    # Validate match_id is a valid UUID
+    validated_match_id = validate_required_uuid(match_id, "match_id")
+    
     try:
         service = ReconciliationService(db)
         result = await service.reject_match(
-            match_id=match_id,
+            match_id=validated_match_id,
             user_id=x_user_id,
             reason=request.reason
         )
