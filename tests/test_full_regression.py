@@ -575,12 +575,13 @@ class TestReconciliationConfirm:
     def test_reconciliation_confirm_match(self):
         """POST /api/reconciliation/match/{match_id}/confirm - Confirm a match (Feature 12)"""
         headers = {"X-Internal-Api-Key": INTERNAL_API_KEY}
-        # Use a fake match ID - should return 404 or 400
+        # Use a valid UUID format for match_id - should return 404 for non-existent match
+        fake_match_id = str(uuid.uuid4())
         response = requests.post(
-            f"{BASE_URL}/api/reconciliation/match/fake-match-id/confirm",
+            f"{BASE_URL}/api/reconciliation/match/{fake_match_id}/confirm",
             headers=headers
         )
-        # Should return 404 for non-existent match
+        # Should return 404 for non-existent match, or 500 if error
         assert response.status_code in [404, 400, 500]
         print(f"✓ Reconciliation confirm match (non-existent): {response.status_code}")
 
