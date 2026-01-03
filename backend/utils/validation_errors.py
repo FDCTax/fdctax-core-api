@@ -192,3 +192,51 @@ def validate_optional_uuid(value: Optional[str], parameter: str) -> Optional[str
             f"{parameter} must be a valid UUID format",
             value
         )
+
+
+def validate_client_id(value: Optional[str], parameter: str = "client_id", required: bool = False) -> Optional[str]:
+    """
+    Validate client_id parameter - accepts both UUID format (Core) and numeric format (CRM).
+    
+    The Core system uses UUIDs for client IDs, but CRM may pass numeric IDs.
+    This function accepts both formats to maintain compatibility.
+    
+    Args:
+        value: The value to validate (can be None if not required)
+        parameter: Name of the parameter for error messages
+        required: Whether the parameter is required
+        
+    Returns:
+        The validated value or None (if not required and not provided)
+        
+    Raises:
+        HTTPException with structured error if required and not provided
+    """
+    import uuid
+    
+    if not value:
+        if required:
+            raise_missing_parameter(parameter)
+        return None
+    
+    # Accept UUID format
+    try:
+        uuid.UUID(value)
+        return value
+    except ValueError:
+        pass
+    
+    # Accept numeric format (CRM client IDs)
+    if value.isdigit():
+        return value
+    
+    # Accept alphanumeric format (for flexibility)
+    if value.replace('-', '').replace('_', '').isalnum():
+        return value
+    
+    # Invalid format
+    raise_invalid_parameter(
+        parameter,
+        f"{parameter} must be a valid UUID or numeric ID",
+        value
+    )
