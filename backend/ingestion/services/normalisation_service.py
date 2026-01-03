@@ -207,10 +207,16 @@ class Agent8MappingClient:
                     
         except Exception as e:
             logger.error(f"Agent 8 mapping call failed: {e}")
-            # Fall back to mock mapping
-            return await self._mock_mapping(raw_category, description, amount, transaction_type)
+            # Return error - no silent fallback
+            return MappingResult(
+                success=False,
+                error=f"Agent 8 service unavailable: {str(e)}",
+                category_normalised="PENDING_REVIEW",
+                category_code="0000",
+                confidence=0.0
+            )
     
-    async def _mock_mapping(
+    async def _preliminary_categorisation(
         self,
         raw_category: str,
         description: Optional[str],
@@ -218,61 +224,67 @@ class Agent8MappingClient:
         transaction_type: Optional[str]
     ) -> MappingResult:
         """
-        Mock mapping for development/testing.
+        Preliminary keyword-based categorisation.
         
-        Uses a simple keyword-based matching approach.
-        Production mapping should use Agent 8's ML-based service.
+        Used when Agent 8 is not available.
+        Returns real accounting categories but marks them as preliminary.
+        All results have reduced confidence to indicate they need review.
         """
         if not raw_category:
             return MappingResult(
                 success=True,
                 category_normalised="Uncategorised",
                 category_code="9999",
-                confidence=0.0
+                confidence=0.0,
+                raw_response={"source": "preliminary", "needs_review": True}
             )
         
         # Normalise for lookup
         lookup_key = raw_category.lower().strip()
         
-        # Direct match
-        if lookup_key in self._mock_mappings:
-            normalised, code = self._mock_mappings[lookup_key]
+        # Direct match in standard categories
+        if lookup_key in self._standard_categories:
+            normalised, code = self._standard_categories[lookup_key]
             return MappingResult(
                 success=True,
                 category_normalised=normalised,
                 category_code=code,
-                confidence=1.0
+                confidence=0.7,  # Reduced confidence - needs Agent 8 verification
+                raw_response={"source": "preliminary_direct", "needs_review": True}
             )
         
         # Partial match
-        for key, (normalised, code) in self._mock_mappings.items():
+        for key, (normalised, code) in self._standard_categories.items():
             if key in lookup_key or lookup_key in key:
                 return MappingResult(
                     success=True,
                     category_normalised=normalised,
                     category_code=code,
-                    confidence=0.8
+                    confidence=0.5,  # Lower confidence for partial match
+                    raw_response={"source": "preliminary_partial", "needs_review": True}
                 )
         
         # Check description for hints
         if description:
             desc_lower = description.lower()
-            for key, (normalised, code) in self._mock_mappings.items():
+            for key, (normalised, code) in self._standard_categories.items():
                 if key in desc_lower:
                     return MappingResult(
                         success=True,
                         category_normalised=normalised,
                         category_code=code,
-                        confidence=0.6
+                        confidence=0.4,  # Low confidence for description-based
+                        raw_response={"source": "preliminary_description", "needs_review": True}
                     )
         
         # Default based on transaction type
         if transaction_type == "INCOME":
             return MappingResult(
                 success=True,
-                category_normalised="Other Income",
+                category_normalised="Other Income - Pending Review",
                 category_code="4999",
-                confidence=0.3
+                confidence=0.2,
+                raw_response={"source": "preliminary_default", "needs_review": True}
             )
         elif transaction_type == "EXPENSE":
             return MappingResult(
