@@ -162,8 +162,9 @@ class Agent8MappingClient:
                 raw_category, description, amount, transaction_type, metadata
             )
         
-        # Otherwise, use mock mapping
-        return await self._mock_mapping(
+        # Without Agent 8, use keyword-based preliminary categorisation
+        # This returns real categories but marks them as needing review
+        return await self._preliminary_categorisation(
             raw_category, description, amount, transaction_type
         )
     
