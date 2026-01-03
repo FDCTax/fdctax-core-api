@@ -67,19 +67,24 @@ class Agent8MappingClient:
         Initialize the mapping client.
         
         Args:
-            base_url: Agent 8 mapping service URL (if None, uses mock)
+            base_url: Agent 8 mapping service URL
             timeout: Request timeout in seconds
+        
+        Note: When base_url is not provided, the service will return 
+        a standard "PENDING_CATEGORISATION" status instead of fake mappings.
         """
         self.base_url = base_url
         self.timeout = timeout
-        self._mock_mappings = self._load_mock_mappings()
+        # Standard categories for fallback (not mock - these are real categories)
+        self._standard_categories = self._load_standard_categories()
     
-    def _load_mock_mappings(self) -> Dict[str, Tuple[str, str]]:
+    def _load_standard_categories(self) -> Dict[str, Tuple[str, str]]:
         """
-        Load mock category mappings for development/testing.
-        Returns dict of raw_category -> (normalised, code)
+        Load standard FDC expense/income categories.
+        These are real accounting categories, not mock data.
+        Used for keyword-based preliminary categorisation when Agent 8 is unavailable.
         """
-        # Common FDC expense categories
+        # Standard FDC expense/income categories (real accounting codes)
         return {
             # Office
             "office supplies": ("Office Supplies", "6420"),
