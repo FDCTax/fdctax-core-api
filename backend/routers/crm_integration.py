@@ -420,10 +420,10 @@ async def list_myfdc_imports(
     Returns summary of import batches with counts and status.
     
     **Filters:**
-    - client_id: Filter by specific client (must be valid UUID if provided)
+    - client_id: Filter by specific client (accepts UUID or numeric format)
     """
-    # Validate client_id is a valid UUID if provided
-    validated_client_id = validate_optional_uuid(client_id, "client_id")
+    # Validate client_id accepts both UUID (Core) and numeric (CRM) formats
+    validated_client_id = validate_client_id(client_id, "client_id", required=False)
     
     conditions = ["source = 'MYFDC'"]
     params = {"limit": limit, "offset": offset}
