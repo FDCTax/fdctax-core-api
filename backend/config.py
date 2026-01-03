@@ -204,6 +204,30 @@ class Settings(BaseSettings):
         description="Fernet encryption key for sensitive fields (TFN)"
     )
     
+    # ==================== EMERGENT LLM KEY ====================
+    EMERGENT_LLM_KEY: str = Field(
+        default="",
+        description="Emergent LLM API key for AI services (OpenAI, Claude, Gemini)"
+    )
+    
+    # ==================== OCR MODULE ====================
+    SECRET_AUTHORITY_URL: str = Field(
+        default="https://secure-keys-13.preview.emergentagent.com",
+        description="Secret Authority URL for secure key retrieval"
+    )
+    OCR_INTERNAL_SERVICE: str = Field(
+        default="core",
+        description="Internal service identifier for OCR"
+    )
+    OCR_INTERNAL_TOKEN: str = Field(
+        default="",
+        description="Internal token for OCR service authentication"
+    )
+    STORAGE_REF_BASE: str = Field(
+        default="/app/storage/receipts",
+        description="Base path for receipt file storage"
+    )
+    
     # ==================== OBSERVABILITY ====================
     SENTRY_DSN: str = Field(
         default="",
