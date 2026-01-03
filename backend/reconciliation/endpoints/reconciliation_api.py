@@ -323,20 +323,24 @@ async def get_matches(
     
     Requires internal API key authentication.
     """
+    # Validate client_id is a valid UUID
+    validated_client_id = validate_required_uuid(client_id, "client_id")
+    
     try:
         # Validate status if provided
         if status:
             try:
                 MatchStatus(status)
             except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid status. Valid values: {[s.value for s in MatchStatus]}"
+                raise_invalid_parameter(
+                    "status",
+                    f"Invalid status. Valid values: {[s.value for s in MatchStatus]}",
+                    status
                 )
         
         service = ReconciliationService(db)
         matches = await service.get_matches_by_client(
-            client_id=client_id,
+            client_id=validated_client_id,
             status=status,
             source_type=source_type,
             limit=limit,
@@ -344,7 +348,7 @@ async def get_matches(
         )
         
         return {
-            "client_id": client_id,
+            "client_id": validated_client_id,
             "matches": matches,
             "count": len(matches),
             "limit": limit,
