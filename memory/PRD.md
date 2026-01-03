@@ -742,9 +742,10 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 │   ├── test_webhooks.py        # Webhook tests (26 tests)
 │   ├── test_sms_proxy.py       # SMS Proxy tests (26 tests)
 │   └── test_reconciliation_api.py  # Reconciliation tests (29 tests) (NEW)
+│   └── test_ocr_api.py          # OCR tests (17 tests) (NEW)
 └── test_reports/               # Test results
 ```
 
 ---
 
-*Last Updated: January 2, 2026 - Ticket A3-RECON-01 Complete*
+*Last Updated: January 3, 2026 - Ticket A3-OCR-01 Complete*
