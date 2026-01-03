@@ -87,11 +87,3 @@ android-sdk/
 !backend/.env
 !backend/.env.staging
 !backend/.env.production
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
