@@ -654,7 +654,6 @@ async def prepare_document(
     4. Returns structured data ready for import
     """
     from ocr.services.ocr_service import ocr_service
-    from utils.validation_errors import raise_missing_parameter
     
     client_id = request.get("client_id")
     document_url = request.get("document_url")
