@@ -293,7 +293,8 @@ async def main():
     
     await create_tables()
     await verify_tables()
-    await seed_test_data()
+    # NOTE: Test data seeding removed for production deployment
+    # Use /api/auth/admin/register to create users manually
     
     logger.info("=" * 50)
     logger.info("Migration complete!")
