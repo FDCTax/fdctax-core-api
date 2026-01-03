@@ -334,6 +334,10 @@ api_router.include_router(lodgeit_router)  # LodgeIT export/import
 from routers.ingestion import router as ingestion_router
 api_router.include_router(ingestion_router)  # File upload/import pipeline
 
+# CRM Integration Endpoints (must be before myfdc_ingest for route priority)
+from routers.crm_integration import router as crm_integration_router
+api_router.include_router(crm_integration_router)  # CRM-specific endpoints with internal API auth
+
 # MyFDC Unified Ingestion (A3-INGEST-02)
 from ingestion.endpoints.myfdc_ingest import router as myfdc_ingestion_router
 api_router.include_router(myfdc_ingestion_router)  # MyFDC → Core ingestion pipeline
