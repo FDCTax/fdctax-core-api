@@ -239,6 +239,70 @@ async def link_or_create_client_v1(
     return await _execute_link_or_create(request, service, db)
 
 
+# ==================== V1 LINK ALIASES (CRM Compatibility) ====================
+
+@v1_router.post("/link", response_model=LinkOrCreateResponse)
+async def link_client_v1(
+    request: LinkOrCreateRequest,
+    service: InternalService = Depends(get_internal_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    [V1] Link a MyFDC user to a Core client (alias for link-or-create).
+    
+    **Auth:** Internal Service Token (X-Internal-Api-Key header)
+    
+    This is an alias endpoint for CRM compatibility.
+    See /v1/link-or-create for full documentation.
+    """
+    return await _execute_link_or_create(request, service, db)
+
+
+@v1_router.get("/link")
+async def get_client_link_status(
+    myfdc_user_id: str = Query(..., description="MyFDC user ID to check"),
+    service: InternalService = Depends(get_internal_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    [V1] Check if a MyFDC user is linked to a Core client.
+    
+    **Auth:** Internal Service Token (X-Internal-Api-Key header)
+    
+    **Returns:**
+    - `linked`: True if user is linked
+    - `client_id`: The Core client UUID if linked, null otherwise
+    """
+    from sqlalchemy import text
+    
+    query = text("""
+        SELECT id::text, display_name, primary_contact_email, myfdc_user_id
+        FROM public.client_profiles
+        WHERE myfdc_user_id = :myfdc_user_id
+        LIMIT 1
+    """)
+    
+    result = await db.execute(query, {"myfdc_user_id": myfdc_user_id})
+    row = result.fetchone()
+    
+    if row:
+        return {
+            "linked": True,
+            "client_id": row[0],
+            "name": row[1],
+            "email": row[2],
+            "myfdc_user_id": row[3]
+        }
+    
+    return {
+        "linked": False,
+        "client_id": None,
+        "name": None,
+        "email": None,
+        "myfdc_user_id": myfdc_user_id
+    }
+
+
 @router.get("/{client_id}", response_model=ClientResponse)
 async def get_client(
     client_id: str,
