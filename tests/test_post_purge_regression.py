@@ -355,8 +355,10 @@ class TestJobsCRUD:
         assert response.status_code in [200, 201]
         
         data = response.json()
-        assert "id" in data or "job_id" in data
-        job_id = data.get("id") or data.get("job_id")
+        assert data["success"] == True
+        assert "job" in data
+        assert "id" in data["job"]
+        job_id = data["job"]["id"]
         print(f"✓ Job created - id: {job_id}")
         return job_id
     
@@ -378,7 +380,7 @@ class TestJobsCRUD:
         
         if create_response.status_code in [200, 201]:
             data = create_response.json()
-            job_id = data.get("id") or data.get("job_id")
+            job_id = data["job"]["id"]
             
             # Get the job
             response = requests.get(
@@ -388,7 +390,8 @@ class TestJobsCRUD:
             assert response.status_code == 200
             
             job_data = response.json()
-            assert job_data.get("id") == job_id or job_data.get("job_id") == job_id
+            assert job_data["success"] == True
+            assert job_data["job"]["id"] == job_id
             print(f"✓ Job retrieved by ID - id: {job_id}")
         else:
             pytest.skip("Could not create job for get test")
@@ -411,7 +414,7 @@ class TestJobsCRUD:
         
         if create_response.status_code in [200, 201]:
             data = create_response.json()
-            job_id = data.get("id") or data.get("job_id")
+            job_id = data["job"]["id"]
             
             # Update the job
             response = requests.patch(
@@ -422,6 +425,7 @@ class TestJobsCRUD:
             assert response.status_code == 200
             
             updated_data = response.json()
+            assert updated_data["success"] == True
             print(f"✓ Job updated - id: {job_id}")
         else:
             pytest.skip("Could not create job for update test")
@@ -444,7 +448,7 @@ class TestJobsCRUD:
         
         if create_response.status_code in [200, 201]:
             data = create_response.json()
-            job_id = data.get("id") or data.get("job_id")
+            job_id = data["job"]["id"]
             
             # Delete the job
             response = requests.delete(
@@ -452,6 +456,10 @@ class TestJobsCRUD:
                 headers={"X-Internal-Api-Key": INTERNAL_API_KEY}
             )
             assert response.status_code in [200, 204]
+            
+            if response.status_code == 200:
+                delete_data = response.json()
+                assert delete_data["success"] == True
             print(f"✓ Job deleted - id: {job_id}")
         else:
             pytest.skip("Could not create job for delete test")
