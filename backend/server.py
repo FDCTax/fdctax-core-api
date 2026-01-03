@@ -330,6 +330,10 @@ api_router.include_router(import_router)  # Bank/OCR import
 from routers.lodgeit import router as lodgeit_router
 api_router.include_router(lodgeit_router)  # LodgeIT export/import
 
+# Jobs Management (CRM integration)
+from routers.jobs import router as jobs_router
+api_router.include_router(jobs_router)  # Job CRUD endpoints
+
 # CRM Integration Endpoints (MUST be before ingestion_router for route priority)
 # These endpoints support internal API key auth for CRM → Core communication
 from routers.crm_integration import router as crm_integration_router
