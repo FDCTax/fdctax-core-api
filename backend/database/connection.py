@@ -4,6 +4,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
 from dotenv import load_dotenv
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-# CRITICAL FIX: Ensure asyncpg driver is used
+# CRITICAL FIX 1: Ensure asyncpg driver is used
 # Production Secret Authority injects postgresql:// but we need postgresql+asyncpg://
 # This conversion MUST happen before create_async_engine is called
 original_url = DATABASE_URL
@@ -29,13 +30,26 @@ elif DATABASE_URL.startswith('postgres://') and '+asyncpg' not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+asyncpg://', 1)
     print("[DB] Converted postgres:// to postgresql+asyncpg://")
 
+# CRITICAL FIX 2: Remove sslmode parameter for asyncpg compatibility
+# asyncpg does NOT support the sslmode parameter (psycopg2 does)
+# Production DATABASE_URL may include ?sslmode=require which causes:
+# TypeError: connect() got an unexpected keyword argument 'sslmode'
+parsed = urlparse(DATABASE_URL)
+query = parse_qs(parsed.query)
+
+if "sslmode" in query:
+    query.pop("sslmode")
+    new_query = urlencode(query, doseq=True)
+    DATABASE_URL = urlunparse(parsed._replace(query=new_query))
+    print("[DB] Removed unsupported sslmode parameter for asyncpg")
+
 # Verify the URL has asyncpg driver
 if '+asyncpg' not in DATABASE_URL:
     raise ValueError(f"DATABASE_URL must use asyncpg driver. Got: {DATABASE_URL[:50]}...")
 
 print(f"[DB] Using async driver: {DATABASE_URL.split('@')[0].split('/')[-1] if '@' in DATABASE_URL else 'asyncpg'}")
 
-# Create async engine with SSL
+# Create async engine with SSL (using asyncpg's ssl parameter, not sslmode)
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
