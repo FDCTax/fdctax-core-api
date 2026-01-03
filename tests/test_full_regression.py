@@ -459,10 +459,12 @@ class TestClientLinking:
         if create_response.status_code == 200:
             client_id = create_response.json()["client_id"]
             
+            # Use a valid UUID for crm_client_id (database expects UUID type)
+            crm_uuid = str(uuid.uuid4())
             response = requests.post(
                 f"{BASE_URL}/api/clients/{client_id}/link-crm",
                 headers=headers,
-                json={"crm_client_id": f"CRM-{unique_id}"}
+                json={"crm_client_id": crm_uuid}
             )
             assert response.status_code == 200
             data = response.json()
