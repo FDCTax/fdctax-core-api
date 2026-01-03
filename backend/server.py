@@ -399,6 +399,10 @@ api_router.include_router(reconciliation_router)  # Reconciliation engine endpoi
 from ocr.endpoints.ocr_api import router as ocr_router
 api_router.include_router(ocr_router)  # OCR receipt processing endpoints
 
+# CRM Integration Endpoints (additional endpoints for CRM → Core)
+from routers.crm_integration import router as crm_integration_router
+api_router.include_router(crm_integration_router)  # CRM-specific endpoints with internal API auth
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
