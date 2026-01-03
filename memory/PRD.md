@@ -676,7 +676,7 @@ The `fdccore` database user lacks `ALTER TABLE` privileges on certain tables. Sc
 
 ### P1 - External Integrations
 1. **Integrate with Agent 8's Mapping Engine** - Replace mock normalisation logic in `NormalisationService` with real HTTP call to Agent 8's category mapping engine
-2. **Core Access to OCR Service (A1-OCR-02)** - Implement client-side logic in Core to call OCR service provided by Agent 5, integrate into ingestion pipeline
+2. ~~Core Access to OCR Service (A1-OCR-02)~~ ✅ Implemented as A3-OCR-01
 
 ### P1 - Frontend Development (On Hold)
 1. **VXT Phone UI** - Display call logs, transcripts, recordings, workpaper linking
