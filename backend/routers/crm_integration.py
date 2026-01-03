@@ -418,13 +418,19 @@ async def list_myfdc_imports(
     **Auth:** Internal API Key (X-Internal-Api-Key header)
     
     Returns summary of import batches with counts and status.
+    
+    **Filters:**
+    - client_id: Filter by specific client (must be valid UUID if provided)
     """
+    # Validate client_id is a valid UUID if provided
+    validated_client_id = validate_optional_uuid(client_id, "client_id")
+    
     conditions = ["source = 'MYFDC'"]
     params = {"limit": limit, "offset": offset}
     
-    if client_id:
+    if validated_client_id:
         conditions.append("client_id = :client_id")
-        params["client_id"] = client_id
+        params["client_id"] = validated_client_id
     
     where_clause = " AND ".join(conditions)
     
