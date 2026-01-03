@@ -547,41 +547,6 @@ async def add_staff_email(
 
 # ==================== UTILITY ENDPOINTS ====================
 
-@router.post("/seed-test-users")
-async def seed_test_users_endpoint(
-    admin_key: str = Query(..., description="Admin key for seeding"),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Seed test users for development.
-    
-    Creates:
-    - admin@fdctax.com (password: admin123, role: admin)
-    - staff@fdctax.com (password: staff123, role: staff)
-    - client@example.com (password: client123, role: client)
-    
-    Requires admin_key = "fdc-seed-2025" for security.
-    """
-    if admin_key != "fdc-seed-2025":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid admin key"
-        )
-    
-    created = await seed_test_users(db)
-    
-    return {
-        "success": True,
-        "message": "Test users seeded",
-        "created_users": created,
-        "test_credentials": [
-            {"email": "admin@fdctax.com", "password": "admin123", "role": "admin"},
-            {"email": "staff@fdctax.com", "password": "staff123", "role": "staff"},
-            {"email": "client@example.com", "password": "client123", "role": "client"}
-        ]
-    }
-
-
 @router.get("/verify")
 async def verify_token(
     current_user: AuthUser = Depends(get_current_user)
