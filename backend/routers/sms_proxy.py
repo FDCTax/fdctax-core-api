@@ -30,7 +30,6 @@ from database import get_db
 from middleware.internal_auth import get_internal_service, InternalService
 from services.sms_proxy import (
     SMSProxyService,
-    MockSMSProxyService,
     SMSSendRequest,
     SMSProxyResponse,
     BulkSMSResult
