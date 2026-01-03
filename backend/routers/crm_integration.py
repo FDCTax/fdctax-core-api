@@ -654,6 +654,7 @@ async def prepare_document(
     4. Returns structured data ready for import
     """
     from ocr.services.ocr_service import ocr_service
+    from utils.validation_errors import raise_missing_parameter
     
     client_id = request.get("client_id")
     document_url = request.get("document_url")
@@ -661,9 +662,9 @@ async def prepare_document(
     transaction_id = request.get("transaction_id")
     
     if not client_id:
-        raise HTTPException(status_code=400, detail="client_id is required")
+        raise_missing_parameter("client_id")
     if not document_url:
-        raise HTTPException(status_code=400, detail="document_url is required")
+        raise_missing_parameter("document_url")
     
     # Determine processing method based on URL/type
     url_lower = document_url.lower()
