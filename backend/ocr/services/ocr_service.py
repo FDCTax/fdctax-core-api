@@ -22,7 +22,7 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 
-from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
+from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent
 
 from ingestion.unified_schema import AttachmentRef, OCRStatus
 
@@ -281,12 +281,16 @@ Important:
                 system_message=self.RECEIPT_OCR_PROMPT
             ).with_model("openai", "gpt-4o")  # Use GPT-4o for vision capabilities
             
-            # Create message with image
-            image_content = ImageContent(image_base64=image_base64)
+            # Create file content for the image
+            file_content = FileContent(
+                content_type=mime_type,
+                file_content_base64=image_base64
+            )
             
+            # Create message with image attachment
             user_message = UserMessage(
                 text="Please analyze this receipt image and extract all information in the specified JSON format.",
-                image_contents=[image_content]
+                file_contents=[file_content]
             )
             
             # Send to OpenAI Vision API
