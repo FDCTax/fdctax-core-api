@@ -84,18 +84,21 @@ async def resolve_client_id(db: AsyncSession, client_id: str) -> Optional[str]:
     except ValueError:
         pass
     
-    # Try to look up by crm_client_id
+    # Try to look up by crm_client_id (cast parameter to text explicitly)
     query = text("""
         SELECT id::text FROM public.client_profiles
-        WHERE crm_client_id = :crm_id
+        WHERE crm_client_id = CAST(:crm_id AS text)
         LIMIT 1
     """)
     
-    result = await db.execute(query, {"crm_id": client_id})
-    row = result.fetchone()
-    
-    if row:
-        return row[0]
+    try:
+        result = await db.execute(query, {"crm_id": str(client_id)})
+        row = result.fetchone()
+        
+        if row:
+            return row[0]
+    except Exception as e:
+        logger.warning(f"Error looking up crm_client_id {client_id}: {e}")
     
     # Return a placeholder UUID that won't match anything
     # This allows the query to run but return empty results
