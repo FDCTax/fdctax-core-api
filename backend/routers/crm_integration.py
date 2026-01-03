@@ -261,7 +261,7 @@ async def list_bookkeeping_transactions(
 
 @router.get("/reconciliation/groups", summary="Get reconciliation groups")
 async def get_reconciliation_groups(
-    client_id: Optional[str] = Query(None, description="Filter by client ID"),
+    client_id: Optional[str] = Query(None, description="Filter by client ID (UUID or CRM ID)"),
     status: Optional[str] = Query(None, description="Filter by match status"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -276,18 +276,17 @@ async def get_reconciliation_groups(
     Groups transactions by reconciliation run/batch for easier management.
     
     **Filters:**
-    - client_id: Filter by specific client (must be valid UUID if provided)
+    - client_id: Filter by specific client (accepts UUID or CRM numeric ID)
     - status: Filter by match status (MATCHED, SUGGESTED, NO_MATCH, etc.)
     """
-    # Validate client_id accepts both UUID (Core) and numeric (CRM) formats
-    validated_client_id = validate_client_id(client_id, "client_id", required=False)
-    
     conditions = []
     params = {"limit": limit, "offset": offset}
     
-    if validated_client_id:
-        conditions.append("client_id = :client_id")
-        params["client_id"] = validated_client_id
+    # Resolve client_id to Core UUID (handles both UUID and CRM numeric IDs)
+    if client_id:
+        resolved_client_id = await resolve_client_id(db, client_id)
+        conditions.append("client_id = :client_id::uuid")
+        params["client_id"] = resolved_client_id
     
     if status:
         conditions.append("match_status = :status")
