@@ -276,6 +276,47 @@ https://fdctax-core-1.preview.emergentagent.com/api/vxt/webhook
   - Full test coverage (42/42 tests passed, minor bug fixed)
   - Internal auth configured via `INTERNAL_API_KEY` env var
 
+### Session 7: OCR Module (January 3, 2026)
+- ✅ **OCR Module (Ticket A3-OCR-01)** - Complete
+  - Core OCR endpoint accepting receipt images via URL
+  - OpenAI Vision API (GPT-4o) integration via Emergent LLM key
+  - Downloads images to local storage at `/app/storage/receipts/{client_id}/`
+  - Extracts structured receipt data (vendor, amount, date, items, GST)
+  - Links OCR results to existing ingestion transactions
+  - Stores attachments metadata in `ingestion_attachments` table
+  - Audit trail populated on all operations
+  - Internal API key authentication
+  - Full test coverage (17/17 tests passed)
+
+**Endpoints:**
+- `GET /api/ocr/status` - Module status (public)
+- `POST /api/ocr/receipt` - Process receipt image from URL
+
+**Request/Response:**
+```json
+// Request
+{
+  "client_id": "uuid",
+  "file_url": "https://...",
+  "transaction_id": "uuid (optional)"
+}
+
+// Response  
+{
+  "success": true,
+  "attachment_id": "uuid",
+  "ocr_result": {
+    "vendor": "Store Name",
+    "amount": "45.50",
+    "date": "2026-01-03",
+    "gst_amount": "4.10",
+    "items": [...],
+    "confidence": 0.95
+  },
+  "transaction_updated": true
+}
+```
+
 ### Session 6: Reconciliation Engine (January 2, 2026)
 - ✅ **Reconciliation Engine (Ticket A3-RECON-01)** - Complete
   - Core reconciliation service with configurable matching rules
