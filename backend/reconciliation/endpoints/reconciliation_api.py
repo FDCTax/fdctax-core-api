@@ -269,8 +269,8 @@ async def find_candidates(
     
     Requires internal API key authentication.
     """
-    # Validate client_id is a valid UUID
-    validated_client_id = validate_required_uuid(client_id, "client_id")
+    # Validate client_id accepts both UUID (Core) and numeric (CRM) formats
+    validated_client_id = validate_client_id(client_id, "client_id", required=True)
     
     # Validate source_transaction_id is a valid UUID
     validated_source_id = validate_required_uuid(request.source_transaction_id, "source_transaction_id")
@@ -323,8 +323,8 @@ async def get_matches(
     
     Requires internal API key authentication.
     """
-    # Validate client_id is a valid UUID
-    validated_client_id = validate_required_uuid(client_id, "client_id")
+    # Validate client_id accepts both UUID (Core) and numeric (CRM) formats
+    validated_client_id = validate_client_id(client_id, "client_id", required=True)
     
     try:
         # Validate status if provided
