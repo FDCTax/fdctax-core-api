@@ -78,11 +78,12 @@ agenthub/agents/youtube/db
 
 # Mobile development
 android-sdk/
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
+
+# Environment files (block sensitive local files, allow deployment configs)
+.env.local
+.env.*.local
+# Allow frontend/.env and backend/.env for Emergent deployment
+!frontend/.env
+!backend/.env
+!backend/.env.staging
+!backend/.env.production
