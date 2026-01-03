@@ -3,7 +3,7 @@ Secret Authority Client (A3-OCR-01)
 
 Handles secure key retrieval from Secret Authority for OCR service.
 Uses the provided contract:
-- SECRET_AUTHORITY_URL=https://secure-keys-13.preview.emergentagent.com
+- SECRET_AUTHORITY_URL=https://taxcrm-bridge.preview.emergentagent.com
 - POST /api/v1/ocr/key with x-internal-service and x-internal-token headers
 """
 
@@ -39,7 +39,7 @@ class SecretAuthorityClient:
     def __init__(self):
         self.base_url = os.environ.get(
             'SECRET_AUTHORITY_URL',
-            'https://secure-keys-13.preview.emergentagent.com'
+            'https://taxcrm-bridge.preview.emergentagent.com'
         )
         self.internal_service = os.environ.get('OCR_INTERNAL_SERVICE', 'core')
         self.internal_token = os.environ.get('OCR_INTERNAL_TOKEN', '')

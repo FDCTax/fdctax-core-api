@@ -24,7 +24,7 @@ from datetime import datetime
 # Get backend URL from environment
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://fdctax-core-1.preview.emergentagent.com"
+    BASE_URL = "https://taxcrm-bridge.preview.emergentagent.com"
 
 # Internal API Key for authentication
 INTERNAL_API_KEY = "test-internal-api-key-for-luna-migration"

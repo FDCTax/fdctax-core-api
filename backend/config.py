@@ -212,7 +212,7 @@ class Settings(BaseSettings):
     
     # ==================== OCR MODULE ====================
     SECRET_AUTHORITY_URL: str = Field(
-        default="https://secure-keys-13.preview.emergentagent.com",
+        default="https://taxcrm-bridge.preview.emergentagent.com",
         description="Secret Authority URL for secure key retrieval"
     )
     OCR_INTERNAL_SERVICE: str = Field(
