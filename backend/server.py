@@ -395,6 +395,10 @@ api_router.include_router(sms_proxy_router)  # SMS proxy endpoints
 from reconciliation.endpoints.reconciliation_api import router as reconciliation_router
 api_router.include_router(reconciliation_router)  # Reconciliation engine endpoints
 
+# OCR Module (A3-OCR-01)
+from ocr.endpoints.ocr_api import router as ocr_router
+api_router.include_router(ocr_router)  # OCR receipt processing endpoints
+
 # ==================== SECRET AUTHORITY VERIFICATION ROUTES ====================
 # These routes are mounted under /api for Secret Authority access
 # Paths: /api/sa/status, /api/sa/email/status, /api/sa/tfn/*, /api/sa/internal/status
