@@ -22,7 +22,7 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 
-from openai import AsyncOpenAI
+from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 
 from ingestion.unified_schema import AttachmentRef, OCRStatus
 
@@ -274,50 +274,29 @@ Important:
             
             image_base64 = base64.b64encode(image_bytes).decode('utf-8')
             
-            # Create OpenAI client with Emergent LLM key
-            client = AsyncOpenAI(
+            # Create chat instance with OpenAI GPT-4 Vision using Emergent LLM key
+            chat = LlmChat(
                 api_key=self.api_key,
-                base_url="https://api.emergentmethods.ai/v1"  # Emergent proxy
+                session_id=f"ocr-{uuid.uuid4()}",
+                system_message=self.RECEIPT_OCR_PROMPT
+            ).with_model("openai", "gpt-4o")  # Use GPT-4o for vision capabilities
+            
+            # Create image content - emergentintegrations uses ImageContent for base64 images
+            image_content = ImageContent(image_base64=image_base64)
+            
+            # Create message with image
+            # The library expects text in one message and image in another via file_contents
+            user_message = UserMessage(
+                text="Please analyze this receipt image and extract all information in the specified JSON format.",
+                file_contents=[image_content]
             )
             
-            # Create the data URL for the image
-            data_url = f"data:{mime_type};base64,{image_base64}"
-            
-            # Send to OpenAI Vision API
+            # Send to OpenAI Vision API via Emergent proxy
             logger.info("Sending image to OpenAI Vision API via Emergent...")
-            
-            response = await client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": self.RECEIPT_OCR_PROMPT
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "Please analyze this receipt image and extract all information in the specified JSON format."
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": data_url,
-                                    "detail": "high"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                max_tokens=2000
-            )
-            
-            # Extract response text
-            response_text = response.choices[0].message.content
+            response = await chat.send_message(user_message)
             
             # Parse response
-            return self._parse_ocr_response(response_text)
+            return self._parse_ocr_response(response)
             
         except Exception as e:
             logger.error(f"OCR API error: {e}")
