@@ -1,0 +1,101 @@
+{
+  "summary": "Post-Purge Regression Testing Complete - All 34 tests passed. Verified all core functionalities work correctly after Legacy Deployment Purge. All mock code removed, real PostgreSQL data only.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/tests/test_post_purge_regression.py",
+    "/app/test_reports/pytest/post_purge_regression_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VERIFIED: Golden test client endpoint /api/clients/golden/test-client correctly returns 404 (removed in purge)",
+    "VERIFIED: SMS proxy mode is 'unavailable' not 'mock' - Agent 5 not configured",
+    "VERIFIED: Normalisation mapper is 'preliminary' not 'agent8_mock' - pending Agent 8 integration",
+    "VERIFIED: Health endpoint returns environment='production' with real PostgreSQL connection",
+    "VERIFIED: All internal API key authentication working correctly (401 for missing, 403 for invalid)",
+    "All 20 features from review request tested and working"
+  ],
+  "updated_files": [
+    "/app/tests/test_post_purge_regression.py"
+  ],
+  "success_rate": {
+    "backend": "100% (34/34 tests passed)"
+  },
+  "test_credentials": {
+    "internal_api_key": "test-internal-api-key-for-luna-migration",
+    "primary_api_key": "4e9d7c3b1a8f2d6c5e0b9a7d3c1f8e4b6a2d9c7f1e3b5a0c4d8f6b2e1c7a9d3",
+    "test_client_id": "4e8dab2c-c306-4b7c-997a-11c81e65a95b"
+  },
+  "seed_data_creation": "Multiple test transactions and jobs created during testing. Test data prefixed with 'TEST-PURGE-' for identification.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Post-purge regression testing complete. All 20 features tested: Health endpoints (3), Ingestion Pipeline (5), Bookkeeping (2), Reconciliation (7), OCR (4), Jobs CRUD (6), Identity Spine (2), Client Management (2), SMS Proxy (1), Normalisation (1). All mock code removed. Real PostgreSQL data only.",
+  "features_tested": {
+    "health_endpoints": {
+      "GET /api/health": "PASS - Returns healthy with PostgreSQL connected, environment=production",
+      "GET /api/health/ready": "PASS - Kubernetes readiness probe",
+      "GET /api/health/live": "PASS - Kubernetes liveness probe"
+    },
+    "purge_verification": {
+      "Golden test client removed": "PASS - /api/clients/golden/test-client returns 404",
+      "SMS proxy mode": "PASS - mode='unavailable' not 'mock'",
+      "Normalisation mapper": "PASS - mapper='preliminary' not 'agent8_mock'"
+    },
+    "ingestion_pipeline": {
+      "POST /api/ingestion/myfdc - auth required": "PASS - 401 without key",
+      "POST /api/ingestion/myfdc - invalid key": "PASS - 403 with invalid key",
+      "POST /api/ingestion/myfdc - empty transactions": "PASS - 400 validation",
+      "POST /api/ingestion/myfdc - success": "PASS - Ingests transactions",
+      "GET /api/ingestion/myfdc/imports": "PASS - Lists import batches"
+    },
+    "bookkeeping": {
+      "GET /api/bookkeeping/transactions - auth required": "PASS - 401 without key",
+      "GET /api/bookkeeping/transactions - list": "PASS - Returns transactions"
+    },
+    "reconciliation": {
+      "GET /api/reconciliation/status": "PASS - Module operational, MYFDC enabled",
+      "GET /api/reconciliation/sources": "PASS - 4 sources (MYFDC, OCR, BANK_FEED, MANUAL)",
+      "POST /api/reconciliation/match - auth required": "PASS - 401 without key",
+      "POST /api/reconciliation/match - run": "PASS - Returns run_id and stats",
+      "GET /api/reconciliation/matches/{client_id}": "PASS - Returns matches",
+      "GET /api/reconciliation/groups": "PASS - Returns groups",
+      "POST /api/reconciliation/candidates": "PASS - Returns candidates"
+    },
+    "ocr": {
+      "GET /api/ocr/status": "PASS - Module operational, OpenAI Vision configured",
+      "POST /api/ocr/receipt - auth required": "PASS - 401 without key",
+      "POST /api/ocr/receipt - invalid URL": "PASS - 400 for FTP URL",
+      "POST /api/ocr/extract - auth required": "PASS - 401 without key"
+    },
+    "jobs_crud": {
+      "GET /api/jobs - auth required": "PASS - 401 without key",
+      "GET /api/jobs - list": "PASS - Returns jobs list",
+      "POST /api/jobs - create": "PASS - Creates job with ID",
+      "GET /api/jobs/{id}": "PASS - Returns job by ID",
+      "PATCH /api/jobs/{id}": "PASS - Updates job",
+      "DELETE /api/jobs/{id}": "PASS - Deletes job"
+    },
+    "identity_spine": {
+      "GET /api/identity/status": "PASS - Module ok, all features enabled",
+      "POST /api/identity/myfdc-signup": "PASS - Public endpoint works"
+    },
+    "client_management": {
+      "POST /api/v1/clients/link-or-create - auth required": "PASS - 401 without key",
+      "POST /api/v1/clients/link-or-create": "PASS - Creates/links client"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": [
+      "Normalisation mapper is 'preliminary' - pending Agent 8 integration (NOT mocked, uses real keyword-based categorisation)",
+      "SMS proxy is 'unavailable' - Agent 5 not configured (NOT mocked, returns 503 when called)"
+    ]
+  }
+}
